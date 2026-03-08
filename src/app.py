@@ -16,14 +16,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.data_loader import load_dataset, data_quality_profile
 from src.config import (
-    DEMAND_ORDER, DIFFICULTY_ORDER, EARNED_SETTLEMENT_ORDER, FINANCIAL_ORDER, K_ANON_THRESHOLD, OPERATING_ORDER,
+    DEMAND_ORDER, DIFFICULTY_ORDER, EARNED_SETTLEMENT_ORDER,
+    EXPECT_DEMAND_ORDER, EXPECT_FINANCIAL_ORDER,
+    FINANCIAL_ORDER, K_ANON_THRESHOLD, OPERATING_ORDER,
     VOL_OBJECTIVES_ORDER, VOL_TYPEUSE_ORDER, WCVA_BRAND, ORG_SIZE_ORDER,
-    WAVE1_CONTEXT, SEVERITY_COLOURS, AltTextConfig, resolve_grouping,
+    YES_NO_ORDER, WAVE1_CONTEXT, SEVERITY_COLOURS, AltTextConfig, resolve_grouping,
 )
 from src.eda import (
     profile_summary, demand_and_outlook, volunteer_recruitment_analysis,
     volunteer_retention_analysis, workforce_operations, volunteer_demographics,
-    volunteering_types, executive_highlights,
+    volunteering_types, executive_highlights, cross_segment_analysis,
 )
 from src.charts import (
     horizontal_bar_ranked, stacked_bar_ordinal, donut_chart,
@@ -167,29 +169,73 @@ if page == "Overview":
         show_chart(fig, "overview_size", pd.DataFrame(sizes.items(), columns=["Size", "Count"]))
 
     with col2:
-        st.subheader("Demand Change (Last 3 Months)")
+        st.subheader("Legal Form")
+        lf = prof["legalform"]
+        fig = donut_chart(list(lf.keys()), list(lf.values()), "Legal form distribution", n, mode=palette_mode)
+        show_chart(fig, "overview_legalform", pd.DataFrame(lf.items(), columns=["Form", "Count"]))
+
+    st.divider()
+    st.subheader("Geographic Distribution of Respondents")
+    col_la, col_region = st.columns([2, 1])
+    with col_la:
+        la_df = pd.DataFrame(prof["la_distribution"].items(), columns=["Local Authority", "Count"])
+        la_df = la_df.sort_values("Count", ascending=False).reset_index(drop=True)
+        fig = horizontal_bar_ranked(la_df, "Local Authority", "Count",
+                                    "Cardiff dominates the sample; interpret geographic patterns with caution",
+                                    n, mode=palette_mode, pct_col=None, height=550)
+        show_chart(fig, "overview_la", la_df)
+    with col_region:
+        reg = prof["region_distribution"]
+        fig = donut_chart(list(reg.keys()), list(reg.values()), "By region", n, mode=palette_mode)
+        show_chart(fig, "overview_region", pd.DataFrame(reg.items(), columns=["Region", "Count"]))
+
+    st.divider()
+    st.subheader("Recent Experience (Last 3 Months)")
+    col3, col4 = st.columns(2)
+    with col3:
         grouper, group_order = resolve_grouping(DEMAND_ORDER)
-        TITLE = "Demand for services has mostly increased"
-        fig = stacked_bar_ordinal(dem["demand"], TITLE, n, mode=palette_mode, alt_config=alt_config,
+        fig = stacked_bar_ordinal(dem["demand"], "Demand for services has mostly increased", n,
+                                  mode=palette_mode, alt_config=alt_config,
                                   grouper=grouper, group_order=group_order)
         show_chart(fig, "overview_demand", dem["demand"])
 
-    col3, col4 = st.columns(2)
-    with col3:
-        st.subheader("Financial Position (Last 3 Months)")
+    with col4:
         grouper, group_order = resolve_grouping(FINANCIAL_ORDER)
-        TITLE = "Half report stable finances; a third are deteriorating"
-        fig = stacked_bar_ordinal(dem["financial"], TITLE, n, mode=palette_mode, alt_config=alt_config,
+        fig = stacked_bar_ordinal(dem["financial"], "Half report stable finances; a third are deteriorating", n,
+                                  mode=palette_mode, alt_config=alt_config,
                                   grouper=grouper, group_order=group_order)
         show_chart(fig, "overview_financial", dem["financial"])
 
-    with col4:
-        st.subheader("Likelihood of Operating Next Year")
+    col5, col6 = st.columns(2)
+    with col5:
         grouper, group_order = resolve_grouping(OPERATING_ORDER)
-        TITLE = "Most organisations expect to survive; but uncertainty exists"
-        fig = stacked_bar_ordinal(dem["operating"], TITLE, n, mode=palette_mode, alt_config=alt_config,
+        fig = stacked_bar_ordinal(dem["operating"], "Most organisations expect to survive; but uncertainty exists", n,
+                                  mode=palette_mode, alt_config=alt_config,
                                   grouper=grouper, group_order=group_order)
         show_chart(fig, "overview_operating", dem["operating"])
+    with col6:
+        grouper, group_order = resolve_grouping(DEMAND_ORDER)
+        fig = stacked_bar_ordinal(dem.get("workforce_change", dem["demand"]),
+                                  "Workforce changes largely mirror demand trends", n,
+                                  mode=palette_mode, alt_config=alt_config,
+                                  grouper=grouper, group_order=group_order)
+        show_chart(fig, "overview_workforce", dem.get("workforce_change", dem["demand"]))
+
+    st.divider()
+    st.subheader("Looking Ahead (Next 3 Months)")
+    col7, col8 = st.columns(2)
+    with col7:
+        grouper, group_order = resolve_grouping(EXPECT_DEMAND_ORDER)
+        fig = stacked_bar_ordinal(dem["expect_demand"], "Organisations expect demand to keep rising", n,
+                                  mode=palette_mode, alt_config=alt_config,
+                                  grouper=grouper, group_order=group_order)
+        show_chart(fig, "overview_expect_demand", dem["expect_demand"])
+    with col8:
+        grouper, group_order = resolve_grouping(EXPECT_FINANCIAL_ORDER)
+        fig = stacked_bar_ordinal(dem["expect_financial"], "Financial outlook: little optimism for improvement", n,
+                                  mode=palette_mode, alt_config=alt_config,
+                                  grouper=grouper, group_order=group_order)
+        show_chart(fig, "overview_expect_financial", dem["expect_financial"])
 
 
 # =========================================================================
@@ -310,6 +356,31 @@ elif page == "Workforce & Operations":
     fig = horizontal_bar_ranked(wf["actions"], "label", "count", "Price increases and unplanned reserves usage are the most common responses", n, mode=palette_mode)
     show_chart(fig, "wf_actions", wf["actions"][["label", "count", "pct"]])
 
+    st.divider()
+    st.subheader("Impact of Shortages")
+    fig = horizontal_bar_ranked(wf["shortage_affect"], "label", "count",
+                                "Unable to meet demand and paused operations are the most common consequences",
+                                n, mode=palette_mode)
+    show_chart(fig, "wf_shortage_affect", wf["shortage_affect"][["label", "count", "pct"]])
+
+    st.divider()
+    st.subheader("Staff Recruitment & Retention Difficulty")
+    alt_config_wf = AltTextConfig(value_col="value", count_col="count", pct_col="pct", sample_size=wf["n_with_staff"])
+    col_sr, col_sret = st.columns(2)
+    with col_sr:
+        grouper, group_order = resolve_grouping(YES_NO_ORDER)
+        fig = stacked_bar_ordinal(wf["staff_rec_difficulty"],
+                                  f"Staff recruitment difficulty (n={wf['n_with_staff']} with paid staff)",
+                                  wf["n_with_staff"], mode=palette_mode, alt_config=alt_config_wf,
+                                  grouper=grouper, group_order=group_order)
+        show_chart(fig, "wf_staff_rec", wf["staff_rec_difficulty"])
+    with col_sret:
+        fig = stacked_bar_ordinal(wf["staff_ret_difficulty"],
+                                  f"Staff retention difficulty (n={wf['n_with_staff']} with paid staff)",
+                                  wf["n_with_staff"], mode=palette_mode, alt_config=alt_config_wf,
+                                  grouper=grouper, group_order=group_order)
+        show_chart(fig, "wf_staff_ret", wf["staff_ret_difficulty"])
+
 
 # =========================================================================
 # PAGE 5: Demographics & Types
@@ -355,11 +426,20 @@ elif page == "Demographics & Types":
 
         show_chart(fig, "dem_change", vd["change_matrix"])
 
+    st.divider()
+    st.subheader("Change in Total Volunteer Time (Last 12 Months)")
+    grouper, group_order = resolve_grouping(DEMAND_ORDER)
+    fig = stacked_bar_ordinal(vd["vol_time"], "How has total volunteer time changed?", n,
+                              mode=palette_mode, alt_config=alt_config,
+                              grouper=grouper, group_order=group_order)
+    show_chart(fig, "dem_vol_time", vd["vol_time"])
+
+    st.divider()
     st.subheader("Types of Volunteering Used")
     for label, type_df in vt["type_data"].items():
         grouper, group_order = resolve_grouping(VOL_TYPEUSE_ORDER)
-        TITLE = f"Types of Volunteering Used: {label}"
-        fig = stacked_bar_ordinal(type_df, TITLE, n, mode=palette_mode, height=140, alt_config=alt_config,
+        fig = stacked_bar_ordinal(type_df, f"Types of Volunteering Used: {label}", n,
+                                  mode=palette_mode, height=140, alt_config=alt_config,
                                   grouper=grouper, group_order=group_order)
         show_chart(fig, f"type_{label.replace(' ', '_')}", type_df)
 
@@ -432,6 +512,26 @@ elif page == "Executive Summary":
     for key, desc in WAVE1_CONTEXT.items():
         if key.endswith("_desc"):
             st.markdown(f"- {desc}")
+
+    st.divider()
+    st.subheader("Key Metrics by Organisation Size")
+    seg = cross_segment_analysis(df)
+    if "Organisation Size" in seg:
+        seg_data = seg["Organisation Size"]
+        seg_rows = []
+        for size in ORG_SIZE_ORDER:
+            if size in seg_data:
+                d = seg_data[size]
+                seg_rows.append({
+                    "Size": f"{size} (n={d['n']})",
+                    "Demand increased %": d["pct_demand_increased"],
+                    "Finance deteriorated %": d["pct_finance_deteriorated"],
+                    "Vol. recruitment difficulty %": d["pct_vol_rec_difficulty"],
+                    "Vol. retention difficulty %": d["pct_vol_ret_difficulty"],
+                    "Too few volunteers %": d["pct_too_few_vols"],
+                })
+        if seg_rows:
+            st.dataframe(pd.DataFrame(seg_rows), hide_index=True, width="stretch")
 
     st.divider()
     st.subheader("Policy Recommendations")

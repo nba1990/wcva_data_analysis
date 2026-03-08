@@ -66,6 +66,7 @@ def demand_and_outlook(df: pd.DataFrame) -> dict:
         "demand": _value_counts_ordered(df["demand"], DEMAND_ORDER),
         "financial": _value_counts_ordered(df["financial"], FINANCIAL_ORDER),
         "operating": _value_counts_ordered(df["operating"], OPERATING_ORDER),
+        "workforce_change": _value_counts_ordered(df["workforce"], DEMAND_ORDER),
         "expect_demand": _value_counts_ordered(df["expectdemand"], EXPECT_DEMAND_ORDER),
         "expect_financial": _value_counts_ordered(df["expectfinancial"], EXPECT_FINANCIAL_ORDER),
         "demand_pct_increased": round(100 * df["demand_direction"].eq("Increased").sum() / len(df), 1),

@@ -181,7 +181,8 @@ def donut_chart(
     fig.update_layout(**_base_layout(title, n, height=height))
     fig.update_layout(showlegend=False)
 
-    org_sizes = sorted(zip(labels, values), reverse=True)
+    # Sort by values in descending order
+    org_sizes = sorted(zip(labels, values), key=lambda x: x[1], reverse=True)
     alt = f"Donut chart: {title}. Descending Order: {org_sizes}. n={n}."  # noqa
     return _set_alt_text(fig, alt)
 
