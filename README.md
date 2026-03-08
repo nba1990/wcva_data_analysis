@@ -150,113 +150,129 @@ Key goals:
 
 ---
 
-# Features [WIP]
+# Features
 
-- Feature 1
-- Feature 2
-- Feature 3
+- **Interactive Streamlit dashboard** with 8 pages: Overview, Volunteer Recruitment, Volunteer Retention, Workforce & Operations, Demographics & Types, Earned Settlement, Executive Summary, Data Notes
+- **Dual-format executive presentation**: self-contained reveal.js HTML slide deck + structured PDF with bookmarks, TOC, and alt-text
+- **WCVA branding** with switchable colour-blind-safe palette (sidebar toggle)
+- **k-anonymity suppression** (results hidden when filtered sample < 5)
+- **Accessibility**: redundant encoding on all charts, alt-text metadata, WCAG contrast validation
+- **Per-chart export**: download PNG image or underlying CSV data table
+- **12 high-priority policy questions** for policy team interrogation
 
 ---
 
 # Project Structure
 
 ```
-
 <project-root>/
 │
-├── src/            # Source code
-├── tests/          # Test files
-├── datasets/       # Datasets for the analysis
-├── plans/          # Work plans and any other project / programme management related artefacts
-├── docs/           # Documentation
-├── scripts/        # Utility scripts
-├── config/         # Configuration files
-└── README.md
+├── src/
+│   ├── __init__.py
+│   ├── config.py              # WCVA palette, column mappings, response orderings, constants
+│   ├── data_loader.py         # CSV loading, cleaning, derived columns, data quality profiling
+│   ├── eda.py                 # Analytical functions (9 dimensions + executive highlights)
+│   ├── charts.py              # WCVA-branded Plotly chart generators with accessibility
+│   ├── app.py                 # Streamlit multi-page dashboard (8 pages)
+│   └── generate_presentation.py  # Dual output: reveal.js HTML + fpdf2 PDF
+│
+├── datasets/
+│   ├── WCVA_W2_Anonymised_Dataset.csv       # Wave 2 data (111 rows, 144 cols)
+│   └── Baromedr_Cymru_QA_Response_Options.docx  # Questionnaire reference
+│
+├── output/
+│   ├── presentation.html      # Self-contained HTML slide deck (opens in any browser)
+│   └── presentation.pdf       # Structured PDF with TOC and bookmarks
+│
+├── plans/
+│   └── policy_questions.md    # 12 high-priority policy questions
+│
+├── .streamlit/
+│   └── config.toml            # WCVA-branded Streamlit theme
+│
+├── requirements.txt
+├── README.md
 └── LICENSE
-
-````
+```
 
 ---
 
-# Installation [WIP]
+# Installation
 
 ```bash
 git clone <repository-url>
 cd <project-name>
-<installation-steps>
-````
 
-Example:
+# Create and activate a virtual environment (recommended)
+python3 -m venv .venv
+source .venv/bin/activate
 
-```bash
-npm install
-```
-
-or
-
-```bash
+# Install dependencies
 pip install -r requirements.txt
 ```
 
 ---
 
-# Usage [WIP]
+# Usage
 
-Example usage:
+### Interactive Dashboard
 
 ```bash
-<run-command>
+streamlit run src/app.py
 ```
 
-Example:
+Opens in your browser at `http://localhost:8501`. Use the sidebar to:
+- Navigate between 8 pages
+- Filter by organisation size, scope, and activity
+- Toggle colour-blind friendly mode
+- Download chart images and data tables
+
+### Generate Executive Presentation
 
 ```bash
-npm start
+python -m src.generate_presentation
 ```
 
-or
+Produces two files in `output/`:
+- `presentation.html` — self-contained reveal.js slide deck (email it, USB it, open in any browser)
+- `presentation.pdf` — structured PDF with table of contents, bookmarks, and alt-text on images
+
+---
+
+# Configuration
+
+All configuration is centralised in `src/config.py`:
+- **WCVA brand palette** and colour-blind-safe alternative
+- **Column-to-question mappings** from the Baromedr questionnaire
+- **Response orderings** for consistent chart axes
+- **Chart defaults** (font, sizing, margins)
+- **k-anonymity threshold** (default: 5)
+- **Wave 1 context** for cross-wave comparisons
+
+The Streamlit theme is set in `.streamlit/config.toml`.
+
+---
+
+# Development
 
 ```bash
-python main.py
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the dashboard locally
+streamlit run src/app.py
+
+# Generate presentation outputs
+python -m src.generate_presentation
 ```
 
 ---
 
-# Configuration [WIP]
-
-Explain configuration options.
-
-Example:
-
-```
-ENV_VAR_NAME=value
-```
-
----
-
-# Development [WIP]
-
-Steps for contributors:
+# Testing
 
 ```bash
-# install dependencies
-<install-command>
-
-# run development environment
-<dev-command>
-
-# run tests
-<test-command>
-```
-
----
-
-# Testing [WIP]
-
-Explain how tests are run.
-
-```bash
-<test-command>
+# Quick smoke test: verify all modules import and data loads
+python -c "from src.data_loader import load_dataset; df = load_dataset(); print(f'OK: {df.shape}')"
 ```
 
 ---
