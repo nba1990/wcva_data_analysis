@@ -179,6 +179,13 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         max_items=8,
         height=320,
     )
+    # Ensure clear alt text for the infographic slide
+    setattr(
+        fig_infographic,
+        "_alt_text",
+        "Horizontal bar chart showing key percentages for demand, finances, "
+        "volunteer availability, and recruitment and retention difficulty.",
+    )
 
     slides = [
         {
@@ -194,7 +201,15 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         {
             "title": "Executive Summary - Key Highlights",
             "subtitle": f"Baromedr Cymru Wave 2 Key Findings: Volunteering in the Welsh Voluntary Sector ({n} organisations across Wales)",
-            "body": highlights_html,
+            "body": (
+                highlights_html
+                + "<p style='font-size:0.8em;color:#555'>These findings are based on an "
+                  "organisational survey. Headline estimates of how many people in Wales "
+                  "volunteer (for example, that around one-third of adults volunteer) "
+                  "depend on survey definitions, age ranges, and whether unpaid caring is "
+                  "included. Future waves could triangulate these organisational views "
+                  "with surveys of individual volunteers and non-volunteers.</p>"
+            ),
             "chart": None,
             "notes": "Top-ranked findings from the survey.",
             "alt_text": "Ordered list of key survey highlights, ranked from most to least important.",
@@ -215,12 +230,13 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "title": "Who Responded?",
             "subtitle": f"{n} organisations across Wales",
             "body": f"<ul>"
-                    f"<li><strong>Small</strong>: {prof['org_size'].get('Small', 0)} | <br>"
-                    f"<strong>Medium</strong>: {prof['org_size'].get('Medium', 0)} | <br>"
-                    f"<strong>Large</strong>: {prof['org_size'].get('Large', 0)}</li> <br>"
-                    f"<li>{prof['social_enterprise_pct']}% are social enterprises</li> <br>"
-                    f"<li>{prof['has_paid_staff_pct']}% have paid staff</li> <br>"
-                    f"<li>Median {prof['median_volunteers']:.0f} volunteers per organisation</li> <br>"
+                    f"<li><strong>Organisation size mix</strong>: Small "
+                    f"{prof['org_size'].get('Small', 0)}, Medium "
+                    f"{prof['org_size'].get('Medium', 0)}, Large "
+                    f"{prof['org_size'].get('Large', 0)}</li> <br>"
+                    f"<li><strong>{prof['social_enterprise_pct']}%</strong> are social enterprises</li> <br>"
+                    f"<li><strong>{prof['has_paid_staff_pct']}%</strong> have paid staff</li> <br>"
+                    f"<li>Median <strong>{prof['median_volunteers']:.0f}</strong> volunteers per organisation</li> <br>"
                     f"</ul>",
             "chart": fig_size,
             "notes": "Sample composition. Emphasise mix of sizes.",
@@ -241,10 +257,10 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "alt_text": getattr(fig_demand, "_alt_text", ""),
         },
         {
-            "title": "Financial positions mostly stable, but over one-third of organisations report deterioration",
+            "title": "Finances mostly unchanged, but a third report deterioration",
             "subtitle": "Multi-point squeeze on financial stability",
             "body": f"<ul>"
-                    f"<li><strong>{dem['financial_pct_deteriorated']}%</strong> report deteriorating finances</li> <br>"
+                    f"<li><strong>{dem['financial_pct_deteriorated']}%</strong> already report deteriorating finances</li> <br>"
                     f"<li><strong>{wf['finance_deteriorated_pct']}%</strong> say finances worsened due to rising costs</li> <br>"
                     f"<li>Only {wf['reserves_yes_pct']}% have reserves; median {wf['median_months_reserves']:.0f} months</li> <br>"
                     f"</ul>"
@@ -283,7 +299,9 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "body": f"<p><strong>Top method</strong>: {rec['rec_methods'].iloc[0]['label']} <br>"
                     f"({rec['rec_methods'].iloc[0]['count']} orgs)</p> <br>"
                     f"<p><strong>Top barrier</strong>: {rec['rec_barriers'].iloc[0]['label']} <br>"
-                    f"({rec['rec_barriers'].iloc[0]['count']} orgs)</p> <br>",
+                    f"({rec['rec_barriers'].iloc[0]['count']} orgs)</p> <br>"
+                    f"<p>Low response to recruitment campaigns underlines why triangulation with "
+                    f"surveys of individual volunteers and non-volunteers would be valuable.</p> <br>",
             "chart": fig_rec_barriers,
             "notes": "Organisations are trying multiple channels. The barrier isn't apathy. It's response rate.",
             "alt_text": getattr(fig_rec_barriers, "_alt_text", ""),
@@ -304,7 +322,8 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "subtitle": "Rising costs are forcing hard choices",
             "body": f"<ul>"
                     f"<li><strong>{wf['finance_deteriorated_pct']}%</strong> report finances deteriorated from rising costs</li> <br>"
-                    f"<li>Only {wf['reserves_yes_pct']}% have reserves; median {wf['median_months_reserves']:.0f} months</li> <br>"
+                    f"<li>Only {wf['reserves_yes_pct']}% have reserves; median "
+                    f"{wf['median_months_reserves']:.0f} months of cover among those with reserves</li> <br>"
                     f"</ul>",
             "chart": fig_concerns,
             "notes": "Financial sustainability is the underpinning risk.",

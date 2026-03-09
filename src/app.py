@@ -33,6 +33,7 @@ from src.charts import (
     grouped_bar, heatmap_matrix, kpi_card_html,
 )
 from src.narratives import demand_finance_scissor_phrase, recruitment_vs_retention_phrase
+from src.infographic import render_at_a_glance_infographic
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -172,64 +173,29 @@ if page == "At-a-Glance":
     rec = volunteer_recruitment_analysis(df)
     ret = volunteer_retention_analysis(df)
 
-    col_top1, col_top2, col_top3 = st.columns(3)
-    col_top1.markdown(
-        kpi_card_html("Organisations in this view", str(n), colour=WCVA_BRAND["teal"]),
-        unsafe_allow_html=True,
-    )
-    col_top2.markdown(
-        kpi_card_html(
-            "Demand increased",
-            f"{dem['demand_pct_increased']}%",
-            colour=WCVA_BRAND["amber"],
-        ),
-        unsafe_allow_html=True,
-    )
-    col_top3.markdown(
-        kpi_card_html(
-            "Finances deteriorated",
-            f"{dem['financial_pct_deteriorated']}%",
-            colour=WCVA_BRAND["coral"],
-        ),
-        unsafe_allow_html=True,
+    render_at_a_glance_infographic(n, dem, rec, ret)
+    st.caption(
+        "Poster-style summary of how rising demand, finances, and volunteer gaps "
+        "interact in this filtered view of the survey."
     )
 
-    st.divider()
-    col_mid1, col_mid2, col_mid3 = st.columns(3)
-    col_mid1.markdown(
-        kpi_card_html(
-            "Too few volunteers for need",
-            f"{rec['pct_too_few']}%",
-            colour=WCVA_BRAND["coral"],
-        ),
-        unsafe_allow_html=True,
-    )
-    col_mid2.markdown(
-        kpi_card_html(
-            "Recruitment difficult",
-            f"{rec['pct_difficulty']}%",
-            colour=WCVA_BRAND["amber"],
-        ),
-        unsafe_allow_html=True,
-    )
-    col_mid3.markdown(
-        kpi_card_html(
-            "Retention difficult",
-            f"{ret['pct_difficulty']}%",
-            colour=WCVA_BRAND["amber"],
-        ),
-        unsafe_allow_html=True,
-    )
+    with st.expander("View metrics as table"):
+        metrics_rows = [
+            {"Metric": "Organisations in view", "Value": n},
+            {"Metric": "Demand increased", "Value": f"{dem['demand_pct_increased']}%"},
+            {"Metric": "Finances deteriorated", "Value": f"{dem['financial_pct_deteriorated']}%"},
+            {"Metric": "Too few volunteers for need", "Value": f"{rec['pct_too_few']}%"},
+            {"Metric": "Recruitment difficult", "Value": f"{rec['pct_difficulty']}%"},
+            {"Metric": "Retention difficult", "Value": f"{ret['pct_difficulty']}%"},
+        ]
+        st.dataframe(pd.DataFrame(metrics_rows), hide_index=True, width="stretch")
 
     st.divider()
     st.subheader("Demand–Capacity Story in One View")
     story_cols = st.columns(2)
     with story_cols[0]:
         st.markdown(f"- {demand_finance_scissor_phrase(dem)}")
-        st.markdown(
-            "- "
-            + recruitment_vs_retention_phrase(rec, ret)
-        )
+        st.markdown("- " + recruitment_vs_retention_phrase(rec, ret))
     with story_cols[1]:
         st.markdown(
             "- Most organisations say they have **too few volunteers** for what they are trying to deliver."
@@ -743,6 +709,15 @@ elif page == "Executive Summary":
         st.warning("Results suppressed due to small sample size.")
         st.stop()
 
+    st.markdown(
+        "This summary is based on an organisational survey. Headline claims about how many "
+        "people in Wales volunteer (for example, that around one-third of adults volunteer) "
+        "depend on the age ranges and definitions used in those population surveys, and may "
+        "exclude under‑15s or blur boundaries with unpaid caring. In the longer term, "
+        "triangulating these organisational findings with surveys of individual volunteers "
+        "and non‑volunteers would give a fuller picture of volunteering in Wales."
+    )
+
     highlights = executive_highlights(df)
 
     for h in highlights:
@@ -822,6 +797,7 @@ elif page == "Data Notes":
     st.subheader("Methodology Notes")
     st.markdown("""
 - **Survey**: Baromedr Cymru Wave 2, conducted in collaboration with NTU VCSE Observatory
+- **Likert Scale**: A psychometric, often 5 or 7-point, survey rating system used to measure attitudes, opinions, and behaviors by gauging the level of agreement, frequency, or satisfaction. **Refer:** [Likert Scale](https://en.wikipedia.org/wiki/Likert_scale) for more information.
 - **Period**: January–February 2026
 - **Sample**: 111 Welsh voluntary sector organisations (self-selected; not a random sample)
 - **Format**: Online survey via Qualtrics; 10–15 minute completion time
@@ -829,10 +805,23 @@ elif page == "Data Notes":
 - **Privacy**: All data anonymised prior to analysis. Results suppressed when filtered sample < 5 organisations (k-anonymity)
 """)
 
+    st.subheader("Definitions of volunteering")
+    st.markdown("""
+- **Volunteering vs unpaid caring**: This analysis follows the Baromedr definition of volunteering
+  and does not treat unpaid caring roles (for family members, for example) as volunteering.
+- **Formal and informal activity**: Many real-world examples (e.g. community clean-ups, emergency response,
+  neighbourhood action) can sit on the boundary between formal and informal volunteering. Where possible,
+  Baromedr questions focus on activity that organisations can reasonably observe and report.
+- **Age ranges**: Headline figures from other sources about the share of people who volunteer often use specific
+  age bands (for example 16–74 or 15–85). Under‑15s and very elderly volunteers may therefore be under-represented
+  in population estimates, even if organisations rely on them in practice.
+""")
+
     st.subheader("Caveats")
     st.markdown("""
 - **Self-selection bias**: Respondents chose to participate; findings may not represent all Welsh voluntary sector organisations
-- **Cardiff over-representation**: 23% of respondents are Cardiff-based; interpret geographic patterns with caution
+- **Cardiff over-representation (raw counts)**: 23% of respondents are Cardiff-based; interpret geographic patterns with caution
+- **Powys over-representation (proportional to population)**: 2.34 representation index - respondents are Powys-based; interpret geographic patterns with caution. **NOTE:** Representation index of 1.0 indicates proportional-to-population sampling; values above 1.0 indicate over-representation.
 - **Small sub-groups**: Some local authority and activity type segments have very few respondents. Avoid over-interpreting these segments
 - **Wave 2 only**: Cross-wave trend analysis requires Wave 1 data (not included in this dataset)
 - **Ordinal data**: Likert-scale responses are ordinal, not interval. Median is more appropriate than mean

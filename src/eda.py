@@ -308,25 +308,39 @@ def executive_highlights(df: pd.DataFrame) -> list[dict]:
         {
             "rank": 1,
             "title": f"Income is the #1 concern ({top_concern['count']}/{n} organisations)",
-            "detail": f"{top_concern['pct']}% of organisations cite income as a top concern, followed by increasing demand ({wf['concerns'].iloc[1]['pct']}%).",
+            "detail": (
+                f"{top_concern['pct']}% of organisations cite income as a top concern, "
+                f"with increasing demand next ({wf['concerns'].iloc[1]['pct']}%). "
+                "Many are worried about income before their finances have actually deteriorated."
+            ),
             "type": "critical",
         },
         {
             "rank": 2,
             "title": "Demand is rising faster than capacity",
-            "detail": f"{dem['demand_pct_increased']}% report increased demand, yet {dem['financial_pct_deteriorated']}% report worsening finances.",
+            "detail": (
+                f"{dem['demand_pct_increased']}% report increased demand, while "
+                f"{dem['financial_pct_deteriorated']}% already report worsening finances. "
+                "Demand is outpacing the resources organisations have to respond."
+            ),
             "type": "critical",
         },
         {
             "rank": 3,
             "title": f"{rec['pct_too_few']}% say they have too few volunteers",
-            "detail": f"{rec['pct_difficulty']}% report active difficulty recruiting volunteers.",
+            "detail": (
+                f"{rec['pct_difficulty']}% report difficulty actively recruiting volunteers."
+            ),
             "type": "warning",
         },
         {
             "rank": 4,
             "title": "Recruitment problem isn't lack of effort",
-            "detail": f"The top barrier is '{top_rec_barrier['label']}' ({top_rec_barrier['count']} orgs), despite {top_rec_method['count']} orgs using {top_rec_method['label'].lower()}.",
+            "detail": (
+                f"The top barrier is '{top_rec_barrier['label']}' "
+                f"({top_rec_barrier['count']} organisations), even though "
+                f"{top_rec_method['count']} use {top_rec_method['label'].lower()} to reach people."
+            ),
             "type": "warning",
         },
         {
