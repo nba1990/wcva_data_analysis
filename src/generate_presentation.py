@@ -12,6 +12,7 @@ from __future__ import annotations
 import base64
 import io
 from datetime import date
+import pandas as pd
 from pathlib import Path
 
 from fpdf import FPDF
@@ -35,6 +36,7 @@ from src.eda import (
 from src.charts import (
     horizontal_bar_ranked, stacked_bar_ordinal, donut_chart,
 )
+from src.narratives import demand_finance_scissor_phrase, recruitment_vs_retention_phrase
 
 
 CHART_W, CHART_H = 1200, 550
@@ -158,6 +160,26 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         grouper=grouper_ef, group_order=group_order_ef,
     )
 
+    # Simple infographic-style bar chart for top-level metrics
+    infographic_data = [
+        ("Demand increased", dem["demand_pct_increased"]),
+        ("Finances deteriorated", dem["financial_pct_deteriorated"]),
+        ("Too few volunteers", rec["pct_too_few"]),
+        ("Recruitment difficult", rec["pct_difficulty"]),
+        ("Retention difficult", ret["pct_difficulty"]),
+    ]
+    info_df = pd.DataFrame(infographic_data, columns=["Metric", "Percent"])
+    fig_infographic = horizontal_bar_ranked(
+        info_df,
+        label_col="Metric",
+        value_col="Percent",
+        pct_col="Percent",
+        title="At-a-Glance: Key Pressures on the Voluntary Sector",
+        n=n,
+        max_items=8,
+        height=320,
+    )
+
     slides = [
         {
             "title": "Baromedr Cymru Wave 2",
@@ -177,6 +199,17 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "notes": "Top-ranked findings from the survey.",
             "alt_text": "Ordered list of key survey highlights, ranked from most to least important.",
             "is_exec_summary": True,
+        },
+        {
+            "title": "At-a-Glance Infographic",
+            "subtitle": "Key pressures on demand, finance and volunteering",
+            "body": (
+                "<p>High-level indicators summarising the squeeze between "
+                "rising demand, constrained finances, and volunteer gaps.</p>"
+            ),
+            "chart": fig_infographic,
+            "notes": "Infographic-style slide to open conversations with senior stakeholders.",
+            "alt_text": getattr(fig_infographic, "_alt_text", ""),
         },
         {
             "title": "Who Responded?",
@@ -201,6 +234,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
                     f"<li><strong>{dem['financial_pct_deteriorated']}%</strong> report deteriorating finances</li> <br>"
                     f"<li><strong>{dem['operating_pct_likely']}%</strong> confident they'll operate next year</li> <br>"
                     f"</ul>"
+                    f"<p>{demand_finance_scissor_phrase(dem)}</p>"
                     f"<p style='font-size:0.7em;color:#888'>Wave 1 context: {WAVE1_CONTEXT['demand_increased_desc']}</p>",
             "chart": fig_demand,
             "notes": "Demand-finance divergence. Wave 1 comparison available.",
@@ -237,7 +271,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "body": f"<ul>"
                     f"<li><strong>{rec['pct_difficulty']}%</strong> report difficulty recruiting</li> <br>"
                     f"<li><strong>{ret['pct_difficulty']}%</strong> report difficulty retaining</li> <br>"
-                    f"<li>Recruiting is almost 2x harder than retaining</li> <br>"
+                    f"<li>{recruitment_vs_retention_phrase(rec, ret)}</li> <br>"
                     f"</ul>",
             "chart": None,
             "notes": "Frame the recruitment/retention asymmetry.",
@@ -357,6 +391,11 @@ REVEAL_TEMPLATE = """<!doctype html>
   }}
   .reveal h1, .reveal h2 {{ color: {navy}; }}
   .reveal h3 {{ color: {teal}; font-size: 0.9em; }}
+  .reveal .slides section {{
+    height: 100vh;
+    box-sizing: border-box;
+    overflow-y: auto;
+  }}
   .reveal .slide-content {{ text-align: left; padding: 0 40px; }}
   .reveal img.chart {{ max-height: 60vh; margin: 10px auto; display: block; border-radius: 4px; }}
   .reveal .subtitle {{ color: {teal}; font-size: 0.75em; margin-top: -10px; }}

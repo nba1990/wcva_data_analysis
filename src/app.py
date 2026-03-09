@@ -32,6 +32,7 @@ from src.charts import (
     horizontal_bar_ranked, stacked_bar_ordinal, donut_chart,
     grouped_bar, heatmap_matrix, kpi_card_html,
 )
+from src.narratives import demand_finance_scissor_phrase, recruitment_vs_retention_phrase
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -142,13 +143,14 @@ def show_chart(fig, key: str, data_df: pd.DataFrame | None = None):
 # Navigation
 # ---------------------------------------------------------------------------
 pages = [
+    "Executive Summary",
+    "At-a-Glance",
     "Overview",
     "Volunteer Recruitment",
     "Volunteer Retention",
     "Workforce & Operations",
     "Demographics & Types",
     "Earned Settlement",
-    "Executive Summary",
     "Data Notes",
 ]
 
@@ -157,9 +159,90 @@ page = st.sidebar.radio("Navigate", pages, label_visibility="collapsed")
 prof = profile_summary(df)
 
 # =========================================================================
-# PAGE 1: Overview
+# PAGE 1: At-a-Glance Infographic
 # =========================================================================
-if page == "Overview":
+if page == "At-a-Glance":
+    st.title("Baromedr Cymru — At a Glance")
+
+    if suppressed:
+        st.warning("Results suppressed due to small sample size. Adjust filters to see data.")
+        st.stop()
+
+    dem = demand_and_outlook(df)
+    rec = volunteer_recruitment_analysis(df)
+    ret = volunteer_retention_analysis(df)
+
+    col_top1, col_top2, col_top3 = st.columns(3)
+    col_top1.markdown(
+        kpi_card_html("Organisations in this view", str(n), colour=WCVA_BRAND["teal"]),
+        unsafe_allow_html=True,
+    )
+    col_top2.markdown(
+        kpi_card_html(
+            "Demand increased",
+            f"{dem['demand_pct_increased']}%",
+            colour=WCVA_BRAND["amber"],
+        ),
+        unsafe_allow_html=True,
+    )
+    col_top3.markdown(
+        kpi_card_html(
+            "Finances deteriorated",
+            f"{dem['financial_pct_deteriorated']}%",
+            colour=WCVA_BRAND["coral"],
+        ),
+        unsafe_allow_html=True,
+    )
+
+    st.divider()
+    col_mid1, col_mid2, col_mid3 = st.columns(3)
+    col_mid1.markdown(
+        kpi_card_html(
+            "Too few volunteers for need",
+            f"{rec['pct_too_few']}%",
+            colour=WCVA_BRAND["coral"],
+        ),
+        unsafe_allow_html=True,
+    )
+    col_mid2.markdown(
+        kpi_card_html(
+            "Recruitment difficult",
+            f"{rec['pct_difficulty']}%",
+            colour=WCVA_BRAND["amber"],
+        ),
+        unsafe_allow_html=True,
+    )
+    col_mid3.markdown(
+        kpi_card_html(
+            "Retention difficult",
+            f"{ret['pct_difficulty']}%",
+            colour=WCVA_BRAND["amber"],
+        ),
+        unsafe_allow_html=True,
+    )
+
+    st.divider()
+    st.subheader("Demand–Capacity Story in One View")
+    story_cols = st.columns(2)
+    with story_cols[0]:
+        st.markdown(f"- {demand_finance_scissor_phrase(dem)}")
+        st.markdown(
+            "- "
+            + recruitment_vs_retention_phrase(rec, ret)
+        )
+    with story_cols[1]:
+        st.markdown(
+            "- Most organisations say they have **too few volunteers** for what they are trying to deliver."
+        )
+        st.markdown(
+            "- Use the filters on the left to see how this picture changes by size, scope, LA, or activity."
+        )
+
+
+# =========================================================================
+# PAGE 2: Overview
+# =========================================================================
+elif page == "Overview":
     st.title("Baromedr Cymru Wave 2 — Overview")
 
     if suppressed:
@@ -310,6 +393,9 @@ if page == "Overview":
                                   grouper=grouper, group_order=group_order)
         show_chart(fig, "overview_financial", dem["financial"])
 
+    # Narrative summary of the demand–finance “scissor effect”
+    st.caption(demand_finance_scissor_phrase(dem))
+
     col5, col6 = st.columns(2)
     with col5:
         grouper, group_order = resolve_grouping(OPERATING_ORDER)
@@ -395,10 +481,14 @@ elif page == "Volunteer Recruitment":
                                   grouper=grouper, group_order=group_order)
         show_chart(fig, "rec_difficulty", rec["vol_rec_difficulty"])
 
+        # Explain the two metrics and how recruitment compares to retention overall
+        ret_summary = volunteer_retention_analysis(df)
+        comparison_sentence = recruitment_vs_retention_phrase(rec, ret_summary)
         st.caption(
             f"{rec['pct_shortage']}% of organisations explicitly report a shortage recruiting volunteers "
             f"(shortage_vol_rec = 'Yes'), while {rec['pct_difficulty']}% of those answering the difficulty "
-            "question find recruitment somewhat or extremely difficult on the Likert scale."
+            "question find recruitment somewhat or extremely difficult on the Likert scale. "
+            + comparison_sentence
         )
 
     with col2:
