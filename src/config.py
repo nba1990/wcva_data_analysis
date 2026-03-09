@@ -135,8 +135,8 @@ def validate_palette_contrast(palette: list[str], bg: str = "#FFFFFF",
 # Chart defaults
 # ---------------------------------------------------------------------------
 CHART_FONT = "Arial, Helvetica, sans-serif"
-CHART_FONT_SIZE = 13
-CHART_TITLE_SIZE = 16
+CHART_FONT_SIZE = 14
+CHART_TITLE_SIZE = 18
 CHART_BG = WCVA_BRAND["white"]
 CHART_GRID = "#E0E0E0"
 CHART_MARGIN = dict(l=20, r=20, t=60, b=20)

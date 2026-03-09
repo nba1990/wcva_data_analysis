@@ -22,7 +22,7 @@ from src.config import (
     EARNED_SETTLEMENT_ORDER, ORG_SIZE_ORDER, YES_NO_ORDER,
     EXPECT_DEMAND_ORDER, EXPECT_FINANCIAL_ORDER,
 )
-from src.data_loader import count_multiselect, count_multiselect_by_segment
+from src.data_loader import count_multiselect, count_multiselect_by_segment, load_la_context
 
 
 def _value_counts_ordered(series: pd.Series, order: list[str]) -> pd.DataFrame:
@@ -42,14 +42,49 @@ def _value_counts_ordered(series: pd.Series, order: list[str]) -> pd.DataFrame:
 
 def profile_summary(df: pd.DataFrame) -> dict:
     n = len(df)
+
+    # Basic distributions used throughout the app
+    org_size = df["org_size"].value_counts().reindex(ORG_SIZE_ORDER).fillna(0).astype(int).to_dict()
+    legalform = df["legalform"].value_counts().head(6).to_dict()
+    wales_scope = df["wales_scope"].value_counts().to_dict()
+    mainactivity = df["mainactivity"].value_counts().head(10).to_dict()
+    la_distribution = df["location_la_primary"].value_counts().to_dict()
+    region_distribution = df["region"].value_counts().to_dict()
+
+    # Local-authority context: join sample counts onto population/org counts
+    la_ctx = load_la_context()
+    la_counts = (
+        df["location_la_primary"]
+        .value_counts()
+        .rename("sample_count")
+        .rename_axis("local_authority")
+        .reset_index()
+    )
+    la_merged = la_ctx.merge(la_counts, on="local_authority", how="left")
+    la_merged["sample_count"] = la_merged["sample_count"].fillna(0).astype(int)
+
+    total_sample = float(n) if n else 1.0
+    total_pop = float(la_merged["population_2024"].sum()) or 1.0
+
+    la_merged["sample_share_pct"] = la_merged["sample_count"] / total_sample * 100.0
+    la_merged["pop_share_pct"] = la_merged["population_2024"] / total_pop * 100.0
+    la_merged["sample_per_100k"] = la_merged["sample_count"] / la_merged["population_2024"] * 100000.0
+    la_merged["orgs_per_10k_pop"] = la_merged["est_vcse_orgs"] / la_merged["population_2024"] * 10000.0
+    # Over/under-representation index (100 = proportional to population)
+    la_merged["representation_index"] = (
+        la_merged["sample_share_pct"] / la_merged["pop_share_pct"]
+    ).replace([pd.NA, pd.NaT], 0.0)
+
     return {
         "n": n,
-        "org_size": df["org_size"].value_counts().reindex(ORG_SIZE_ORDER).fillna(0).astype(int).to_dict(),
-        "legalform": df["legalform"].value_counts().head(6).to_dict(),
-        "wales_scope": df["wales_scope"].value_counts().to_dict(),
-        "mainactivity": df["mainactivity"].value_counts().head(10).to_dict(),
-        "la_distribution": df["location_la_primary"].value_counts().to_dict(),
-        "region_distribution": df["region"].value_counts().to_dict(),
+        "org_size": org_size,
+        "legalform": legalform,
+        "wales_scope": wales_scope,
+        "mainactivity": mainactivity,
+        "la_distribution": la_distribution,
+        "region_distribution": region_distribution,
+        "la_context": la_merged.to_dict(orient="records"),
+        "est_vcse_orgs": la_merged[["local_authority", "est_vcse_orgs"]],
         "social_enterprise_pct": round(100 * (df["socialenterprise"] == "Yes").sum() / n, 1),
         "has_paid_staff_pct": round(100 * (df["paidworkforce"] == "Yes").sum() / n, 1),
         "median_employees": df["peopleemploy"].median(),
@@ -85,6 +120,13 @@ def demand_and_outlook(df: pd.DataFrame) -> dict:
 
 def volunteer_recruitment_analysis(df: pd.DataFrame) -> dict:
     n = len(df)
+    shortage_yes = int(df["has_vol_rec_difficulty"].sum())
+    # For Likert-based difficulty, use only respondents who answered the question
+    vol_rec_series = df["vol_rec"]
+    likert_base = int(vol_rec_series.notna().sum())
+    likert_hard = int(
+        vol_rec_series.isin(["Somewhat difficult", "Extremely difficult"]).sum()
+    )
     return {
         "n": n,
         "shortage_vol_rec": _value_counts_ordered(df["shortage_vol_rec"], YES_NO_ORDER),
@@ -94,7 +136,11 @@ def volunteer_recruitment_analysis(df: pd.DataFrame) -> dict:
         "rec_barriers": count_multiselect(df, REC_BARRIERS_LABELS),
         "rec_barriers_by_size": count_multiselect_by_segment(df, REC_BARRIERS_LABELS, "org_size"),
         "rec_methods_by_size": count_multiselect_by_segment(df, REC_METHODS_LABELS, "org_size"),
-        "pct_difficulty": round(100 * df["has_vol_rec_difficulty"].sum() / n, 1),
+        # Share finding recruitment somewhat or extremely difficult (Likert-based, non-missing base)
+        "difficulty_base": likert_base,
+        "pct_difficulty": round(100 * likert_hard / likert_base, 1) if likert_base else 0,
+        # Share explicitly reporting a shortage recruiting volunteers
+        "pct_shortage": round(100 * shortage_yes / n, 1) if n else 0,
         "pct_too_few": round(
             100 * df["volobjectives"].isin([
                 "Slightly too few volunteers", "Significantly too few volunteers"
@@ -109,6 +155,13 @@ def volunteer_recruitment_analysis(df: pd.DataFrame) -> dict:
 
 def volunteer_retention_analysis(df: pd.DataFrame) -> dict:
     n = len(df)
+    shortage_yes = int(df["has_vol_ret_difficulty"].sum())
+    # For Likert-based difficulty, use only respondents who answered the question
+    vol_ret_series = df["vol_ret"]
+    likert_base = int(vol_ret_series.notna().sum())
+    likert_hard = int(
+        vol_ret_series.isin(["Somewhat difficult", "Extremely difficult"]).sum()
+    )
     return {
         "n": n,
         "shortage_vol_ret": _value_counts_ordered(df["shortage_vol_ret"], YES_NO_ORDER),
@@ -117,7 +170,10 @@ def volunteer_retention_analysis(df: pd.DataFrame) -> dict:
         "vol_offer": count_multiselect(df, VOL_OFFER_LABELS),
         "ret_barriers_by_size": count_multiselect_by_segment(df, RET_BARRIERS_LABELS, "org_size"),
         "vol_offer_by_size": count_multiselect_by_segment(df, VOL_OFFER_LABELS, "org_size"),
-        "pct_difficulty": round(100 * df["has_vol_ret_difficulty"].sum() / n, 1),
+        # Share finding retention somewhat or extremely difficult (Likert-based, non-missing base)
+        "difficulty_base": likert_base,
+        "pct_difficulty": round(100 * likert_hard / likert_base, 1) if likert_base else 0,
+        "pct_shortage": round(100 * shortage_yes / n, 1) if n else 0,
     }
 
 

@@ -78,19 +78,21 @@ def horizontal_bar_ranked(
 
     text_vals = [f"{row[value_col]}  ({row[pct_col]}%)" for _, row in data.iterrows()] if pct_col else [str(v) for v in data[value_col]]
 
-    fig = go.Figure(go.Bar(
-        y=data[label_col],
-        x=data[value_col],
-        orientation="h",
-        text=text_vals,
-        textposition="outside",
-        textfont=dict(size=12),
-        marker_color=colour,
-        cliponaxis=False,
-    ))
+    fig = go.Figure(
+        go.Bar(
+            y=data[label_col],
+            x=data[value_col],
+            orientation="h",
+            text=text_vals,
+            textposition="outside",
+            textfont=dict(size=14),
+            marker_color=colour,
+            cliponaxis=False,
+        )
+    )
 
-    fig.update_layout(**_base_layout(title, n, height=max(height, len(data) * 36 + 100)))
-    fig.update_yaxes(autorange="reversed", tickfont=dict(size=12))
+    fig.update_layout(**_base_layout(title, n, height=max(height, len(data) * 40 + 110)))
+    fig.update_yaxes(autorange="reversed", tickfont=dict(size=13))
     fig.update_xaxes(showgrid=True, gridcolor=CHART_GRID, zeroline=False, showticklabels=False)
 
     alt = f"Bar chart: {title}. Top item: {data.iloc[0][label_col]} ({data.iloc[0][value_col]}). Based on {n} organisations."
@@ -126,9 +128,9 @@ def stacked_bar_ordinal(
             x=[pct],
             orientation="h",
             name=label,
-            text=f"{label}: {pct}%" if pct >= 5 else "",
+            text=f"{label}: {pct}%" if pct >= 4 else "",
             textposition="inside",
-            textfont=dict(size=11, color="white" if i not in (2,) else WCVA_BRAND["navy"]),
+            textfont=dict(size=12, color="white" if i not in (2,) else WCVA_BRAND["navy"]),
             marker_color=colour,
             hovertemplate=f"{label}: {count} ({pct}%)<extra></extra>",
         ))
@@ -138,7 +140,7 @@ def stacked_bar_ordinal(
     fig.update_layout(
         **base,
         barmode="stack",
-        legend=dict(orientation="h", yanchor="top", y=-0.3, xanchor="left", x=0, font=dict(size=11)),
+        legend=dict(orientation="h", yanchor="top", y=-0.3, xanchor="left", x=0, font=dict(size=12)),
     )
     fig.update_xaxes(showticklabels=False, showgrid=False, range=[0, 100])
     fig.update_yaxes(showticklabels=False)
@@ -173,7 +175,7 @@ def donut_chart(
         hole=0.45,
         textinfo="label+percent",
         textposition="outside",
-        textfont=dict(size=12),
+        textfont=dict(size=13),
         marker=dict(colors=palette[:len(labels)]),
         hovertemplate="%{label}: %{value} (%{percent})<extra></extra>",
     ))
@@ -214,7 +216,7 @@ def grouped_bar(
             name=seg,
             text=[f"{v}%" for v in data[seg]],
             textposition="outside",
-            textfont=dict(size=10),
+            textfont=dict(size=11),
             marker_color=palette[i % len(palette)],
             cliponaxis=False,
         ))
@@ -238,7 +240,7 @@ def grouped_bar(
         legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="left", x=0),
     )
 
-    fig.update_yaxes(autorange="reversed", tickfont=dict(size=11))
+    fig.update_yaxes(autorange="reversed", tickfont=dict(size=12))
     fig.update_xaxes(showgrid=True, gridcolor=CHART_GRID, showticklabels=False)
 
     alt = f"Grouped bar: {title}, comparing {', '.join(segment_cols)}. n={n}."

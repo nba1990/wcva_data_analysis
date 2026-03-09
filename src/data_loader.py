@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
-from src.config import DATASET_PATH, LA_TO_REGION, MULTI_SELECT_GROUPS
+from src.config import DATASET_PATH, DATA_DIR, LA_TO_REGION, MULTI_SELECT_GROUPS
 
 
 def load_dataset(path: str | None = None) -> pd.DataFrame:
@@ -22,6 +22,20 @@ def load_dataset(path: str | None = None) -> pd.DataFrame:
     df = _clean(df)
     df = _derive_columns(df)
     return df
+
+
+def load_la_context(path: str | None = None) -> pd.DataFrame:
+    """
+    Load local-authority context data (population and estimated VCSE org counts).
+
+    The CSV is intentionally small and static so that it can be updated easily
+    from ONS / WCVA sources for future waves.
+    """
+    csv_path = Path(path) if path is not None else DATA_DIR / "la_context_wales.csv"
+    ctx = pd.read_csv(csv_path)
+    # Normalise column names just in case
+    ctx["local_authority"] = ctx["local_authority"].str.strip()
+    return ctx
 
 
 def _clean(df: pd.DataFrame) -> pd.DataFrame:

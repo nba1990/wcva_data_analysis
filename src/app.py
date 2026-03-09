@@ -21,6 +21,7 @@ from src.config import (
     FINANCIAL_ORDER, K_ANON_THRESHOLD, OPERATING_ORDER,
     VOL_OBJECTIVES_ORDER, VOL_TYPEUSE_ORDER, WCVA_BRAND, ORG_SIZE_ORDER,
     YES_NO_ORDER, WAVE1_CONTEXT, SEVERITY_COLOURS, AltTextConfig, resolve_grouping,
+    CHART_FONT_SIZE, CHART_TITLE_SIZE,
 )
 from src.eda import (
     profile_summary, demand_and_outlook, volunteer_recruitment_analysis,
@@ -61,6 +62,13 @@ st.sidebar.divider()
 
 accessible_mode = st.sidebar.checkbox("Colour-blind friendly mode", value=False)
 palette_mode = "accessible" if accessible_mode else "brand"
+
+text_size_mode = st.sidebar.radio(
+    "Chart label size",
+    ["Normal", "Larger"],
+    index=0,
+)
+TEXT_SCALE = 1.0 if text_size_mode == "Normal" else 1.3
 
 st.sidebar.divider()
 st.sidebar.subheader("Filters")
@@ -107,8 +115,16 @@ st.sidebar.caption(f"Showing **{n}** of {len(df_full)} organisations")
 
 def show_chart(fig, key: str, data_df: pd.DataFrame | None = None):
     """Display a Plotly chart with optional download buttons."""
-    # st.plotly_chart(fig, use_container_width=True, key=key)
-    # use_container_width=True is deprecated and is already removed in Streamlit since 2025-12-31
+    # Apply dynamic text scaling from sidebar control
+    if TEXT_SCALE != 1.0:
+        fig.update_layout(
+            font=dict(size=CHART_FONT_SIZE * TEXT_SCALE),
+            title_font_size=CHART_TITLE_SIZE * TEXT_SCALE,
+            legend=dict(font=dict(size=CHART_FONT_SIZE * TEXT_SCALE)),
+        )
+        fig.update_xaxes(tickfont_size=CHART_FONT_SIZE * TEXT_SCALE)
+        fig.update_yaxes(tickfont_size=CHART_FONT_SIZE * TEXT_SCALE)
+
     st.plotly_chart(fig, width="stretch", key=key)
     if hasattr(fig, "_alt_text"):
         st.caption(f"Accessibility: {fig._alt_text}")
@@ -138,6 +154,8 @@ pages = [
 
 page = st.sidebar.radio("Navigate", pages, label_visibility="collapsed")
 
+prof = profile_summary(df)
+
 # =========================================================================
 # PAGE 1: Overview
 # =========================================================================
@@ -148,7 +166,6 @@ if page == "Overview":
         st.warning("Results suppressed due to small sample size. Adjust filters to see data.")
         st.stop()
 
-    prof = profile_summary(df)
     dem = demand_and_outlook(df)
 
     cols = st.columns(4)
@@ -178,16 +195,103 @@ if page == "Overview":
     st.subheader("Geographic Distribution of Respondents")
     col_la, col_region = st.columns([2, 1])
     with col_la:
-        la_df = pd.DataFrame(prof["la_distribution"].items(), columns=["Local Authority", "Count"])
-        la_df = la_df.sort_values("Count", ascending=False).reset_index(drop=True)
-        fig = horizontal_bar_ranked(la_df, "Local Authority", "Count",
-                                    "Cardiff dominates the sample; interpret geographic patterns with caution",
-                                    n, mode=palette_mode, pct_col=None, height=550)
-        show_chart(fig, "overview_la", la_df)
+        la_ctx = pd.DataFrame(prof["la_context"])
+        la_ctx = la_ctx.sort_values("sample_count", ascending=False).reset_index(drop=True)
+        total_sample = max(n, 1)
+        total_pop = max(la_ctx["population_2024"].sum(), 1)
+        la_ctx["sample_share_pct"] = la_ctx["sample_count"] / total_sample * 100.0
+        la_ctx["pop_share_pct"] = la_ctx["population_2024"] / total_pop * 100.0
+        la_ctx["representation_index"] = (
+            la_ctx["sample_share_pct"] / la_ctx["pop_share_pct"]
+        ).round(2)
+
+        # It looks like the df `la_ctx` already has the `est_vcse_orgs` column
+        # No need to merge again!
+        # la_ctx = la_ctx.merge(
+        #         prof["est_vcse_orgs"],
+        #         on="local_authority",
+        #         how="left",
+        #         validate="one_to_one"
+        #     )
+
+        fig = horizontal_bar_ranked(
+            la_ctx.rename(columns={"local_authority": "Local Authority", "sample_count": "Sample count"}),
+            "Local Authority",
+            "Sample count",
+            "Sample by local authority (raw counts)",
+            n,
+            mode=palette_mode,
+            pct_col=None,
+            height=550,
+        )
+        show_chart(fig, "overview_la", la_ctx[["local_authority", "region", "population_2024", "sample_count", "est_vcse_orgs", "representation_index"]])
+
+        # Optional deeper dive: representation index by region
+        with st.expander("View over/under-representation by Local Authority (sample vs population)"):
+            rep_df = la_ctx.sort_values("representation_index", ascending=False).copy()
+            rep_vis = rep_df.rename(
+                columns={"local_authority": "Local Authority", "region": "Region", "representation_index": "Representation index"}
+            )
+            fig_rep = horizontal_bar_ranked(
+                rep_vis,
+                "Local Authority",
+                "Representation index",
+                "Representation index by Local Authority (1.0 = proportional to population)",
+                n,
+                mode=palette_mode,
+                pct_col=None,
+                height=420,
+            )
+            show_chart(fig_rep, "overview_local_authority_repindex", rep_df)
+
     with col_region:
-        reg = prof["region_distribution"]
-        fig = donut_chart(list(reg.keys()), list(reg.values()), "By region", n, mode=palette_mode)
-        show_chart(fig, "overview_region", pd.DataFrame(reg.items(), columns=["Region", "Count"]))
+        ctx = pd.DataFrame(prof["la_context"])
+        region_summary = (
+            ctx.groupby("region", as_index=False)
+            .agg(
+                population_2024=("population_2024", "sum"),
+                sample_count=("sample_count", "sum"),
+            )
+        )
+        total_sample = max(n, 1)
+        total_pop = max(region_summary["population_2024"].sum(), 1)
+        region_summary["sample_share_pct"] = region_summary["sample_count"] / total_sample * 100.0
+        region_summary["pop_share_pct"] = region_summary["population_2024"] / total_pop * 100.0
+        region_summary["representation_index"] = (
+            region_summary["sample_share_pct"] / region_summary["pop_share_pct"]
+        ).round(2)
+
+        fig = donut_chart(
+            list(region_summary["region"]),
+            list(region_summary["sample_share_pct"].round(1)),
+            "Sample share by region (%)",
+            n,
+            mode=palette_mode,
+        )
+        show_chart(fig, "overview_region", region_summary)
+
+        # Optional deeper dive: representation index by region
+        with st.expander("View over/under-representation by region (sample vs population)"):
+            rep_df = region_summary.sort_values("representation_index", ascending=False).copy()
+            rep_vis = rep_df.rename(
+                columns={"region": "Region", "representation_index": "Representation index"}
+            )
+            fig_rep = horizontal_bar_ranked(
+                rep_vis,
+                "Region",
+                "Representation index",
+                "Representation index by region (1.0 = proportional to population)",
+                n,
+                mode=palette_mode,
+                pct_col=None,
+                height=420,
+            )
+            show_chart(fig_rep, "overview_region_repindex", rep_df)
+
+    st.caption(
+        "Note: Sample shares are compared against 2024 mid-year population estimates. "
+        "Representation index of 1.0 indicates proportional-to-population sampling; values above 1.0 indicate over-representation."
+    )
 
     st.divider()
     st.subheader("Recent Experience (Last 3 Months)")
@@ -251,9 +355,26 @@ elif page == "Volunteer Recruitment":
     rec = volunteer_recruitment_analysis(df)
 
     cols = st.columns(3)
-    cols[0].markdown(kpi_card_html("Report difficulty recruiting", f"{rec['pct_difficulty']}%", colour=WCVA_BRAND["coral"]), unsafe_allow_html=True)
-    cols[1].markdown(kpi_card_html("Say 'too few' volunteers", f"{rec['pct_too_few']}%", colour=WCVA_BRAND["amber"]), unsafe_allow_html=True)
-    cols[2].markdown(kpi_card_html("Organisations", str(n), colour=WCVA_BRAND["teal"]), unsafe_allow_html=True)
+    cols[0].markdown(
+        kpi_card_html(
+            "Find recruitment somewhat / very difficult",
+            f"{rec['pct_difficulty']}%",
+            colour=WCVA_BRAND["coral"],
+        ),
+        unsafe_allow_html=True,
+    )
+    cols[1].markdown(
+        kpi_card_html(
+            "Report shortage recruiting volunteers",
+            f"{rec['pct_shortage']}%",
+            colour=WCVA_BRAND["amber"],
+        ),
+        unsafe_allow_html=True,
+    )
+    cols[2].markdown(
+        kpi_card_html("Organisations", str(n), colour=WCVA_BRAND["teal"]),
+        unsafe_allow_html=True,
+    )
 
     st.divider()
     alt_config = AltTextConfig(value_col="value", count_col="count", pct_col="pct", sample_size=n)
@@ -262,9 +383,23 @@ elif page == "Volunteer Recruitment":
         st.subheader("Recruitment Difficulty")
         grouper, group_order = resolve_grouping(DIFFICULTY_ORDER)
         TITLE = "Most organisations find recruitment somewhat or extremely difficult"
-        fig = stacked_bar_ordinal(rec["vol_rec_difficulty"], TITLE, n, mode=palette_mode, alt_config=alt_config,
+        # Use the number answering this question (non-missing) as the base for alt text
+        diff_base = int(rec["vol_rec_difficulty"]["count"].sum())
+        alt_config_diff = AltTextConfig(
+            value_col="value",
+            count_col="count",
+            pct_col="pct",
+            sample_size=diff_base,
+        )
+        fig = stacked_bar_ordinal(rec["vol_rec_difficulty"], TITLE, diff_base, mode=palette_mode, alt_config=alt_config_diff,
                                   grouper=grouper, group_order=group_order)
         show_chart(fig, "rec_difficulty", rec["vol_rec_difficulty"])
+
+        st.caption(
+            f"{rec['pct_shortage']}% of organisations explicitly report a shortage recruiting volunteers "
+            f"(shortage_vol_rec = 'Yes'), while {rec['pct_difficulty']}% of those answering the difficulty "
+            "question find recruitment somewhat or extremely difficult on the Likert scale."
+        )
 
     with col2:
         st.subheader("Volunteer Numbers vs. Need")
@@ -303,9 +438,26 @@ elif page == "Volunteer Retention":
 
     alt_config = AltTextConfig(value_col="value", count_col="count", pct_col="pct", sample_size=n)
     cols = st.columns(3)
-    cols[0].markdown(kpi_card_html("Report retention difficulty", f"{ret['pct_difficulty']}%", colour=WCVA_BRAND["amber"]), unsafe_allow_html=True)
-    cols[1].markdown(kpi_card_html("Organisations", str(n), colour=WCVA_BRAND["teal"]), unsafe_allow_html=True)
-    cols[2].markdown(kpi_card_html("Retention difficulty", f"{ret['vol_ret_difficulty'].iloc[3]['pct'] + ret['vol_ret_difficulty'].iloc[4]['pct']}%", delta="Somewhat + Extremely difficult", colour=WCVA_BRAND["coral"]), unsafe_allow_html=True)
+    cols[0].markdown(
+        kpi_card_html(
+            "Find retention somewhat / very difficult",
+            f"{ret['pct_difficulty']}%",
+            colour=WCVA_BRAND["amber"],
+        ),
+        unsafe_allow_html=True,
+    )
+    cols[1].markdown(
+        kpi_card_html(
+            "Report shortage retaining volunteers",
+            f"{ret['pct_shortage']}%",
+            colour=WCVA_BRAND["coral"],
+        ),
+        unsafe_allow_html=True,
+    )
+    cols[2].markdown(
+        kpi_card_html("Organisations", str(n), colour=WCVA_BRAND["teal"]),
+        unsafe_allow_html=True,
+    )
 
     st.divider()
 
@@ -326,6 +478,12 @@ elif page == "Volunteer Retention":
         fig = stacked_bar_ordinal(ret["vol_ret_difficulty"], TITLE, n, mode=palette_mode, alt_config=alt_config,
                                   grouper=grouper, group_order=group_order)
         show_chart(fig, "ret_difficulty", ret["vol_ret_difficulty"])
+
+    st.caption(
+        f"{ret['pct_shortage']}% of organisations explicitly report a shortage retaining volunteers "
+        "(shortage_vol_ret = 'Yes'), while {ret['pct_difficulty']}% find retention somewhat or "
+        "extremely difficult on the Likert scale."
+    )
 
 
 # =========================================================================
@@ -588,4 +746,17 @@ elif page == "Data Notes":
 - **Small sub-groups**: Some local authority and activity type segments have very few respondents. Avoid over-interpreting these segments
 - **Wave 2 only**: Cross-wave trend analysis requires Wave 1 data (not included in this dataset)
 - **Ordinal data**: Likert-scale responses are ordinal, not interval. Median is more appropriate than mean
+""")
+
+    st.subheader("Estimated Number of VCSE Organisations in Wales")
+    st.markdown("""
+- For the `est_vcse_orgs` column, it appeas to not be so simple to fully validate those numbers as official local-authority counts counts from an authoritative Wales-wide source.
+- There appears to be some good sector-level sources, but not a clean official table matching this column definition.
+- The reason is that Welsh sector sources use different universes:
+  - WCVA says Wales has **32,000+** third sector organisations
+  - While NCVO reports **7,009** charities in Wales in its 2023 Almanac
+  - Equal to about **2.3 organisations** per 1,000 people.
+- The pre-populated helper CSV sums up to **14,980** organisations, which is about **4.7** per **1,000** people using the total population.
+- That sits neatly between the “registered charities only” count and the broader “all third sector organisations” count.
+- Therefore, `est_vcse_orgs` is only considered plausible as a modelled estimate, but not validated as an official observed count.
 """)
