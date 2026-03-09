@@ -207,7 +207,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "alt_text": getattr(fig_demand, "_alt_text", ""),
         },
         {
-            "title": "Half report stable finances; a third are deteriorating",
+            "title": "Financial positions mostly stable, but over one-third of organisations report deterioration",
             "subtitle": "Multi-point squeeze on financial stability",
             "body": f"<ul>"
                     f"<li><strong>{dem['financial_pct_deteriorated']}%</strong> report deteriorating finances</li> <br>"
