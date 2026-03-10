@@ -26,9 +26,11 @@ from src.config import (
 from src.wave_context import (
     WAVE1_CONTEXT,
     WaveRegistry,
-    build_wave_context_from_df,
+    build_wave_registry_from_current_data,
     trend_series,
     TREND_METRICS,
+    compare_demand_increase,
+    compare_financial_deterioration,
 )
 from src.eda import (
     profile_summary, demand_and_outlook, volunteer_recruitment_analysis,
@@ -65,14 +67,8 @@ def get_data():
 
 @st.cache_data
 def get_wave_registry() -> WaveRegistry:
-    """
-    Build a simple cross-wave registry for trend analysis.
-
-    Wave 1 is the hand-crafted context; Wave 2 is derived from the full dataset.
-    """
-    df_all = load_dataset()
-    wave2 = build_wave_context_from_df(df_all, wave_label="Wave 2", wave_number=2)
-    return WaveRegistry(waves={"Wave 1": WAVE1_CONTEXT, "Wave 2": wave2})
+    """Shared cross-wave registry for trend analysis and narratives."""
+    return build_wave_registry_from_current_data()
 
 df_full = get_data()  # Shape of dataset: (111, 162) (111 organisations, 162 variables) # noqa
 
@@ -172,6 +168,7 @@ pages = [
     "Volunteer Recruitment",
     "Volunteer Retention",
     "Workforce & Operations",
+    "Concerns & Risks",
     "Demographics & Types",
     "Earned Settlement",
     "Data Notes",
@@ -209,6 +206,28 @@ if page == "At-a-Glance":
     st.caption(
         "Poster-style summary of how rising demand, finances, and volunteer gaps "
         "interact in this filtered view of the survey."
+    )
+
+    st.info(
+        "These infographic headline percentages are drawn directly from the same aggregates used "
+        "elsewhere in the dashboard: demand and finance from **Demand & Outlook**, and volunteer "
+        "shortage and difficulty from the **Volunteer Recruitment** and **Volunteer Retention** analyses."
+    )
+
+    st.subheader("How This Links to the Executive Summary")
+    st.markdown(
+        "<div style='border-left:4px solid {colour};padding:12px 16px;margin:8px 0;"
+        "background:#F7F8FA;border-radius:4px'>"
+        "<ul style='margin-top:4px;padding-left:18px;color:#333;font-size:0.9rem;'>"
+        "<li>The infographic cards are driven by the same columns used elsewhere in the dashboard: "
+        "`demand_direction` and `financial_direction` feed the demand and finance metrics, while "
+        "`volobjectives`, `vol_rec` and `vol_ret` feed the volunteer shortage and difficulty metrics. "
+        "These are the same inputs that underpin Executive Summary highlights #2 (rising demand vs squeezed "
+        "finances) and #3 (too few volunteers and recruitment difficulty).</li>"
+        "<li>Any changes you see when applying filters here are reflected in how those stories would "
+        "read for that segment of the sector.</li>"
+        "</ul></div>".format(colour=WCVA_BRAND["blue"]),
+        unsafe_allow_html=True,
     )
 
     with st.expander("View metrics as table"):
@@ -282,48 +301,31 @@ elif page == "Overview":
 
     st.divider()
 
+    st.info(
+        "The overview KPI tiles for demand, finances and likelihood of operating are calculated from "
+        "the **Demand & Outlook** aggregates shown further down this page; they share the same base and "
+        "filters as the stacked bar charts for recent experience and expectations."
+    )
+
     # Cross-wave headline trend (Wave 1 vs Wave 2)
     with st.expander("Wave-to-wave headline trend (all organisations)"):
         registry = get_wave_registry()
-        demand_trend = trend_series(
-            registry,
-            "demand.headline.increasing_demand_for_services_pct",
-        )
-        finance_trend = trend_series(
-            registry,
-            "finance.headline.financial_position_deteriorated_due_to_rising_costs_pct",
-        )
+        from src.wave_context import build_trend_long, build_trend_pivot
 
-        if demand_trend and finance_trend:
-            trend_rows = []
-            # Demand
-            for point in demand_trend:
-                trend_rows.append(
-                    {
-                        "Wave": point["wave_label"],
-                        "Metric": "Demand increased",
-                        "Value %": point["value"],
-                    }
-                )
-            # Finance
-            for point in finance_trend:
-                trend_rows.append(
-                    {
-                        "Wave": point["wave_label"],
-                        "Metric": "Finances deteriorated (rising costs)",
-                        "Value %": point["value"],
-                    }
-                )
-
-            trend_df = pd.DataFrame(trend_rows)
+        trend_df = build_trend_long(registry)
+        if trend_df.empty:
+            st.info("No cross-wave metrics are available yet. Add more waves or metrics to TREND_METRICS.")
+        else:
+            wide = build_trend_pivot(trend_df)
             st.dataframe(
-                trend_df,
+                wide,
                 hide_index=True,
                 width="stretch",
             )
             st.caption(
-                "Simple cross-wave comparison using the validated WaveContext schema. "
-                "Additional metrics can be trended by changing the attribute path."
+                "Cross-wave comparison using the validated WaveContext schema. "
+                "Columns show key headline indicators; additional metrics can be added "
+                "via TREND_METRICS without changing this view."
             )
 
     col1, col2 = st.columns(2)
@@ -494,6 +496,24 @@ elif page == "Overview":
                                   grouper=grouper, group_order=group_order)
         show_chart(fig, "overview_expect_financial", dem["expect_financial"])
 
+    st.subheader("How This Links to the Executive Summary")
+    st.markdown(
+        "<div style='border-left:4px solid {colour};padding:12px 16px;margin:8px 0;"
+        "background:#F7F8FA;border-radius:4px'>"
+        "<ul style='margin-top:4px;padding-left:18px;color:#333;font-size:0.9rem;'>"
+        "<li>The KPI tiles at the top of this page and the stacked bar charts labelled "
+        "<strong>Demand for services has mostly increased</strong> (top left, based on `demand_direction`) "
+        "and <strong>Finances mostly unchanged, but a third report deterioration</strong> (top right, based on "
+        "`financial_direction`) provide the evidence for the Executive Summary narrative on the "
+        "demand–capacity ‘scissor effect’.</li>"
+        "<li>The expectations charts <strong>Organisations expect demand to keep rising</strong> "
+        "(`expectdemand`) and <strong>Financial outlook: little optimism for improvement</strong> "
+        "(`expectfinancial`) show the forward-looking components of that same story, supporting references "
+        "to the outlook not improving in the next three months.</li>"
+        "</ul></div>".format(colour=WCVA_BRAND["blue"]),
+        unsafe_allow_html=True,
+    )
+
 
 # =========================================================================
 # PAGE 3: Volunteer Recruitment
@@ -506,6 +526,12 @@ elif page == "Volunteer Recruitment":
         st.stop()
 
     rec = volunteer_recruitment_analysis(df)
+    # Cross-wave context for recruitment difficulty
+    registry = get_wave_registry()
+    vol_rec_trend = trend_series(
+        registry,
+        "workforce.headline.face_volunteer_recruitment_difficulties_pct",
+    )
 
     cols = st.columns(3)
     cols[0].markdown(
@@ -562,8 +588,22 @@ elif page == "Volunteer Recruitment":
         st.subheader("Volunteer Numbers vs. Need")
         grouper, group_order = resolve_grouping(VOL_OBJECTIVES_ORDER)
         TITLE = "Majority report having too few volunteers for their objectives"
-        fig = stacked_bar_ordinal(rec["vol_objectives"], TITLE, n, mode=palette_mode, alt_config=alt_config,
-                                  grouper=grouper, group_order=group_order)
+        obj_base = int(rec["vol_objectives"]["count"].sum())
+        alt_config_obj = AltTextConfig(
+            value_col="value",
+            count_col="count",
+            pct_col="pct",
+            sample_size=obj_base,
+        )
+        fig = stacked_bar_ordinal(
+            rec["vol_objectives"],
+            TITLE,
+            obj_base,
+            mode=palette_mode,
+            alt_config=alt_config_obj,
+            grouper=grouper,
+            group_order=group_order,
+        )
         show_chart(fig, "rec_objectives", rec["vol_objectives"])
 
     st.subheader("Top Recruitment Methods Used")
@@ -580,6 +620,39 @@ elif page == "Volunteer Recruitment":
         fig = grouped_bar(rec["rec_barriers_by_size"], "label", seg_cols, "How barriers differ by organisation size", n, mode=palette_mode)
         show_chart(fig, "rec_barriers_seg", rec["rec_barriers_by_size"])
 
+    if vol_rec_trend:
+        earliest = vol_rec_trend[0]
+        latest = vol_rec_trend[-1]
+        change = latest["value"] - earliest["value"]
+        direction = "higher" if change > 0 else "lower" if change < 0 else "similar"
+        st.info(
+            f"**Wave comparison – recruitment difficulty**: {earliest['value']}% in {earliest['wave_label']} "
+            f"vs {latest['value']}% in {latest['wave_label']} "
+            f"({abs(change)} percentage points {direction} in the latest wave)."
+        )
+
+    st.info(
+        "The recruitment KPIs and narrative in this page are based on the **Volunteer Recruitment "
+        "analysis**: the difficulty tiles use the Likert-scale `vol_rec` distribution, the shortage "
+        "tile uses `shortage_vol_rec`, and the “too few volunteers” figures come from the "
+        "`volobjectives` distribution shown in the 'Volunteer Numbers vs. Need' chart."
+    )
+
+    st.subheader("How This Links to the Executive Summary")
+    st.markdown(
+        "<div style='border-left:4px solid {colour};padding:12px 16px;margin:8px 0;"
+        "background:#F7F8FA;border-radius:4px'>"
+        "<ul style='margin-top:4px;padding-left:18px;color:#333;font-size:0.9rem;'>"
+        "<li>Executive Summary highlight #3 on organisations having too few volunteers and "
+        "finding recruitment difficult is drawn from the `vol_rec` <strong>Recruitment Difficulty</strong> chart (top left) "
+        "and the `volobjectives` <strong>Volunteer Numbers vs. Need</strong> chart (top right) respectively, and from the "
+        "underlying distributions presented on this page.</li>"
+        "<li>The discussion of recruitment methods and barriers (highlight #4) is backed by the "
+        "multi-select charts here on this page for recruitment methods and barriers.</li>"
+        "</ul></div>".format(colour=WCVA_BRAND["blue"]),
+        unsafe_allow_html=True,
+    )
+
 
 # =========================================================================
 # PAGE 4: Volunteer Retention
@@ -592,6 +665,11 @@ elif page == "Volunteer Retention":
         st.stop()
 
     ret = volunteer_retention_analysis(df)
+    registry = get_wave_registry()
+    vol_ret_trend = trend_series(
+        registry,
+        "workforce.headline.face_volunteer_retention_difficulties_pct",
+    )
 
     alt_config = AltTextConfig(value_col="value", count_col="count", pct_col="pct", sample_size=n)
     cols = st.columns(3)
@@ -632,14 +710,61 @@ elif page == "Volunteer Retention":
         st.subheader("Retention Difficulty")
         grouper, group_order = resolve_grouping(DIFFICULTY_ORDER)
         TITLE = "Retention is easier than recruitment; but challenges persist"
-        fig = stacked_bar_ordinal(ret["vol_ret_difficulty"], TITLE, n, mode=palette_mode, alt_config=alt_config,
-                                  grouper=grouper, group_order=group_order)
+        diff_base = int(ret["vol_ret_difficulty"]["count"].sum())
+        alt_config_ret = AltTextConfig(
+            value_col="value",
+            count_col="count",
+            pct_col="pct",
+            sample_size=diff_base,
+        )
+        fig = stacked_bar_ordinal(
+            ret["vol_ret_difficulty"],
+            TITLE,
+            diff_base,
+            mode=palette_mode,
+            alt_config=alt_config_ret,
+            grouper=grouper,
+            group_order=group_order,
+        )
         show_chart(fig, "ret_difficulty", ret["vol_ret_difficulty"])
 
     st.caption(
         f"{ret['pct_shortage']}% of organisations explicitly report a shortage retaining volunteers "
-        "(shortage_vol_ret = 'Yes'), while {ret['pct_difficulty']}% find retention somewhat or "
+        f"(shortage_vol_ret = 'Yes'), while {ret['pct_difficulty']}% find retention somewhat or "
         "extremely difficult on the Likert scale."
+    )
+
+    if vol_ret_trend:
+        earliest = vol_ret_trend[0]
+        latest = vol_ret_trend[-1]
+        change = latest["value"] - earliest["value"]
+        direction = "higher" if change > 0 else "lower" if change < 0 else "similar"
+        st.info(
+            f"**Wave comparison – retention difficulty**: {earliest['value']}% in {earliest['wave_label']} "
+            f"vs {latest['value']}% in {latest['wave_label']} "
+            f"({abs(change)} percentage points {direction} in the latest wave)."
+        )
+
+    st.info(
+        "The retention KPIs and statements are taken from the **Volunteer Retention analysis**: "
+        "the difficulty tile uses the Likert-based `vol_ret` distribution, the shortage tile uses "
+        "`shortage_vol_ret`, and the barriers and offers charts show the same multi-select "
+        "blocks that underpin the executive summary discussion of external vs organisational factors."
+    )
+
+    st.subheader("How This Links to the Executive Summary")
+    st.markdown(
+        "<div style='border-left:4px solid {colour};padding:12px 16px;margin:8px 0;"
+        "background:#F7F8FA;border-radius:4px'>"
+        "<ul style='margin-top:4px;padding-left:18px;color:#333;font-size:0.9rem;'>"
+        "<li>Executive Summary highlight #5, which notes that retention barriers are largely external, "
+        "is based on the distribution of retention barriers from the `vol_ret_*` block, shown in the "
+        "<strong>Retention Barriers</strong> chart above (top of this page).</li>"
+        "<li>The contrast between recruitment and retention difficulty in the Executive Summary draws on "
+        "the respective Likert distributions for `vol_rec` (Recruitment Difficulty chart on the Volunteer "
+        "Recruitment page, top left) and `vol_ret` (Retention Difficulty chart on this page, top right).</li>"
+        "</ul></div>".format(colour=WCVA_BRAND["blue"]),
+        unsafe_allow_html=True,
     )
 
 
@@ -651,30 +776,32 @@ elif page == "Trends & Waves":
     st.caption("Compare headline indicators across survey waves using the validated WaveContext model.")
 
     registry = get_wave_registry()
+    from src.wave_context import build_trend_long, build_trend_pivot, summarise_trend_changes
 
-    # Build long-format trend table for all configured metrics
-    trend_rows: list[dict[str, object]] = []
-    for metric in TREND_METRICS:
-        series = trend_series(registry, metric["attr_path"])
-        for point in series:
-            wave = registry.get(point["wave_label"])
-            trend_rows.append(
-                {
-                    "metric_id": metric["id"],
-                    "metric_label": metric["label"],
-                    "section": metric["section"],
-                    "wave_label": point["wave_label"],
-                    "wave_number": point["wave_number"],
-                    "value": point["value"],
-                    "wave_n": wave.meta.wave_response_count,
-                }
-            )
+    trend_df = build_trend_long(registry)
 
-    if not trend_rows:
+    if trend_df.empty:
         st.info("No cross-wave metrics are available yet. Add more waves or metrics to TREND_METRICS.")
         st.stop()
-
-    trend_df = pd.DataFrame(trend_rows)
+    # Narrative summary for key metrics using earliest vs latest change
+    key_metric_ids = ["demand_increase", "finance_deteriorated_costs", "too_few_volunteers", "has_reserves", "using_reserves"]
+    summaries = summarise_trend_changes(trend_df, key_metric_ids)
+    if summaries:
+        lines = []
+        for mid in key_metric_ids:
+            summary = summaries.get(mid)
+            if not summary:
+                continue
+            direction = "increased" if summary["change_pct_points"] > 0 else "decreased" if summary["change_pct_points"] < 0 else "was unchanged"
+            lines.append(
+                f"- **{summary['label']}** {direction} from {summary['first_value']}% in {summary['first_wave']} "
+                f"to {summary['latest_value']}% in {summary['latest_wave']} "
+                f"({summary['change_pct_points']} percentage points)."
+            )
+        if lines:
+            st.subheader("Headline cross-wave story")
+            st.markdown("\n".join(lines))
+            st.divider()
 
     # Metric selection / filtering
     st.sidebar.subheader("Trend metrics")
@@ -688,23 +815,18 @@ elif page == "Trends & Waves":
     working_df = trend_df[trend_df["metric_label"].isin(selected_labels)].copy()
 
     st.subheader("Headline trend table")
-    wide = (
-        working_df
-        .pivot_table(
-            index=["wave_number", "wave_label"],
-            columns="metric_label",
-            values="value",
-        )
-        .sort_index()
-    )
-    # Attach per-wave respondent counts (they are the same for all metrics)
-    wave_counts = (
-        working_df[["wave_number", "wave_label", "wave_n"]]
-        .drop_duplicates(subset=["wave_number", "wave_label"])
-        .set_index(["wave_number", "wave_label"])
-    )
-    wide = wide.join(wave_counts).reset_index().rename(columns={"wave_label": "Wave", "wave_n": "n_organisations"})
+    wide = build_trend_pivot(working_df)
     st.dataframe(wide, hide_index=True, width="stretch")
+
+    # Download full long-format trends as CSV for external analysis
+    csv = trend_df.to_csv(index=False)
+    st.download_button(
+        "Download trends CSV",
+        csv,
+        file_name="wave_trends_long.csv",
+        mime="text/csv",
+        key="download_trends_csv",
+    )
 
     st.divider()
     st.subheader("Trend charts by theme")
@@ -820,6 +942,22 @@ elif page == "Trends & Waves":
             "if it is False, it indicates a mapping or transformation issue."
         )
 
+    st.subheader("How This Links to the Executive Summary")
+    st.markdown(
+        "<div style='border-left:4px solid {colour};padding:12px 16px;margin:8px 0;"
+        "background:#F7F8FA;border-radius:4px'>"
+        "<ul style='margin-top:4px;padding-left:18px;color:#333;font-size:0.9rem;'>"
+        "<li>All cross-wave statements in the Executive Summary (for example, comparisons between Wave 1 "
+        "and Wave 2 on demand, finances, reserves and volunteer gaps) are drawn from the trend table and "
+        "line charts on this page, which in turn are built from the WaveContext registry columns such as "
+        "`demand_increase`, `finance_deteriorated_costs`, `too_few_volunteers`, `has_reserves` and "
+        "`using_reserves`.</li>"
+        "<li>The debug table at the bottom links EDA aggregates like `pct_too_few` and `reserves_yes_pct` "
+        "to their WaveContext counterparts, providing a direct audit trail for the Executive Summary metrics.</li>"
+        "</ul></div>".format(colour=WCVA_BRAND["blue"]),
+        unsafe_allow_html=True,
+    )
+
 
 # =========================================================================
 # PAGE 6: Workforce & Operations
@@ -832,6 +970,11 @@ elif page == "Workforce & Operations":
         st.stop()
 
     wf = workforce_operations(df)
+    registry = get_wave_registry()
+    staff_rec_trend = trend_series(
+        registry,
+        "workforce.headline.face_staff_recruitment_difficulties_pct",
+    )
 
     cols = st.columns(4)
     cols[0].markdown(kpi_card_html("Finances deteriorated", f"{wf['finance_deteriorated_pct']}%", colour=WCVA_BRAND["coral"]), unsafe_allow_html=True)
@@ -874,9 +1017,187 @@ elif page == "Workforce & Operations":
                                   grouper=grouper, group_order=group_order)
         show_chart(fig, "wf_staff_ret", wf["staff_ret_difficulty"])
 
+    if staff_rec_trend:
+        earliest = staff_rec_trend[0]
+        latest = staff_rec_trend[-1]
+        change = latest["value"] - earliest["value"]
+        direction = "higher" if change > 0 else "lower" if change < 0 else "similar"
+        st.info(
+            f"**Wave comparison – staff recruitment difficulty**: {earliest['value']}% in {earliest['wave_label']} "
+            f"vs {latest['value']}% in {latest['wave_label']} "
+            f"({abs(change)} percentage points {direction} in the latest wave)."
+        )
+
+    st.info(
+        "The workforce KPIs and concerns in this page are driven by the **Workforce & Operations analysis** "
+        "(`workforce_operations`): the finance and reserves tiles come from the same aggregates that feed the "
+        "executive summary and cross-wave trends, while the concerns, actions, and shortage-impact charts "
+        "mirror the detailed breakdowns on the **Concerns & Risks** page."
+    )
+
 
 # =========================================================================
-# PAGE 7: Demographics & Types
+# PAGE 7: Concerns & Risks
+# =========================================================================
+elif page == "Concerns & Risks":
+    st.title("Organisational Concerns & Risks")
+
+    if suppressed:
+        st.warning("Results suppressed due to small sample size.")
+        st.stop()
+
+    wf = workforce_operations(df)
+
+    st.markdown(
+        "This page shows the full distributions behind the executive summary statements "
+        "about income, increasing demand, recruitment and retention concerns, and the "
+        "operational impact of rising costs and shortages."
+    )
+
+    st.divider()
+    st.subheader("Operational Concerns (current wave / filtered view)")
+    fig = horizontal_bar_ranked(
+        wf["concerns"],
+        "label",
+        "count",
+        "Concerns organisations highlight as most pressing",
+        n,
+        mode=palette_mode,
+    )
+    show_chart(fig, "concerns_full", wf["concerns"][["label", "count", "pct"]])
+
+    st.info(
+        "The executive summary headline **“Income is the #1 concern”** and references to "
+        "**increasing demand as the second most common concern** are derived directly from "
+        "the ordering and percentages in the chart and table above."
+    )
+
+    st.divider()
+    st.subheader("Concerns as Top Issues Across Waves")
+    registry = get_wave_registry()
+    from src.wave_context import build_trend_long, build_trend_pivot, summarise_trend_changes
+
+    trend_df = build_trend_long(registry)
+    concern_ids = ["income_top_concern", "demand_top_concern", "inflation_top_concern"]
+    concerns_trend = trend_df[trend_df["metric_id"].isin(concern_ids)].copy()
+
+    if concerns_trend.empty:
+        st.info("No cross-wave concerns metrics are available yet. Add them to TREND_METRICS to enable this view.")
+    else:
+        wide_concerns = build_trend_pivot(concerns_trend)
+        st.dataframe(wide_concerns, hide_index=True, width="stretch")
+
+        summaries = summarise_trend_changes(concerns_trend, concern_ids)
+        if summaries:
+            bullets = []
+            for mid in concern_ids:
+                summary = summaries.get(mid)
+                if not summary:
+                    continue
+                direction = (
+                    "increased"
+                    if summary["change_pct_points"] > 0
+                    else "decreased"
+                    if summary["change_pct_points"] < 0
+                    else "was unchanged"
+                )
+                bullets.append(
+                    f"- **{summary['label']}** {direction} from {summary['first_value']}% in {summary['first_wave']} "
+                    f"to {summary['latest_value']}% in {summary['latest_wave']} "
+                    f"({summary['change_pct_points']} percentage points)."
+                )
+            if bullets:
+                st.markdown("#### Cross-wave concern story")
+                st.markdown("\n".join(bullets))
+
+        st.markdown("#### Concern trends by theme")
+        for metric_label, mdf in concerns_trend.groupby("metric_label"):
+            mdf = mdf.sort_values("wave_number")
+            fig_line = px.line(
+                mdf,
+                x="wave_number",
+                y="value",
+                markers=True,
+                text="value",
+                labels={"wave_number": "Wave", "value": "Percent"},
+                title=metric_label,
+            )
+            fig_line.update_traces(textposition="top center")
+            fig_line.update_xaxes(
+                tickvals=mdf["wave_number"],
+                ticktext=mdf["wave_label"],
+            )
+            unique_waves = (
+                mdf[["wave_label", "wave_n"]]
+                .drop_duplicates()
+                .sort_values("wave_label")
+            )
+            wave_summaries = ", ".join(
+                f"{row.wave_label} (n={row.wave_n})"
+                for row in unique_waves.itertuples(index=False)
+            )
+            n_waves = unique_waves.shape[0]
+            fig_line._alt_text = (
+                f"Trend line for {metric_label} as a top concern across {n_waves} waves. "
+                f"Waves and respondent counts: {wave_summaries}."
+            )
+            show_chart(
+                fig_line,
+                key=f"concerns_trend_{metric_label}",
+                data_df=mdf[["wave_label", "wave_number", "wave_n", "value"]],
+            )
+
+    st.divider()
+    st.subheader("Actions Taken Due to Rising Costs")
+    fig = horizontal_bar_ranked(
+        wf["actions"],
+        "label",
+        "count",
+        "How organisations have responded to rising costs",
+        n,
+        mode=palette_mode,
+    )
+    show_chart(fig, "concerns_actions", wf["actions"][["label", "count", "pct"]])
+
+    st.info(
+        "The executive summary highlight about **unplanned use of reserves** comes from the "
+        "row labelled “Unplanned use of reserves” in the actions table above."
+    )
+
+    st.divider()
+    st.subheader("Operational Impact of Shortages")
+    fig = horizontal_bar_ranked(
+        wf["shortage_affect"],
+        "label",
+        "count",
+        "Consequences organisations report from staff or volunteer shortages",
+        n,
+        mode=palette_mode,
+    )
+    show_chart(fig, "concerns_shortage_affect", wf["shortage_affect"][["label", "count", "pct"]])
+
+    st.divider()
+    st.subheader("How This Links to the Executive Summary")
+    st.markdown(
+        "<div style='border-left:4px solid {colour};padding:12px 16px;margin:8px 0;"
+        "background:#F7F8FA;border-radius:4px'>"
+        "<ul style='margin-top:4px;padding-left:18px;color:#333;font-size:0.9rem;'>"
+        "<li><strong>Headline #1 (Income is the #1 concern)</strong> is based on the highest "
+        "percentage row in the <strong>Operational Concerns</strong> chart above, which is built from the "
+        "`concerns_*` multi-select block and summarised in `workforce_operations`.</li>"
+        "<li><strong>References to increasing demand as a major concern</strong> use the "
+        "“Increasing demand” row in that same concerns chart together with the cross-wave concern trends "
+        "for metric IDs such as `demand_top_concern`.</li>"
+        "<li><strong>Highlights about rising costs and reserves</strong> draw on both the "
+        "actions table (especially the row where `actions_*` maps to “Unplanned use of reserves”) and the "
+        "reserves KPIs (`reserves_yes_pct`, `using_reserves_pct`) on the Workforce & Operations page.</li>"
+        "</ul></div>".format(colour=WCVA_BRAND["blue"]),
+        unsafe_allow_html=True,
+    )
+
+
+# =========================================================================
+# PAGE 8: Demographics & Types
 # =========================================================================
 elif page == "Demographics & Types":
     st.title("Volunteer Demographics & Volunteering Types")
@@ -936,9 +1257,25 @@ elif page == "Demographics & Types":
                                   grouper=grouper, group_order=group_order)
         show_chart(fig, f"type_{label.replace(' ', '_')}", type_df)
 
+    st.subheader("How This Links to the Executive Summary")
+    st.markdown(
+        "<div style='border-left:4px solid {colour};padding:12px 16px;margin:8px 0;"
+        "background:#F7F8FA;border-radius:4px'>"
+        "<ul style='margin-top:4px;padding-left:18px;color:#333;font-size:0.9rem;'>"
+        "<li>Comments in the Executive Summary about who is volunteering (for example, age groups forming "
+        "the core volunteer base) are supported by the `vol_dem_*` multi-select block shown in the "
+        "<strong>Volunteer Age/Group Presence</strong> chart (top of this page) and the `vol_dem_change_*` "
+        "columns visualised in the heatmap below.</li>"
+        "<li>Any references to the mix of volunteering types (e.g. micro, virtual, remote) draw on the "
+        "`vol_typeuse_*` columns displayed in the series of <strong>Types of Volunteering Used</strong> "
+        "stacked bar charts along the bottom of this page.</li>"
+        "</ul></div>".format(colour=WCVA_BRAND["blue"]),
+        unsafe_allow_html=True,
+    )
+
 
 # =========================================================================
-# PAGE 8: Earned Settlement
+# PAGE 9: Earned Settlement
 # =========================================================================
 elif page == "Earned Settlement":
     st.title("Earned Settlement Policy")
@@ -952,6 +1289,7 @@ elif page == "Earned Settlement":
         st.stop()
 
     vt = volunteering_types(df)
+    registry = get_wave_registry()
 
     col1, col2 = st.columns(2)
     alt_config = AltTextConfig(value_col="value", count_col="count", pct_col="pct", sample_size=n)
@@ -976,9 +1314,15 @@ elif page == "Earned Settlement":
         "policy risks becoming an unfunded mandate."
     )
 
+    st.info(
+        "All earned settlement statements on this page and in the executive summary are backed by the "
+        "`earnedsettlement` Likert distribution and the `settlement_capacity` counts shown in the charts "
+        "above, via the **Volunteering Types & Earned Settlement analysis** (`volunteering_types`)."
+    )
+
 
 # =========================================================================
-# PAGE 9: Executive Summary
+# PAGE 10: Executive Summary
 # =========================================================================
 elif page == "Executive Summary":
     st.title("Executive Summary — Key Findings")
@@ -1019,10 +1363,33 @@ elif page == "Executive Summary":
         )
 
     st.divider()
-    st.subheader("Wave 1 Context")
-    wave1 = WAVE1_CONTEXT
-    for line in wave1.executive_context_callouts():
-        st.markdown(f"- {line}")
+    st.subheader("Wave context across waves")
+    registry = get_wave_registry()
+    for label in registry.list_waves():
+        wave_ctx = registry.get(label)
+        bullet_lines = "".join(f"<li>{line}</li>" for line in wave_ctx.executive_context_callouts())
+        st.markdown(
+            f"<div style='border-left:4px solid {WCVA_BRAND['blue']};"
+            f"background:#F7F8FA;padding:12px 16px;margin:8px 0;border-radius:4px;'>"
+            f"<strong>{wave_ctx.meta.wave_label}</strong> "
+            f"<span style='color:#555'>(n={wave_ctx.meta.wave_response_count})</span>"
+            f"<ul style='margin-top:6px;padding-left:18px;color:#333;font-size:0.9rem;'>"
+            f"{bullet_lines}</ul></div>",
+            unsafe_allow_html=True,
+        )
+
+    # Simple earliest vs latest comparison for key headline metrics
+    first_wave, latest_wave = registry.first_and_latest()
+    dem_change = compare_demand_increase(first_wave, latest_wave)
+    fin_change = compare_financial_deterioration(first_wave, latest_wave)
+    st.info(
+        f"From {dem_change['old_wave']} to {dem_change['new_wave']}, the share reporting increased demand "
+        f"changed from {dem_change['old_value']}% to {dem_change['new_value']}% "
+        f"({dem_change['change_pct_points']} percentage points). "
+        f"Over the same period, the share reporting finances deteriorated due to rising costs shifted from "
+        f"{fin_change['old_value']}% to {fin_change['new_value']}% "
+        f"({fin_change['change_pct_points']} percentage points)."
+    )
 
     st.divider()
     st.subheader("Key Metrics by Organisation Size")
@@ -1101,7 +1468,7 @@ elif page == "Executive Summary":
 
 
 # =========================================================================
-# PAGE 10: Data Notes
+# PAGE 11: Data Notes
 # =========================================================================
 elif page == "Data Notes":
     st.title("Data Notes & Methodology")

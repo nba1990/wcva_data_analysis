@@ -28,7 +28,12 @@ from src.config import (
     DEMAND_ORDER, EXPECT_DEMAND_ORDER, EXPECT_FINANCIAL_ORDER,
     FINANCIAL_ORDER, OUTPUT_DIR, WCVA_BRAND, AltTextConfig, resolve_grouping,
 )
-from src.wave_context import WAVE1_CONTEXT
+from src.wave_context import (
+    WAVE1_CONTEXT,
+    build_wave_registry_from_current_data,
+    build_trend_long,
+    summarise_trend_changes,
+)
 from src.eda import (
     profile_summary, demand_and_outlook, volunteer_recruitment_analysis,
     volunteer_retention_analysis, workforce_operations, volunteering_types,
@@ -103,6 +108,73 @@ def build_slides(df, palette_mode: str) -> list[dict]:
     highlights = executive_highlights(df)
     cross = finance_recruitment_cross(df)
 
+    # Cross-wave trends for key metrics using the shared registry helpers,
+    # so that the presentation stays in sync with the main dashboard.
+    registry = build_wave_registry_from_current_data()
+    trend_df = build_trend_long(registry)
+    core_metric_ids = [
+        "demand_increase",
+        "finance_deteriorated_costs",
+        "operating_likely",
+        "too_few_volunteers",
+        "has_reserves",
+        "using_reserves",
+    ]
+    core_trends = trend_df[trend_df["metric_id"].isin(core_metric_ids)].copy() if not trend_df.empty else pd.DataFrame()
+
+    trends_table_html = ""
+    wave_summary_html = ""
+    trends_table_meta: dict[str, object] | None = None
+    wave_summary_text = ""
+    if not core_trends.empty:
+        trends_df = core_trends.sort_values(["metric_label", "wave_number"])
+        # Build a simple HTML table for inclusion in the slide body
+        trends_pivot = (
+            trends_df.pivot_table(
+                index=["wave_number", "wave_label"],
+                columns="metric_label",
+                values="value",
+            )
+            .sort_index()
+        )
+        trends_pivot = trends_pivot.reset_index().rename(columns={"wave_label": "Wave"})
+        trends_pivot["Wave"] = trends_pivot["Wave"].astype(str)
+        trends_html_rows: list[str] = []
+        # Header row
+        cols = ["Wave"] + [c for c in trends_pivot.columns if c not in {"wave_number", "Wave"}]
+        header_cells = "".join(f"<th>{c}</th>" for c in cols)
+        trends_html_rows.append(f"<tr>{header_cells}</tr>")
+        # Data rows (iterate as dicts to avoid namedtuple field-name issues)
+        for _, row in trends_pivot[cols].iterrows():
+            cells = [f"<td>{row[c]}</td>" for c in cols]
+            trends_html_rows.append(f"<tr>{''.join(cells)}</tr>")
+        trends_table_html = (
+            "<table style='font-size:0.75em;border-collapse:collapse;'>"
+            "<thead>"
+            f"{trends_html_rows[0]}"
+            "</thead><tbody>"
+            f"{''.join(trends_html_rows[1:])}"
+            "</tbody></table>"
+        )
+        # Add a short respondent-count summary below the table
+        wave_counts = (
+            trends_df[["wave_label", "wave_n"]]
+            .drop_duplicates()
+            .sort_values("wave_label")
+        )
+        wave_summaries = ", ".join(
+            f"{row.wave_label} (n={row.wave_n})"
+            for row in wave_counts.itertuples(index=False)
+        )
+        wave_summary_text = f"Respondent counts by wave: {wave_summaries}."
+        wave_summary_html = f"<p style='font-size:0.75em;color:#555'>{wave_summary_text}</p>"
+
+        # Store a lightweight representation of the table for PDF rendering
+        trends_table_meta = {
+            "columns": cols,
+            "rows": trends_pivot[cols].to_dict(orient="records"),
+        }
+
     highlights_html = render_executive_insights_list_html(
         highlights,
         title_key="title",
@@ -170,6 +242,11 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         ("Recruitment difficult", rec["pct_difficulty"]),
         ("Retention difficult", ret["pct_difficulty"]),
     ]
+    # If we have multi-wave trends, build a short narrative for the infographic slide.
+    trend_summaries = summarise_trend_changes(
+        trend_df,
+        ["demand_increase", "finance_deteriorated_costs", "too_few_volunteers"],
+    ) if not trend_df.empty else {}
     info_df = pd.DataFrame(infographic_data, columns=["Metric", "Percent"])
     fig_infographic = horizontal_bar_ranked(
         info_df,
@@ -229,6 +306,14 @@ def build_slides(df, palette_mode: str) -> list[dict]:
                 f"<strong>{rec['pct_too_few']}%</strong> too few volunteers ▼ | "
                 f"<strong>{rec['pct_difficulty']}%</strong> recruitment difficult ▼ | "
                 f"<strong>{ret['pct_difficulty']}%</strong> retention difficult ▼</p>"
+                + (
+                    "<p style='font-size:0.8em;color:#555'>"
+                    f"Compared with earlier waves, demand and financial pressure have"
+                    f" {('increased' if trend_summaries.get('demand_increase', {}).get('change_pct_points', 0) > 0 else 'shifted')}"
+                    " further, while the share reporting too few volunteers has "
+                    f"{'risen' if trend_summaries.get('too_few_volunteers', {}).get('change_pct_points', 0) > 0 else 'remained similar'}."
+                    "</p>"
+                if trend_summaries else "")
             ),
             "chart": fig_infographic,
             "notes": "Infographic-style slide to open conversations with senior stakeholders.",
@@ -358,6 +443,22 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "chart": None,
             "notes": "Policy opportunity, but requires investment in support infrastructure.",
             "alt_text": "",
+        },
+        {
+            "title": "Trends Across Waves",
+            "subtitle": "How headline indicators have shifted across survey waves",
+            "body": (
+                "<p>This slide summarises how headline indicators have shifted across "
+                "Baromedr Cymru survey waves, using the shared WaveContext model. "
+                "It focuses on demand, finances, organisational resilience, and volunteer capacity.</p>"
+                + trends_table_html
+                + wave_summary_html
+            ),
+            "chart": None,
+            "notes": "Cross-wave context. As additional waves are added to the registry, this table will expand automatically.",
+            "alt_text": "Table comparing key percentages across survey waves for demand, finances, too few volunteers, and financial reserves.",
+            "trends_table": trends_table_meta,
+            "trends_summary_text": wave_summary_text,
         },
         {
             "title": "Recommendations for WCVA Policy Team",
@@ -515,7 +616,9 @@ class BaromedrPDF(FPDF):
     def add_slide_page(self, title: str, body: str,
                        chart_bytes: bytes | None = None, alt_text: str = "",
                        is_exec_summary: bool = False,
-                       highlights: list[dict] | None = None):
+                       highlights: list[dict] | None = None,
+                       trends_table: dict | None = None,
+                       trends_summary_text: str | None = None):
         self.add_page()
         self.start_section(title)
 
@@ -529,8 +632,21 @@ class BaromedrPDF(FPDF):
         else:
             self.set_font("Helvetica", "", 11)
             self.set_text_color(50, 50, 50)
-            clean_body = _strip_html(body)
-            self.multi_cell(0, 6, clean_body)
+            # Special handling for the trends slide: render intro + table + summary
+            if title == "Trends Across Waves" and trends_table:
+                intro_html = body.split("</p>", 1)[0] if "</p>" in body else body
+                intro_text = _strip_html(intro_html)
+                self.multi_cell(0, 6, intro_text)
+                self.ln(4)
+                self._render_trends_table(trends_table)
+                if trends_summary_text:
+                    self.ln(3)
+                    self.set_font("Helvetica", "I", 9)
+                    self.set_text_color(100, 100, 100)
+                    self.multi_cell(0, 5, trends_summary_text)
+            else:
+                clean_body = _strip_html(body)
+                self.multi_cell(0, 6, clean_body)
         self.ln(3)
 
         if chart_bytes:
@@ -577,6 +693,50 @@ class BaromedrPDF(FPDF):
             self.set_line_width(0.2)
 
             self.ln(3)
+
+    def _render_trends_table(self, table: dict):
+        """Render a simple horizontal table for cross-wave trends."""
+        cols: list[str] = table.get("columns", [])
+        rows: list[dict] = table.get("rows", [])
+        if not cols or not rows:
+            return
+
+        # Split wide tables into two narrower blocks for PDF readability.
+        # Wave column is repeated for each block so the comparison remains clear.
+        wave_col = cols[0]
+        metric_cols = cols[1:]
+
+        # Two roughly equal blocks of metrics (plus the Wave column in each).
+        if len(metric_cols) <= 3:
+            col_groups = [cols]
+        else:
+            half = (len(metric_cols) + 1) // 2
+            first_group = [wave_col] + metric_cols[:half]
+            second_group = [wave_col] + metric_cols[half:]
+            col_groups = [first_group, second_group]
+
+        for idx, group_cols in enumerate(col_groups):
+            if idx > 0:
+                self.ln(4)
+
+            self.set_font("Helvetica", "B", 9)
+            self.set_text_color(50, 50, 50)
+
+            total_width = self.w - self.l_margin - self.r_margin
+            col_width = total_width / len(group_cols)
+
+            # Header row
+            for c in group_cols:
+                self.cell(col_width, 7, c, border=1, align="C")
+            self.ln(7)
+
+            self.set_font("Helvetica", "", 9)
+            for row in rows:
+                for c in group_cols:
+                    val = row.get(c, "")
+                    text = "" if pd.isna(val) else str(val)
+                    self.cell(col_width, 7, text, border=1, align="C")
+                self.ln(7)
 
 
 def _strip_html(text: str) -> str:
@@ -658,7 +818,14 @@ def generate_pdf(slides: list[dict], highlights: list[dict] | None = None) -> by
         is_exec = s.get("is_exec_summary", False)
 
         if first:
-            pdf.add_slide_page(s["title"], body, chart_bytes, s.get("alt_text", ""))
+            pdf.add_slide_page(
+                s["title"],
+                body,
+                chart_bytes,
+                s.get("alt_text", ""),
+                trends_table=s.get("trends_table"),
+                trends_summary_text=s.get("trends_summary_text"),
+            )
             pdf.insert_toc_placeholder(_render_toc, pages=2)
             first = False
         else:
@@ -666,6 +833,8 @@ def generate_pdf(slides: list[dict], highlights: list[dict] | None = None) -> by
                 s["title"], body, chart_bytes, s.get("alt_text", ""),
                 is_exec_summary=is_exec,
                 highlights=highlights if is_exec else None,
+                trends_table=s.get("trends_table"),
+                trends_summary_text=s.get("trends_summary_text"),
             )
 
     return pdf.output()

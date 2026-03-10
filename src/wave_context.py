@@ -316,6 +316,18 @@ class WaveRegistry(StrictBaseModel):
             key=lambda label: self.waves[label].meta.wave_number,
         )
 
+    def first_and_latest(self) -> tuple[WaveContext, WaveContext]:
+        """
+        Convenience accessor returning the earliest and latest waves
+        by wave_number. Useful for narrative comparisons.
+        """
+        labels = self.list_waves()
+        if not labels:
+            raise ValueError("WaveRegistry is empty")
+        first = self.waves[labels[0]]
+        latest = self.waves[labels[-1]]
+        return first, latest
+
 
 def build_wave_context_from_df(
     df: pd.DataFrame,
@@ -385,9 +397,19 @@ def build_wave_context_from_df(
 
     # Key organisational concerns from multi-select block
     concerns_df = wf["concerns"]
+
+    def _pct_for_concern(label_exact: str) -> int:
+        """Helper to extract a percentage for an exact concern label."""
+        if concerns_df.empty:
+            return 0
+        row = concerns_df[concerns_df["label"] == label_exact]
+        if row.empty:
+            return 0
+        return int(round(row["pct"].iloc[0]))
+
     income_row = concerns_df[concerns_df["label"] == "Income"].iloc[0]
-    inc_demand_row = concerns_df[concerns_df["label"].str.contains("Increasing demand", case=False)].iloc[0]
-    inflation_row = concerns_df[concerns_df["label"].str.contains("Inflation", case=False)].iloc[0]
+    inc_demand_row = concerns_df[concerns_df["label"] == "Increasing demand"].iloc[0]
+    inflation_row = concerns_df[concerns_df["label"] == "Inflation (non-energy)"].iloc[0]
 
     key_concerns_top_cards = KeyOrganisationalConcernsTopCards(
         income_pct=int(round(income_row["pct"])),
@@ -432,10 +454,10 @@ def build_wave_context_from_df(
     )
 
     recruitment_retention = RecruitmentAndRetentionConcerns(
-        staff_recruitment_concern_pct=0,
-        staff_retention_concern_pct=0,
-        volunteer_recruitment_concern_pct=0,
-        volunteer_retention_concern_pct=0,
+        staff_recruitment_concern_pct=_pct_for_concern("Staff recruitment"),
+        staff_retention_concern_pct=_pct_for_concern("Staff retention"),
+        volunteer_recruitment_concern_pct=_pct_for_concern("Volunteer recruitment"),
+        volunteer_retention_concern_pct=_pct_for_concern("Volunteer retention"),
     )
 
     impact_recruitment = ImpactOfRecruitmentDifficulties(
@@ -542,6 +564,32 @@ def load_wave_registry(raw_waves: Mapping[str, Mapping]) -> WaveRegistry:
     return WaveRegistry(waves=validated)
 
 
+def build_wave_registry_from_current_data() -> WaveRegistry:
+    """
+    Build a global WaveRegistry combining the hand-crafted Wave 1 context
+    with Wave 2+ contexts derived from the current dataset.
+
+    This helper is intentionally lightweight and does not depend on
+    Streamlit or PDF/HTML rendering so it can be reused across the
+    dashboard and presentation layers.
+    """
+    from src.data_loader import load_dataset  # local import to avoid cycles
+
+    df_all = load_dataset()
+    # Wave 2 is currently derived from the full dataset; additional waves
+    # can be appended here as the tracking series grows.
+    wave2_ctx = build_wave_context_from_df(
+        df_all,
+        wave_label="Wave 2",
+        wave_number=2,
+    )
+    waves: Dict[str, WaveContext] = {
+        "Wave 1": WAVE1_CONTEXT,
+        "Wave 2": wave2_ctx,
+    }
+    return WaveRegistry(waves=waves)
+
+
 # ============================================================
 # Useful comparison helpers
 # ============================================================
@@ -635,6 +683,101 @@ def trend_series(
         )
 
     return sorted(points, key=lambda row: row["wave_number"])
+
+
+def build_trend_long(
+    registry: WaveRegistry,
+    metrics: list[Mapping[str, str]] | None = None,
+) -> pd.DataFrame:
+    """
+    Build a long-format DataFrame of trend points for the supplied metrics.
+
+    Columns: metric_id, metric_label, section, wave_label, wave_number, value, wave_n
+    """
+    if metrics is None:
+        metrics = TREND_METRICS
+
+    rows: list[dict[str, Any]] = []
+    for metric in metrics:
+        series = trend_series(registry, metric["attr_path"])
+        for point in series:
+            wave = registry.get(point["wave_label"])
+            rows.append(
+                {
+                    "metric_id": metric["id"],
+                    "metric_label": metric["label"],
+                    "section": metric["section"],
+                    "wave_label": point["wave_label"],
+                    "wave_number": point["wave_number"],
+                    "value": point["value"],
+                    "wave_n": wave.meta.wave_response_count,
+                }
+            )
+
+    return pd.DataFrame(rows)
+
+
+def build_trend_pivot(trend_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Pivot a long-format trend_df (from build_trend_long) into a wide table
+    suitable for display in dashboards and reports.
+
+    Returns a DataFrame indexed by wave_number/wave label with one column
+    per metric label plus an 'n_organisations' column.
+    """
+    if trend_df.empty:
+        return trend_df.copy()
+
+    wide = (
+        trend_df.pivot_table(
+            index=["wave_number", "wave_label"],
+            columns="metric_label",
+            values="value",
+        )
+        .sort_index()
+    )
+
+    wave_counts = (
+        trend_df[["wave_number", "wave_label", "wave_n"]]
+        .drop_duplicates(subset=["wave_number", "wave_label"])
+        .set_index(["wave_number", "wave_label"])
+    )
+    wide = wide.join(wave_counts).reset_index().rename(
+        columns={"wave_label": "Wave", "wave_n": "n_organisations"}
+    )
+    return wide
+
+
+def summarise_trend_changes(
+    trend_df: pd.DataFrame,
+    metric_ids: list[str],
+) -> dict[str, dict[str, Any]]:
+    """
+    Summarise first vs latest values for selected metrics.
+
+    Returns a mapping:
+      metric_id -> {label, first_wave, latest_wave, first_value, latest_value, change_pct_points}
+    """
+    summaries: dict[str, dict[str, Any]] = {}
+    if trend_df.empty:
+        return summaries
+
+    for metric_id in metric_ids:
+        mdf = trend_df[trend_df["metric_id"] == metric_id].sort_values("wave_number")
+        if mdf.empty:
+            continue
+        first = mdf.iloc[0]
+        latest = mdf.iloc[-1]
+        change = pct_point_change(int(first["value"]), int(latest["value"]))
+        summaries[metric_id] = {
+            "label": first["metric_label"],
+            "first_wave": first["wave_label"],
+            "latest_wave": latest["wave_label"],
+            "first_value": int(first["value"]),
+            "latest_value": int(latest["value"]),
+            "change_pct_points": change,
+        }
+    return summaries
 
 
 # ---------------------------------------------------------------------------

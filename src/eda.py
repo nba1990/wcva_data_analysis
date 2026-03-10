@@ -36,6 +36,22 @@ def _value_counts_ordered(series: pd.Series, order: list[str]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _share_true(series: pd.Series) -> float:
+    """
+    Return percentage of 'True' values using a non-missing base.
+
+    Design convention:
+    - For any single survey question, percentages are calculated over respondents
+      with a non-missing answer to that question (series.notna()).
+    - This keeps figures consistent between KPI tiles, charts, and narratives,
+      and avoids discrepancies when some organisations skip a question.
+    """
+    base = int(series.notna().sum())
+    if base == 0:
+        return 0.0
+    return round(100 * series.sum() / base, 1)
+
+
 # ---------------------------------------------------------------------------
 # 1. Profile summary
 # ---------------------------------------------------------------------------
@@ -130,7 +146,7 @@ def demand_and_outlook(df: pd.DataFrame) -> dict:
 
 def volunteer_recruitment_analysis(df: pd.DataFrame) -> dict:
     n = len(df)
-    shortage_yes = int(df["has_vol_rec_difficulty"].sum())
+    shortage_series = df["has_vol_rec_difficulty"]
     # For Likert-based difficulty, use only respondents who answered the question
     vol_rec_series = df["vol_rec"]
     likert_base = int(vol_rec_series.notna().sum())
@@ -149,13 +165,22 @@ def volunteer_recruitment_analysis(df: pd.DataFrame) -> dict:
         # Share finding recruitment somewhat or extremely difficult (Likert-based, non-missing base)
         "difficulty_base": likert_base,
         "pct_difficulty": round(100 * likert_hard / likert_base, 1) if likert_base else 0,
-        # Share explicitly reporting a shortage recruiting volunteers
-        "pct_shortage": round(100 * shortage_yes / n, 1) if n else 0,
-        "pct_too_few": round(
-            100 * df["volobjectives"].isin([
-                "Slightly too few volunteers", "Significantly too few volunteers"
-            ]).sum() / n, 1
-        ),
+        # Share explicitly reporting a shortage recruiting volunteers (non-missing base)
+        "pct_shortage": _share_true(shortage_series),
+        "pct_too_few": (
+            lambda series: (
+                round(
+                    100
+                    * series.isin(
+                        ["Slightly too few volunteers", "Significantly too few volunteers"]
+                    ).sum()
+                    / series.notna().sum(),
+                    1,
+                )
+                if series.notna().sum()
+                else 0
+            )
+        )(df["volobjectives"]),
     }
 
 
@@ -165,7 +190,7 @@ def volunteer_recruitment_analysis(df: pd.DataFrame) -> dict:
 
 def volunteer_retention_analysis(df: pd.DataFrame) -> dict:
     n = len(df)
-    shortage_yes = int(df["has_vol_ret_difficulty"].sum())
+    shortage_series = df["has_vol_ret_difficulty"]
     # For Likert-based difficulty, use only respondents who answered the question
     vol_ret_series = df["vol_ret"]
     likert_base = int(vol_ret_series.notna().sum())
@@ -183,7 +208,8 @@ def volunteer_retention_analysis(df: pd.DataFrame) -> dict:
         # Share finding retention somewhat or extremely difficult (Likert-based, non-missing base)
         "difficulty_base": likert_base,
         "pct_difficulty": round(100 * likert_hard / likert_base, 1) if likert_base else 0,
-        "pct_shortage": round(100 * shortage_yes / n, 1) if n else 0,
+        # Share explicitly reporting a shortage retaining volunteers (non-missing base)
+        "pct_shortage": _share_true(shortage_series),
     }
 
 
@@ -210,12 +236,9 @@ def workforce_operations(df: pd.DataFrame) -> dict:
         staff_ret_difficulty_pct = 0.0
 
     # Across all organisations, share reporting volunteer recruitment/retention difficulties
-    vol_rec_difficulty_pct = round(
-        100 * df["has_vol_rec_difficulty"].sum() / n, 1
-    ) if n else 0.0
-    vol_ret_difficulty_pct = round(
-        100 * df["has_vol_ret_difficulty"].sum() / n, 1
-    ) if n else 0.0
+    # Use non-missing bases to stay consistent with recruitment/retention analyses.
+    vol_rec_difficulty_pct = _share_true(df["has_vol_rec_difficulty"])
+    vol_ret_difficulty_pct = _share_true(df["has_vol_ret_difficulty"])
 
     return {
         "n": n,
@@ -298,15 +321,30 @@ def volunteering_types(df: pd.DataFrame) -> dict:
 
 def _segment_metrics(subset: pd.DataFrame, n: int) -> dict:
     """Shared metrics for a subset (n = len(subset))."""
+    volobj = subset["volobjectives"]
+    volobj_base = int(volobj.notna().sum())
+    rec_diff = subset["has_vol_rec_difficulty"]
+    ret_diff = subset["has_vol_ret_difficulty"]
     return {
         "n": n,
-        "pct_vol_rec_difficulty": round(100 * subset["has_vol_rec_difficulty"].sum() / n, 1),
-        "pct_vol_ret_difficulty": round(100 * subset["has_vol_ret_difficulty"].sum() / n, 1),
-        "pct_demand_increased": round(100 * subset["demand_direction"].eq("Increased").sum() / n, 1),
-        "pct_finance_deteriorated": round(100 * subset["financial_direction"].eq("Deteriorated").sum() / n, 1),
-        "pct_too_few_vols": round(100 * subset["volobjectives"].isin([
-            "Slightly too few volunteers", "Significantly too few volunteers"
-        ]).sum() / n, 1),
+        # Percentages use non-missing bases per-metric; this keeps segment tables
+        # aligned with the main KPIs and avoids denominator confusion.
+        "pct_vol_rec_difficulty": _share_true(rec_diff),
+        "pct_vol_ret_difficulty": _share_true(ret_diff),
+        "pct_demand_increased": _share_true(subset["demand_direction"].eq("Increased")),
+        "pct_finance_deteriorated": _share_true(subset["financial_direction"].eq("Deteriorated")),
+        "pct_too_few_vols": (
+            round(
+                100
+                * volobj.isin(
+                    ["Slightly too few volunteers", "Significantly too few volunteers"]
+                ).sum()
+                / volobj_base,
+                1,
+            )
+            if volobj_base
+            else 0
+        ),
     }
 
 
@@ -386,7 +424,7 @@ def executive_highlights(df: pd.DataFrame) -> list[dict]:
             "title": f"Income is the #1 concern ({top_concern['count']}/{n} organisations)",
             "detail": (
                 f"{top_concern['pct']}% of organisations cite income as a top concern, "
-                f"with increasing demand next ({wf['concerns'].iloc[1]['pct']}%). "
+                f"with increasing demand being cited as the second most common concern ({wf['concerns'].iloc[1]['pct']}%). "
                 "Many are worried about income before their finances have actually deteriorated."
             ),
             "type": "critical",
