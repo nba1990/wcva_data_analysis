@@ -423,7 +423,7 @@ def cross_segment_analysis(df: pd.DataFrame) -> dict:
 
 def finance_recruitment_cross(df: pd.DataFrame) -> dict | None:
     """
-    Among orgs whose finances deteriorated vs not, what % find recruitment difficult?
+    Among orgs whose financial position deteriorated (last 3 mth) vs not, what % find recruitment difficult?
     Returns None if counts are too small for a sensible comparison.
     """
     n = len(df)
@@ -483,8 +483,8 @@ def executive_highlights(df: pd.DataFrame) -> list[dict]:
             "title": "Demand is rising faster than capacity",
             "detail": (
                 f"{dem['demand_pct_increased']}% report increased demand, while "
-                f"{dem['financial_pct_deteriorated']}% already report worsening finances. "
-                "The gap between income concern and those reporting worsening finances reflects that many organisations are anxious about funding before deterioration shows in the figures. "
+                f"{dem['financial_pct_deteriorated']}% report overall financial position deteriorated (last 3 months). "
+                "The gap between income concern and those reporting deteriorated position reflects that many organisations are anxious about funding before deterioration shows in the figures. "
                 "Demand is outpacing the resources organisations have to respond with."
             ),
             "type": "critical",
@@ -533,11 +533,11 @@ def executive_highlights(df: pd.DataFrame) -> list[dict]:
         if diff >= 5:
             highlights.append({
                 "rank": 7,
-                "title": "Recruitment difficulty is higher where finances have deteriorated",
+                "title": "Recruitment difficulty is higher where financial position has deteriorated",
                 "detail": (
-                    f"Among organisations reporting deteriorating finances, {cross['pct_rec_difficulty_if_finance_deteriorated']}% "
+                    f"Among organisations whose financial position deteriorated (last 3 months), {cross['pct_rec_difficulty_if_finance_deteriorated']}% "
                     f"find recruitment difficult, compared with {cross['pct_rec_difficulty_if_finance_not_deteriorated']}% "
-                    f"among those whose finances have not deteriorated (n={cross['n_finance_deteriorated']} vs {cross['n_finance_not_deteriorated']})."
+                    f"among those whose financial position has not deteriorated (n={cross['n_finance_deteriorated']} vs {cross['n_finance_not_deteriorated']})."
                 ),
                 "type": "warning",
             })

@@ -237,7 +237,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
     # Simple infographic-style bar chart for top-level metrics
     infographic_data = [
         ("Demand increased", dem["demand_pct_increased"]),
-        ("Finances deteriorated", dem["financial_pct_deteriorated"]),
+        ("Financial position deteriorated (last 3 mth)", dem["financial_pct_deteriorated"]),
         ("Too few volunteers", rec["pct_too_few"]),
         ("Recruitment difficult", rec["pct_difficulty"]),
         ("Retention difficult", ret["pct_difficulty"]),
@@ -283,10 +283,10 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "body": (
                 highlights_html
                 + "<p style='font-size:0.8em;color:#555'>These findings are based on an "
-                  "organisational survey. Headline estimates of how many people in Wales "
-                  "volunteer (for example, that around one-third of adults volunteer) "
-                  "depend on survey definitions, age ranges, and whether unpaid caring is "
-                  "included. Future waves could triangulate these organisational views "
+                  "organisational survey. Do not generalise these findings to all adults in Wales: "
+                  "this is not a population estimate of volunteering behaviour. Headline estimates of how many "
+                  "people in Wales volunteer (e.g. one-third of adults) depend on definitions, age ranges, and "
+                  "whether unpaid caring is included. Future waves could triangulate these organisational views "
                   "with surveys of individual volunteers and non-volunteers.</p>"
             ),
             "chart": None,
@@ -302,16 +302,17 @@ def build_slides(df, palette_mode: str) -> list[dict]:
                 "rising demand, constrained finances, and volunteer gaps.</p>"
                 f"<p><strong>{n}</strong> organisations in view | "
                 f"<strong>{dem['demand_pct_increased']}%</strong> demand increased ▲ | "
-                f"<strong>{dem['financial_pct_deteriorated']}%</strong> finances deteriorated ▼ | "
+                f"<strong>{dem['financial_pct_deteriorated']}%</strong> financial position deteriorated (3 mth) ▼ | "
                 f"<strong>{rec['pct_too_few']}%</strong> too few volunteers ▼ | "
                 f"<strong>{rec['pct_difficulty']}%</strong> recruitment difficult ▼ | "
                 f"<strong>{ret['pct_difficulty']}%</strong> retention difficult ▼</p>"
                 + (
                     "<p style='font-size:0.8em;color:#555'>"
-                    f"Compared with earlier waves, demand and financial pressure have"
-                    f" {('increased' if trend_summaries.get('demand_increase', {}).get('change_pct_points', 0) > 0 else 'shifted')}"
-                    " further, while the share reporting too few volunteers has "
-                    f"{'risen' if trend_summaries.get('too_few_volunteers', {}).get('change_pct_points', 0) > 0 else 'remained similar'}."
+                    "Compared with Wave 1: demand pressure has "
+                    f"{'increased' if trend_summaries.get('demand_increase', {}).get('change_pct_points', 0) > 0 else 'shifted'}. "
+                    "The share reporting too few volunteers has "
+                    f"{'risen' if trend_summaries.get('too_few_volunteers', {}).get('change_pct_points', 0) > 0 else 'remained similar'}. "
+                    "Financial pressure is measured differently across waves (see trend table); do not infer a single cross-wave trend from this slide."
                     "</p>"
                 if trend_summaries else "")
             ),
@@ -338,7 +339,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "subtitle": "The scissor effect",
             "body": f"<ul>"
                     f"<li><strong>{dem['demand_pct_increased']}%</strong> report increased demand</li> <br>"
-                    f"<li><strong>{dem['financial_pct_deteriorated']}%</strong> report deteriorating finances</li> <br>"
+                    f"<li><strong>{dem['financial_pct_deteriorated']}%</strong> report overall financial position deteriorated (last 3 months)</li> <br>"
                     f"<li><strong>{dem['operating_pct_likely']}%</strong> confident they'll operate next year</li> <br>"
                     f"</ul>"
                     f"<p>{demand_finance_scissor_phrase(dem)}</p>"
@@ -352,11 +353,11 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "title": "Finances mostly unchanged, but a third report deterioration",
             "subtitle": "Multi-point squeeze on financial stability",
             "body": f"<ul>"
-                    f"<li><strong>{dem['financial_pct_deteriorated']}%</strong> already report deteriorating finances</li> <br>"
-                    f"<li><strong>{wf['finance_deteriorated_pct']}%</strong> say finances worsened due to rising costs</li> <br>"
+                    f"<li><strong>{dem['financial_pct_deteriorated']}%</strong> report overall financial position deteriorated (last 3 months)</li> <br>"
+                    f"<li><strong>{wf['finance_deteriorated_pct']}%</strong> say finances deteriorated due to rising costs (different question)</li> <br>"
                     f"<li>Only {wf['reserves_yes_pct']}% have reserves; median {wf['median_months_reserves']:.0f} months</li> <br>"
                     f"</ul>"
-                    f"<p style='font-size:0.7em;color:#888'>Wave 1 context: "
+                    f"<p style='font-size:0.7em;color:#888'>Two different metrics above; both valid. Wave 1 context: "
                     f"{WAVE1_CONTEXT.financial_deteriorated_callout()}</p>",
             "chart": fig_financial,
             "notes": "Financial position squeeze. Reserves runway is shrinking.",
@@ -382,7 +383,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
                 f"<li><strong>{rec['pct_difficulty']}%</strong> report difficulty recruiting</li> <br>"
                 f"<li><strong>{ret['pct_difficulty']}%</strong> report difficulty retaining</li> <br>"
                 f"<li>{recruitment_vs_retention_phrase(rec, ret)}</li>"
-                + (f" <br><li>Among organisations with deteriorating finances, <strong>{cross['pct_rec_difficulty_if_finance_deteriorated']}%</strong> find recruitment difficult, vs <strong>{cross['pct_rec_difficulty_if_finance_not_deteriorated']}%</strong> where finances have not deteriorated.</li>" if cross else "")
+                + (f" <br><li>Among organisations whose financial position deteriorated (last 3 months), <strong>{cross['pct_rec_difficulty_if_finance_deteriorated']}%</strong> find recruitment difficult, vs <strong>{cross['pct_rec_difficulty_if_finance_not_deteriorated']}%</strong> where financial position has not deteriorated.</li>" if cross else "")
                 + f"</ul>"
             ),
             "chart": None,
@@ -417,7 +418,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "title": "What Organisations Are Doing (and Need)",
             "subtitle": "Rising costs are forcing hard choices",
             "body": f"<ul>"
-                    f"<li><strong>{wf['finance_deteriorated_pct']}%</strong> report finances deteriorated from rising costs</li> <br>"
+                    f"<li><strong>{wf['finance_deteriorated_pct']}%</strong> report finances deteriorated due to rising costs</li> <br>"
                     f"<li>Only {wf['reserves_yes_pct']}% have reserves; median "
                     f"{wf['median_months_reserves']:.0f} months of cover among those with reserves</li> <br>"
                     f"</ul>",
@@ -441,7 +442,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "subtitle": "Cautious optimism, but capacity is a concern",
             "body": _earned_settlement_body(vt),
             "chart": None,
-            "notes": "Policy opportunity, but requires investment in support infrastructure.",
+            "notes": "Frame as conditional capacity, not blanket endorsement. Policy opportunity but requires investment in support infrastructure.",
             "alt_text": "",
         },
         {
@@ -479,25 +480,13 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "subtitle": "Summary of bases and definitions",
             "body": (
                 "<ul>"
-                "<li><strong>Demand increasing / finances deteriorated</strong>: "
-                "percentages based on all organisations answering the `demand_direction` "
-                "and `financial_direction` questions in the last 3 months.</li> <br>"
+                "<li><strong>Demand increasing</strong>: share answering `demand_direction` as “Increased” (last 3 months).</li> <br>"
+                "<li><strong>Financial position deteriorated (last 3 months)</strong>: share answering `financial_direction` as “Deteriorated” (Likert; different from rising-cost question below).</li> <br>"
                 "<li><strong>Recruitment and retention difficult</strong>: "
-                "share of organisations selecting “Somewhat difficult” or "
-                "“Extremely difficult” on the Likert questions `vol_rec` and `vol_ret`, "
-                "using only those who answered each question.</li> <br>"
-                "<li><strong>Too few volunteers</strong>: "
-                "share of organisations whose `volobjectives` response is "
-                "“Slightly too few volunteers” or “Significantly too few volunteers”, "
-                "again using a non-missing base.</li> <br>"
-                "<li><strong>Finances deteriorated due to rising costs</strong>: "
-                "share of organisations answering `financedeteriorate` as “Yes”; "
-                "reserves and using-reserves percentages are calculated among those "
-                "answering `reserves` and, for using reserves, among those with reserves.</li> <br>"
-                "<li><strong>Finance–recruitment cross metric</strong>: "
-                "compares the share finding recruitment difficult (`vol_rec` somewhat / "
-                "extremely difficult) between organisations whose `financial_direction` "
-                "is “Deteriorated” and those whose finances have not deteriorated.</li>"
+                "share selecting “Somewhat difficult” or “Extremely difficult” on `vol_rec` and `vol_ret`.</li> <br>"
+                "<li><strong>Too few volunteers</strong>: share whose `volobjectives` is “Slightly too few” or “Significantly too few”.</li> <br>"
+                "<li><strong>Finances deteriorated due to rising costs</strong>: share answering `financedeteriorate` as “Yes”; reserves and using-reserves use their own bases.</li> <br>"
+                "<li><strong>Finance–recruitment cross</strong>: recruitment-difficulty share among those with `financial_direction` “Deteriorated” vs not.</li>"
                 "</ul>"
             ),
             "chart": None,

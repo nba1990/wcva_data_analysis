@@ -41,6 +41,24 @@ def _compute_trend(
         return "▼", "wcva-trend-down"
 
 
+def _trend_vs_wave_text(
+    current: float | None,
+    previous: float | None,
+    *,
+    higher_is_good: bool,
+) -> str:
+    """Return a short 'vs Wave 1' line for the card (e.g. '▼ 12 pts vs Wave 1')."""
+    if current is None or previous is None:
+        return "vs Wave 1 (no prior wave)"
+    delta = round(float(current) - float(previous), 1)
+    if abs(delta) < 0.1:
+        return "● little change vs Wave 1"
+    pts_str = f"{abs(delta):.1f}".rstrip("0").rstrip(".")  # e.g. 12.0 -> 12, 0.2 -> 0.2
+    if delta > 0:
+        return f"▼ {pts_str} pts vs Wave 1" if not higher_is_good else f"▲ {pts_str} pts vs Wave 1"
+    return f"▲ {pts_str} pts vs Wave 1" if not higher_is_good else f"▼ {pts_str} pts vs Wave 1"
+
+
 def _classify_severity(
     value: float | None,
     *,
@@ -113,7 +131,8 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
     demand_prev = float(dem.get("demand_pct_increased_prev", demand_now))
 
     finance_now = float(dem["financial_pct_deteriorated"])
-    finance_prev = float(dem.get("financial_pct_deteriorated_prev", finance_now))
+    _raw_finance_prev = dem.get("financial_pct_deteriorated_prev")
+    finance_prev = float(_raw_finance_prev) if _raw_finance_prev is not None else None
 
     too_few_now = float(rec["pct_too_few"])
     too_few_prev = float(rec.get("pct_too_few_prev", too_few_now))
@@ -155,6 +174,17 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
     )
     ret_colour = _compute_gauge_colour(ret_diff_now, higher_is_good=False)
 
+    # "vs Wave 1" line for each pressure metric (so arrow direction is explicit)
+    demand_vs = _trend_vs_wave_text(demand_now, demand_prev, higher_is_good=False)
+    finance_vs = (
+        "No comparable Wave 1 measure (this card: last 3 mth; Wave 1 used different question)"
+        if finance_prev is None
+        else _trend_vs_wave_text(finance_now, finance_prev, higher_is_good=False)
+    )
+    too_few_vs = _trend_vs_wave_text(too_few_now, too_few_prev, higher_is_good=False)
+    rec_vs = _trend_vs_wave_text(rec_diff_now, rec_diff_prev, higher_is_good=False)
+    ret_vs = _trend_vs_wave_text(ret_diff_now, ret_diff_prev, higher_is_good=False)
+
     return [
         {
             "id": "orgs",
@@ -169,10 +199,11 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
             "gauge_colour": "#E0E5EC",
             "trend_symbol": "●",
             "trend_class": "wcva-trend-neutral",
+            "trend_vs_wave": "",
         },
         {
             "id": "demand",
-            "label": "Demand increased",
+            "label": "Share reporting increased demand",
             "value": f"{dem['demand_pct_increased']}%",
             "caption": "Report increased demand for their services",
             "icon": "📈",
@@ -181,24 +212,26 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
             "gauge_colour": demand_colour,
             "trend_symbol": demand_trend_symbol,
             "trend_class": demand_trend_class,
+            "trend_vs_wave": demand_vs,
             "severity": _classify_severity(demand_now, higher_is_good=False),
         },
         {
             "id": "finance",
-            "label": "Finances deteriorated",
+            "label": "Share reporting financial position deteriorated (last 3 mth)",
             "value": f"{dem['financial_pct_deteriorated']}%",
-            "caption": "Say their financial position has worsened",
+            "caption": "Overall position worsened in last 3 months (Likert); distinct from ‘deteriorated due to rising costs’",
             "icon": "💷",
             "theme": "finance",
             "gauge_fill": finance_now,
             "gauge_colour": finance_colour,
             "trend_symbol": finance_trend_symbol,
             "trend_class": finance_trend_class,
+            "trend_vs_wave": finance_vs,
             "severity": _classify_severity(finance_now, higher_is_good=False),
         },
         {
             "id": "too_few",
-            "label": "Too few volunteers",
+            "label": "Share with too few volunteers",
             "value": f"{rec['pct_too_few']}%",
             "caption": (
                 "Say they have too few volunteers for their objectives"
@@ -209,11 +242,12 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
             "gauge_colour": too_few_colour,
             "trend_symbol": too_few_trend_symbol,
             "trend_class": too_few_trend_class,
+            "trend_vs_wave": too_few_vs,
             "severity": _classify_severity(too_few_now, higher_is_good=False),
         },
         {
             "id": "rec_diff",
-            "label": "Recruitment difficult",
+            "label": "Share finding recruitment difficult",
             "value": f"{rec['pct_difficulty']}%",
             "caption": (
                 "Find recruiting volunteers somewhat or very difficult"
@@ -224,11 +258,12 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
             "gauge_colour": rec_colour,
             "trend_symbol": rec_trend_symbol,
             "trend_class": rec_trend_class,
+            "trend_vs_wave": rec_vs,
             "severity": _classify_severity(rec_diff_now, higher_is_good=False),
         },
         {
             "id": "ret_diff",
-            "label": "Retention difficult",
+            "label": "Share finding retention difficult",
             "value": f"{ret['pct_difficulty']}%",
             "caption": (
                 "Find retaining volunteers somewhat or very difficult"
@@ -239,6 +274,7 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
             "gauge_colour": ret_colour,
             "trend_symbol": ret_trend_symbol,
             "trend_class": ret_trend_class,
+            "trend_vs_wave": ret_vs,
             "severity": _classify_severity(ret_diff_now, higher_is_good=False),
         },
     ]
@@ -359,6 +395,12 @@ def render_at_a_glance_infographic(
           .wcva-trend-neutral {{
             color: #888888;
           }}
+          .wcva-card-vs-wave {{
+            font-size: 0.72rem;
+            color: #666666;
+            margin-top: 2px;
+            margin-bottom: 4px;
+          }}
           .wcva-card-caption {{
             font-size: 0.8rem;
             color: #555555;
@@ -400,6 +442,8 @@ def render_at_a_glance_infographic(
     card_html_parts: list[str] = []
     for m in metrics:
         theme_class = "wcva-card-theme-" + m["theme"] if m.get("theme") else ""
+        vs_wave = m.get("trend_vs_wave") or ""
+        vs_wave_line = f'<div class="wcva-card-vs-wave">{vs_wave}</div>' if vs_wave else ""
         card_html_parts.append(
             f"""
             <div class="wcva-card {theme_class}">
@@ -412,10 +456,10 @@ def render_at_a_glance_infographic(
                 <div class="wcva-trend-icon {m.get('trend_class', '')}"
                      aria-hidden="true">{m.get('trend_symbol', '')}</div>
               </div>
+              {vs_wave_line}
               <div class="wcva-pill-bar">
                 <div class="wcva-pill-fill"
-                     style="--wcva-gauge-fill: {m.get('gauge_fill', 0)}; "
-                           "--wcva-gauge-colour: {m.get('gauge_colour', teal)};">
+                     style="--wcva-gauge-fill: {m.get('gauge_fill', 0)}; --wcva-gauge-colour: {m.get('gauge_colour', teal)};">
                 </div>
               </div>
               <div class="wcva-card-caption">{m['caption']}</div>
@@ -429,7 +473,7 @@ def render_at_a_glance_infographic(
     html = f"""
     <div class="wcva-info-root">
       <div class="wcva-info-legend">
-        <span><strong>Arrows:</strong> ▲ improving, ▼ worsening, ● little change vs previous wave</span>
+        <span><strong>Arrows:</strong> change vs previous wave — ▼ more of the sector in this situation (worsening), ▲ less (improving), ● little change</span>
         <span><strong>Colours:</strong> teal = relatively positive, amber = mixed, coral = high concern</span>
       </div>
       <div class="wcva-info-grid">

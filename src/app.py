@@ -247,9 +247,11 @@ if page == "At-a-Glance":
     first_wave, latest_wave = registry.first_and_latest()
 
     dem["demand_pct_increased_prev"] = first_wave.demand.headline.increasing_demand_for_services_pct
-    dem["financial_pct_deteriorated_prev"] = (
-        first_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
-    )
+    # Do not set financial_pct_deteriorated_prev from Wave 1: Wave 1 only has
+    # "deteriorated due to rising costs", which is a different question from this
+    # card's "financial position deteriorated (last 3 months)". Comparing them
+    # would mix two measures. Leave unset so the infographic shows no trend comparison.
+    dem["financial_pct_deteriorated_prev"] = None
 
     too_few_prev = first_wave.workforce.headline.too_few_volunteers_pct
     rec_diff_prev = first_wave.workforce.headline.face_volunteer_recruitment_difficulties_pct
@@ -279,13 +281,78 @@ if page == "At-a-Glance":
         "indicate whether each percentage is relatively positive, mixed, or a high concern."
     )
 
-    # Optional context strip: explicit Wave 1 vs latest-wave percentages for
-    # the same indicators that drive the infographic cards. This keeps the
-    # cards clean but gives readers a transparent audit trail for the arrows.
-    def _delta_arrow(old: int, new: int, *, higher_is_good: bool) -> str:
+    # Show how these At-a-Glance KPIs are calculated (same pattern as Overview)
+    with st.expander("Show how these At-a-Glance KPIs are calculated"):
+        demand_inc_count = int(df["demand_direction"].eq("Increased").sum())
+        demand_base = int(df["demand_direction"].notna().sum())
+        finance_det_count = int(df["financial_direction"].eq("Deteriorated").sum())
+        finance_base = int(df["financial_direction"].notna().sum())
+        volobj_base = int(df["volobjectives"].notna().sum())
+        too_few_count = int(
+            df["volobjectives"].isin(
+                ["Slightly too few volunteers", "Significantly too few volunteers"]
+            ).sum()
+        )
+        vol_rec_base = int(df["vol_rec"].notna().sum())
+        vol_rec_hard = int(
+            df["vol_rec"].isin(["Somewhat difficult", "Extremely difficult"]).sum()
+        )
+        vol_ret_base = int(df["vol_ret"].notna().sum())
+        vol_ret_hard = int(
+            df["vol_ret"].isin(["Somewhat difficult", "Extremely difficult"]).sum()
+        )
+
+        at_glance_rows = [
+            {
+                "Metric": "Share reporting increased demand",
+                "Column / question": "demand_direction",
+                "Numerator (count)": demand_inc_count,
+                "Denominator (answered)": demand_base,
+                "Percentage": dem["demand_pct_increased"],
+            },
+            {
+                "Metric": "Share reporting financial position deteriorated (last 3 months)",
+                "Column / question": "financial_direction (Likert)",
+                "Numerator (count)": finance_det_count,
+                "Denominator (answered)": finance_base,
+                "Percentage": dem["financial_pct_deteriorated"],
+            },
+            {
+                "Metric": "Share with too few volunteers",
+                "Column / question": "volobjectives",
+                "Numerator (count)": too_few_count,
+                "Denominator (answered)": volobj_base,
+                "Percentage": rec["pct_too_few"],
+            },
+            {
+                "Metric": "Share finding recruitment difficult",
+                "Column / question": "vol_rec (Likert)",
+                "Numerator (count)": vol_rec_hard,
+                "Denominator (answered)": vol_rec_base,
+                "Percentage": rec["pct_difficulty"],
+            },
+            {
+                "Metric": "Share finding retention difficult",
+                "Column / question": "vol_ret (Likert)",
+                "Numerator (count)": vol_ret_hard,
+                "Denominator (answered)": vol_ret_base,
+                "Percentage": ret["pct_difficulty"],
+            },
+        ]
+        at_glance_df = pd.DataFrame(at_glance_rows)
+
+        st.markdown(
+            "The cards above use the same definitions and bases as the **Overview** and **Executive Summary**. "
+            "Percentages are calculated only over organisations that answered each question. "
+            "The table below shows the exact counts and bases for this filtered view."
+        )
+        st.dataframe(at_glance_df, hide_index=True, width="stretch")
+
+    # Wave 1 vs "This view" (card values) so numbers match the cards and definitions are clear
+    def _delta_arrow(old: float, new: float, *, higher_is_good: bool) -> str:
         """Return a coloured arrow HTML snippet mirroring the infographic logic."""
-        delta = new - old
-        if abs(delta) < 1:
+        delta = round(float(new) - float(old), 1)
+        if abs(delta) < 0.1:
             return f"<span style='color:{WCVA_BRAND['mid_grey']}'>●</span>"
 
         went_up = delta > 0
@@ -293,73 +360,79 @@ if page == "At-a-Glance":
         symbol = "▲" if is_positive_change else "▼"
         colour = WCVA_BRAND["amber"] if is_positive_change else WCVA_BRAND["coral"]
         sign = "+" if delta > 0 else ""
+        delta_str = f"{delta:.1f}".rstrip("0").rstrip(".")  # 16.8 -> "16.8", 12.0 -> "12"
         return (
             f"<span style='color:{colour};font-weight:700'>{symbol}</span> "
-            f"({sign}{delta} pts)"
+            f"({sign}{delta_str} pts)"
         )
 
-    with st.expander("Wave 1 vs latest wave context for these headline indicators"):
+    with st.expander("Wave 1 vs this view (same definitions as the cards)"):
+        # "This view" = current filtered card values so they always match the infographic
+        d_this = dem["demand_pct_increased"]
+        f_this = dem["financial_pct_deteriorated"]
+        tf_this = rec["pct_too_few"]
+        rec_this = rec["pct_difficulty"]
+        ret_this = ret["pct_difficulty"]
+
         d_old = first_wave.demand.headline.increasing_demand_for_services_pct
-        d_new = latest_wave.demand.headline.increasing_demand_for_services_pct
-
-        f_old = first_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
-        f_new = latest_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
-
         tf_old = first_wave.workforce.headline.too_few_volunteers_pct
-        tf_new = latest_wave.workforce.headline.too_few_volunteers_pct
-
         rec_old = first_wave.workforce.headline.face_volunteer_recruitment_difficulties_pct
-        rec_new = latest_wave.workforce.headline.face_volunteer_recruitment_difficulties_pct
-
         ret_old = first_wave.workforce.headline.face_volunteer_retention_difficulties_pct
-        ret_new = latest_wave.workforce.headline.face_volunteer_retention_difficulties_pct
+        # Wave 1 finance headline is "deteriorated due to rising costs", not Likert; card uses Likert
+        f_old_rising = first_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
 
-        # All of these are "pressure" metrics where higher values are concerning.
+        st.markdown(
+            "**This view** = the same percentages as the cards above (current filters). "
+            "**Wave 1** = registry benchmarks. For demand, too few volunteers, and recruitment/retention difficulty, "
+            "the definition matches. For finances, the card uses *financial position deteriorated* (Likert); "
+            "Wave 1 only has *deteriorated due to rising costs* (different question), so that row is labelled below."
+        )
+
         bullets = [
             (
-                "Demand increased",
+                "Share reporting increased demand",
                 d_old,
-                d_new,
-                _delta_arrow(d_old, d_new, higher_is_good=False),
-            ),
-            (
-                "Finances deteriorated",
-                f_old,
-                f_new,
-                _delta_arrow(f_old, f_new, higher_is_good=False),
+                d_this,
+                _delta_arrow(d_old, d_this, higher_is_good=False),
             ),
         ]
 
-        if tf_old is not None and tf_new is not None:
+        if tf_old is not None:
             bullets.append(
                 (
-                    "Too few volunteers",
+                    "Share with too few volunteers",
                     tf_old,
-                    tf_new,
-                    _delta_arrow(tf_old, tf_new, higher_is_good=False),
+                    tf_this,
+                    _delta_arrow(tf_old, tf_this, higher_is_good=False),
                 )
             )
         bullets.append(
             (
-                "Recruitment difficult",
+                "Share finding recruitment difficult",
                 rec_old,
-                rec_new,
-                _delta_arrow(rec_old, rec_new, higher_is_good=False),
+                rec_this,
+                _delta_arrow(rec_old, rec_this, higher_is_good=False),
             )
         )
         bullets.append(
             (
-                "Retention difficult",
+                "Share finding retention difficult",
                 ret_old,
-                ret_new,
-                _delta_arrow(ret_old, ret_new, higher_is_good=False),
+                ret_this,
+                _delta_arrow(ret_old, ret_this, higher_is_good=False),
             )
         )
+
+        def _pct_disp(x) -> str:
+            if x is None:
+                return "—"
+            v = round(float(x), 1)
+            return str(int(v)) if v == int(v) else str(v)
 
         lines = []
         for label, old, new, arrow_html in bullets:
             lines.append(
-                f"<li><strong>{label}</strong>: Wave 1 {old}% → latest wave {new}% {arrow_html}</li>"
+                f"<li><strong>{label}</strong>: Wave 1 {_pct_disp(old)}% → This view {_pct_disp(new)}% {arrow_html}</li>"
             )
 
         st.markdown(
@@ -367,6 +440,12 @@ if page == "At-a-Glance":
             + "".join(lines)
             + "</ul>",
             unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            "**Finances:** This view uses *financial position deteriorated* (Likert, last 3 months): "
+            f"**{_pct_disp(f_this)}%**. Wave 1 reported *deteriorated due to rising costs* (different question): "
+            f"**{_pct_disp(f_old_rising)}%** — not directly comparable."
         )
 
     st.info(
@@ -394,11 +473,11 @@ if page == "At-a-Glance":
     with st.expander("View metrics as table"):
         metrics_rows = [
             {"Metric": "Organisations in view", "Value": str(n)},
-            {"Metric": "Demand increased", "Value": f"{dem['demand_pct_increased']}%"},
-            {"Metric": "Finances deteriorated", "Value": f"{dem['financial_pct_deteriorated']}%"},
-            {"Metric": "Too few volunteers for need", "Value": f"{rec['pct_too_few']}%"},
-            {"Metric": "Recruitment difficult", "Value": f"{rec['pct_difficulty']}%"},
-            {"Metric": "Retention difficult", "Value": f"{ret['pct_difficulty']}%"},
+            {"Metric": "Share reporting increased demand", "Value": f"{dem['demand_pct_increased']}%"},
+            {"Metric": "Share reporting financial position deteriorated (last 3 months)", "Value": f"{dem['financial_pct_deteriorated']}%"},
+            {"Metric": "Share with too few volunteers", "Value": f"{rec['pct_too_few']}%"},
+            {"Metric": "Share finding recruitment difficult", "Value": f"{rec['pct_difficulty']}%"},
+            {"Metric": "Share finding retention difficult", "Value": f"{ret['pct_difficulty']}%"},
         ]
         metrics_df = pd.DataFrame(metrics_rows, dtype="string")
         st.dataframe(metrics_df, hide_index=True, width="stretch")
@@ -421,7 +500,7 @@ if page == "At-a-Glance":
     st.subheader("Key questions for deeper analysis")
     st.markdown(
         "- How different are these pressures for smaller vs larger organisations, or by main activity?\n"
-        "- Among organisations whose finances have deteriorated, is recruitment difficulty higher than for those with stable finances?\n"
+        "- Among organisations whose financial position has deteriorated (last 3 months), is recruitment difficulty higher than for those with stable finances?\n"
         "- Where are volunteer shortages most acute, and which parts of the sector appear to be coping better?"
     )
 
@@ -788,7 +867,7 @@ elif page == "Overview":
 
     with col4:
         grouper, group_order = resolve_grouping(FINANCIAL_ORDER)
-        fig = stacked_bar_ordinal(dem["financial"], "Finances mostly unchanged, but a third report deterioration", n,
+        fig = stacked_bar_ordinal(dem["financial"], "Financial position (last 3 mth): mostly unchanged, but a third report deterioration", n,
                                   mode=palette_mode, alt_config=alt_config,
                                   grouper=grouper, group_order=group_order)
         show_chart(fig, "overview_financial", dem["financial"])
@@ -834,7 +913,7 @@ elif page == "Overview":
         "<ul style='margin-top:4px;padding-left:18px;color:#333;font-size:0.9rem;'>"
         "<li>The KPI tiles at the top of this page and the stacked bar charts labelled "
         "<strong>Demand for services has mostly increased</strong> (top left, based on `demand_direction`) "
-        "and <strong>Finances mostly unchanged, but a third report deterioration</strong> (top right, based on "
+        "and <strong>Financial position (last 3 mth): mostly unchanged, but a third report deterioration</strong> (top right, based on "
         "`financial_direction`) provide the evidence for the Executive Summary narrative on the "
         "demand–capacity ‘scissor effect’.</li>"
         "<li>The expectations charts <strong>Organisations expect demand to keep rising</strong> "
@@ -1452,6 +1531,10 @@ elif page == "Workforce & Operations":
 
     # Audit trail for finance & reserves KPIs on this page
     with st.expander("Show how these finance and reserves KPIs are calculated"):
+        st.caption(
+            "Note: \"Finances deteriorated due to rising costs\" (below) uses a different question from "
+            "\"Financial position deteriorated (last 3 months)\" on the Overview and At-a-Glance pages; both are valid."
+        )
         finance_series = df.get("financedeteriorate")
         if finance_series is not None:
             finance_base = int(finance_series.notna().sum())
@@ -1914,9 +1997,9 @@ elif page == "Executive Summary":
     cross = finance_recruitment_cross(df)
     if cross:
         st.info(
-            f"**Finance–recruitment link**: Among organisations reporting deteriorating finances, "
+            f"**Finance–recruitment link**: Among organisations whose **financial position deteriorated (last 3 months)**, "
             f"{cross['pct_rec_difficulty_if_finance_deteriorated']}% find recruitment difficult, compared with "
-            f"{cross['pct_rec_difficulty_if_finance_not_deteriorated']}% among those whose finances have not deteriorated."
+            f"{cross['pct_rec_difficulty_if_finance_not_deteriorated']}% among those whose financial position has not deteriorated."
         )
 
     # Explicit audit trail for how the headline metrics are calculated (filtered-aware)
@@ -1948,9 +2031,9 @@ elif page == "Executive Summary":
             f"  - **demand_pct_increased**: organisations where `demand_direction == \"Increased\"` (from the `demand` Likert question).  \n"
             f"    Formula: **{demand_count} / {n_base} = {dem_exec['demand_pct_increased']}%**.  \n"
             f"    _Shown in: Overview page — top KPI tile \"Demand increasing\" and the stacked bar \"Demand for services has mostly increased\" (Recent Experience)._  \n"
-            f"  - **financial_pct_deteriorated**: organisations where `financial_direction == \"Deteriorated\"` (from the `financial` Likert question).  \n"
+            f"  - **financial_pct_deteriorated** (overall position, last 3 months): organisations where `financial_direction == \"Deteriorated\"`.  \n"
             f"    Formula: **{finance_det_count} / {n_base} = {dem_exec['financial_pct_deteriorated']}%**.  \n"
-            f"    _Shown in: Overview page — KPI tile \"Financial position deteriorated (last 3 months)\" and the stacked bar \"Finances mostly unchanged...\" (Recent Experience); At-a-Glance infographic._"
+            f"    _Shown in: Overview — KPI \"Financial position deteriorated (last 3 months)\" and stacked bar; At-a-Glance. Different from \"Finances deteriorated due to rising costs\" (Highlight #6, below)._"
         )
 
         st.markdown(
@@ -1989,13 +2072,13 @@ elif page == "Executive Summary":
             # Small audit-table so the raw counts are visible
             cross_rows = [
                 {
-                    "Finance group": "Finances deteriorated",
+                    "Finance group": "Financial position deteriorated (3 mth)",
                     "Orgs in group (n)": n_det,
                     "Answered recruitment (vol_rec)": det_ans_n,
                     "Recruitment difficult (count)": det_hard,
                 },
                 {
-                    "Finance group": "Finances not deteriorated",
+                    "Finance group": "Financial position not deteriorated (3 mth)",
                     "Orgs in group (n)": n_not_det,
                     "Answered recruitment (vol_rec)": not_det_ans_n,
                     "Recruitment difficult (count)": not_det_hard,
@@ -2006,11 +2089,11 @@ elif page == "Executive Summary":
 
             st.markdown(
                 "- **Finance–recruitment cross metric (optional Highlight #7 and info box)**  \n"
-                f"  - Highlight #7 reports **n={n_det} vs {n_not_det}**: the number of organisations in each finance group (finances deteriorated vs not).  \n"
+                f"  - Highlight #7 reports **n={n_det} vs {n_not_det}**: the number of organisations in each group (financial position deteriorated vs not, last 3 months).  \n"
                 "  - The percentages use only those who answered the recruitment difficulty question (`vol_rec`).  \n"
-                f"  - **Finances deteriorated** group: {n_det} organisations, {det_ans_n} answered `vol_rec` → **{det_hard} / {det_ans_n} = {cross_exec['pct_rec_difficulty_if_finance_deteriorated']}%** find recruitment difficult.  \n"
-                f"  - **Finances not deteriorated** group: {n_not_det} organisations, {not_det_ans_n} answered `vol_rec` → **{not_det_hard} / {not_det_ans_n} = {cross_exec['pct_rec_difficulty_if_finance_not_deteriorated']}%** find recruitment difficult.  \n"
-                "  - The difference between these two percentages underpins the statement that recruitment challenges are higher where finances have deteriorated.  \n"
+                f"  - **Financial position deteriorated (3 mth)** group: {n_det} organisations, {det_ans_n} answered `vol_rec` → **{det_hard} / {det_ans_n} = {cross_exec['pct_rec_difficulty_if_finance_deteriorated']}%** find recruitment difficult.  \n"
+                f"  - **Financial position not deteriorated (3 mth)** group: {n_not_det} organisations, {not_det_ans_n} answered `vol_rec` → **{not_det_hard} / {not_det_ans_n} = {cross_exec['pct_rec_difficulty_if_finance_not_deteriorated']}%** find recruitment difficult.  \n"
+                "  - The difference between these two percentages underpins the statement that recruitment challenges are higher where financial position has deteriorated (last 3 months).  \n"
                 "  _Components shown in: Overview / Workforce & Operations (finance tiles); Volunteer Recruitment page (\"Recruitment Difficulty\" chart and table — the difficulty count used here is split by finance group in this Executive Summary); Concerns & Risks (concerns chart). The cross comparison itself is only in this Executive Summary and the info box above._"
             )
 
@@ -2068,7 +2151,7 @@ elif page == "Executive Summary":
                 seg_rows.append({
                     "Size": f"{size} (n={d['n']})",
                     "Demand increased %": d["pct_demand_increased"],
-                    "Finance deteriorated %": d["pct_finance_deteriorated"],
+                    "Financial position deteriorated (3 mth) %": d["pct_finance_deteriorated"],
                     "Vol. recruitment difficulty %": d["pct_vol_rec_difficulty"],
                     "Vol. retention difficulty %": d["pct_vol_ret_difficulty"],
                     "Too few volunteers %": d["pct_too_few_vols"],
@@ -2084,7 +2167,7 @@ elif page == "Executive Summary":
                 "Main activity": name,
                 "n": d["n"],
                 "Demand increased %": d["pct_demand_increased"],
-                "Finance deteriorated %": d["pct_finance_deteriorated"],
+                "Financial position deteriorated (3 mth) %": d["pct_finance_deteriorated"],
                 "Vol. recruitment difficulty %": d["pct_vol_rec_difficulty"],
                 "Too few volunteers %": d["pct_too_few_vols"],
             }

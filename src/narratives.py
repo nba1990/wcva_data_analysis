@@ -29,7 +29,7 @@ def demand_finance_scissor_phrase(dem: Mapping) -> str:
         )
     if finance_pct:
         parts.append(
-            f"{finance_pct:.1f}% report their finances have deteriorated"
+            f"{finance_pct:.1f}% report overall financial position deteriorated (last 3 months)"
         )
 
     core = "; ".join(parts)
