@@ -75,6 +75,15 @@ def profile_summary(df: pd.DataFrame) -> dict:
         la_merged["sample_share_pct"] / la_merged["pop_share_pct"]
     ).replace([pd.NA, pd.NaT], 0.0)
 
+    # Share of organisations reporting any volunteers.
+    # We treat strictly positive volunteer counts as having volunteers.
+    has_volunteers_pct = round(
+        100
+        * (df["peoplevol"].fillna(0) > 0).sum()
+        / n,
+        1,
+    ) if n else 0
+
     return {
         "n": n,
         "org_size": org_size,
@@ -87,6 +96,7 @@ def profile_summary(df: pd.DataFrame) -> dict:
         "est_vcse_orgs": la_merged[["local_authority", "est_vcse_orgs"]],
         "social_enterprise_pct": round(100 * (df["socialenterprise"] == "Yes").sum() / n, 1),
         "has_paid_staff_pct": round(100 * (df["paidworkforce"] == "Yes").sum() / n, 1),
+        "has_volunteers_pct": has_volunteers_pct,
         "median_employees": df["peopleemploy"].median(),
         "median_volunteers": df["peoplevol"].median(),
     }
@@ -186,11 +196,36 @@ def workforce_operations(df: pd.DataFrame) -> dict:
     with_staff = df[df["paidworkforce"] == "Yes"]
     n_staff = len(with_staff)
 
+    staff_rec_difficulty = _value_counts_ordered(with_staff["shortage_staff_rec"], YES_NO_ORDER)
+    staff_ret_difficulty = _value_counts_ordered(with_staff["shortage_staff_ret"], YES_NO_ORDER)
+
+    # Among organisations with paid staff, share reporting recruitment/retention difficulties.
+    if n_staff:
+        rec_yes_row = staff_rec_difficulty[staff_rec_difficulty["value"] == "Yes"]
+        ret_yes_row = staff_ret_difficulty[staff_ret_difficulty["value"] == "Yes"]
+        staff_rec_difficulty_pct = float(rec_yes_row["pct"].iloc[0]) if not rec_yes_row.empty else 0.0
+        staff_ret_difficulty_pct = float(ret_yes_row["pct"].iloc[0]) if not ret_yes_row.empty else 0.0
+    else:
+        staff_rec_difficulty_pct = 0.0
+        staff_ret_difficulty_pct = 0.0
+
+    # Across all organisations, share reporting volunteer recruitment/retention difficulties
+    vol_rec_difficulty_pct = round(
+        100 * df["has_vol_rec_difficulty"].sum() / n, 1
+    ) if n else 0.0
+    vol_ret_difficulty_pct = round(
+        100 * df["has_vol_ret_difficulty"].sum() / n, 1
+    ) if n else 0.0
+
     return {
         "n": n,
         "n_with_staff": n_staff,
-        "staff_rec_difficulty": _value_counts_ordered(with_staff["shortage_staff_rec"], YES_NO_ORDER),
-        "staff_ret_difficulty": _value_counts_ordered(with_staff["shortage_staff_ret"], YES_NO_ORDER),
+        "staff_rec_difficulty": staff_rec_difficulty,
+        "staff_ret_difficulty": staff_ret_difficulty,
+        "staff_rec_difficulty_pct": staff_rec_difficulty_pct,
+        "staff_ret_difficulty_pct": staff_ret_difficulty_pct,
+        "vol_rec_difficulty_pct": vol_rec_difficulty_pct,
+        "vol_ret_difficulty_pct": vol_ret_difficulty_pct,
         "shortage_affect": count_multiselect(df, SHORTAGE_AFFECT_LABELS),
         "concerns": count_multiselect(df, CONCERNS_LABELS),
         "actions": count_multiselect(df, ACTIONS_LABELS),

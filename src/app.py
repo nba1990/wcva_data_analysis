@@ -23,7 +23,13 @@ from src.config import (
     YES_NO_ORDER, SEVERITY_COLOURS, AltTextConfig, resolve_grouping,
     CHART_FONT_SIZE, CHART_TITLE_SIZE,
 )
-from src.wave_context import WAVE1_CONTEXT
+from src.wave_context import (
+    WAVE1_CONTEXT,
+    WaveRegistry,
+    build_wave_context_from_df,
+    trend_series,
+    TREND_METRICS,
+)
 from src.eda import (
     profile_summary, demand_and_outlook, volunteer_recruitment_analysis,
     volunteer_retention_analysis, workforce_operations, volunteer_demographics,
@@ -35,6 +41,7 @@ from src.charts import (
     grouped_bar, heatmap_matrix, kpi_card_html,
 )
 from src.narratives import demand_finance_scissor_phrase, recruitment_vs_retention_phrase
+import plotly.express as px
 from src.infographic import render_at_a_glance_infographic
 
 # ---------------------------------------------------------------------------
@@ -54,6 +61,18 @@ st.set_page_config(
 @st.cache_data
 def get_data():
     return load_dataset()
+
+
+@st.cache_data
+def get_wave_registry() -> WaveRegistry:
+    """
+    Build a simple cross-wave registry for trend analysis.
+
+    Wave 1 is the hand-crafted context; Wave 2 is derived from the full dataset.
+    """
+    df_all = load_dataset()
+    wave2 = build_wave_context_from_df(df_all, wave_label="Wave 2", wave_number=2)
+    return WaveRegistry(waves={"Wave 1": WAVE1_CONTEXT, "Wave 2": wave2})
 
 df_full = get_data()  # Shape of dataset: (111, 162) (111 organisations, 162 variables) # noqa
 
@@ -149,6 +168,7 @@ pages = [
     "Executive Summary",
     "At-a-Glance",
     "Overview",
+    "Trends & Waves",
     "Volunteer Recruitment",
     "Volunteer Retention",
     "Workforce & Operations",
@@ -261,6 +281,50 @@ elif page == "Overview":
     cols[3].markdown(kpi_card_html("Likely operating next yr", f"{dem['operating_pct_likely']}%", colour=WCVA_BRAND["teal"]), unsafe_allow_html=True)
 
     st.divider()
+
+    # Cross-wave headline trend (Wave 1 vs Wave 2)
+    with st.expander("Wave-to-wave headline trend (all organisations)"):
+        registry = get_wave_registry()
+        demand_trend = trend_series(
+            registry,
+            "demand.headline.increasing_demand_for_services_pct",
+        )
+        finance_trend = trend_series(
+            registry,
+            "finance.headline.financial_position_deteriorated_due_to_rising_costs_pct",
+        )
+
+        if demand_trend and finance_trend:
+            trend_rows = []
+            # Demand
+            for point in demand_trend:
+                trend_rows.append(
+                    {
+                        "Wave": point["wave_label"],
+                        "Metric": "Demand increased",
+                        "Value %": point["value"],
+                    }
+                )
+            # Finance
+            for point in finance_trend:
+                trend_rows.append(
+                    {
+                        "Wave": point["wave_label"],
+                        "Metric": "Finances deteriorated (rising costs)",
+                        "Value %": point["value"],
+                    }
+                )
+
+            trend_df = pd.DataFrame(trend_rows)
+            st.dataframe(
+                trend_df,
+                hide_index=True,
+                width="stretch",
+            )
+            st.caption(
+                "Simple cross-wave comparison using the validated WaveContext schema. "
+                "Additional metrics can be trended by changing the attribute path."
+            )
 
     col1, col2 = st.columns(2)
     alt_config = AltTextConfig(value_col="value", count_col="count", pct_col="pct", sample_size=n)
@@ -432,7 +496,7 @@ elif page == "Overview":
 
 
 # =========================================================================
-# PAGE 2: Volunteer Recruitment
+# PAGE 3: Volunteer Recruitment
 # =========================================================================
 elif page == "Volunteer Recruitment":
     st.title("Volunteer Recruitment")
@@ -518,7 +582,7 @@ elif page == "Volunteer Recruitment":
 
 
 # =========================================================================
-# PAGE 3: Volunteer Retention
+# PAGE 4: Volunteer Retention
 # =========================================================================
 elif page == "Volunteer Retention":
     st.title("Volunteer Retention")
@@ -580,7 +644,185 @@ elif page == "Volunteer Retention":
 
 
 # =========================================================================
-# PAGE 4: Workforce & Operations
+# PAGE 5: Trends & Waves
+# =========================================================================
+elif page == "Trends & Waves":
+    st.title("Trends Across Waves")
+    st.caption("Compare headline indicators across survey waves using the validated WaveContext model.")
+
+    registry = get_wave_registry()
+
+    # Build long-format trend table for all configured metrics
+    trend_rows: list[dict[str, object]] = []
+    for metric in TREND_METRICS:
+        series = trend_series(registry, metric["attr_path"])
+        for point in series:
+            wave = registry.get(point["wave_label"])
+            trend_rows.append(
+                {
+                    "metric_id": metric["id"],
+                    "metric_label": metric["label"],
+                    "section": metric["section"],
+                    "wave_label": point["wave_label"],
+                    "wave_number": point["wave_number"],
+                    "value": point["value"],
+                    "wave_n": wave.meta.wave_response_count,
+                }
+            )
+
+    if not trend_rows:
+        st.info("No cross-wave metrics are available yet. Add more waves or metrics to TREND_METRICS.")
+        st.stop()
+
+    trend_df = pd.DataFrame(trend_rows)
+
+    # Metric selection / filtering
+    st.sidebar.subheader("Trend metrics")
+    available_labels = sorted(trend_df["metric_label"].unique().tolist())
+    selected_labels = st.sidebar.multiselect(
+        "Select metrics to display",
+        options=available_labels,
+        default=available_labels,
+    )
+
+    working_df = trend_df[trend_df["metric_label"].isin(selected_labels)].copy()
+
+    st.subheader("Headline trend table")
+    wide = (
+        working_df
+        .pivot_table(
+            index=["wave_number", "wave_label"],
+            columns="metric_label",
+            values="value",
+        )
+        .sort_index()
+    )
+    # Attach per-wave respondent counts (they are the same for all metrics)
+    wave_counts = (
+        working_df[["wave_number", "wave_label", "wave_n"]]
+        .drop_duplicates(subset=["wave_number", "wave_label"])
+        .set_index(["wave_number", "wave_label"])
+    )
+    wide = wide.join(wave_counts).reset_index().rename(columns={"wave_label": "Wave", "wave_n": "n_organisations"})
+    st.dataframe(wide, hide_index=True, width="stretch")
+
+    st.divider()
+    st.subheader("Trend charts by theme")
+
+    for section_name, section_df in working_df.groupby("section"):
+        st.markdown(f"### {section_name}")
+
+        # Group metrics within this section into two-column layout
+        metric_groups = list(section_df.groupby("metric_label"))
+        cols = st.columns(2)
+
+        for idx, (metric_label, mdf) in enumerate(metric_groups):
+            col = cols[idx % 2]
+            with col:
+                mdf = mdf.sort_values("wave_number")
+
+                fig = px.line(
+                    mdf,
+                    x="wave_number",
+                    y="value",
+                    markers=True,
+                    text="value",
+                    labels={"wave_number": "Wave", "value": "Percent"},
+                    title=metric_label,
+                )
+                fig.update_traces(textposition="top center")
+                fig.update_xaxes(
+                    tickvals=mdf["wave_number"],
+                    ticktext=mdf["wave_label"],
+                )
+
+                # Build rich alt-text with wave counts and number of waves
+                unique_waves = (
+                    mdf[["wave_label", "wave_n"]]
+                    .drop_duplicates()
+                    .sort_values("wave_label")
+                )
+                wave_summaries = ", ".join(
+                    f"{row.wave_label} (n={row.wave_n})"
+                    for row in unique_waves.itertuples(index=False)
+                )
+                n_waves = unique_waves.shape[0]
+                fig._alt_text = (
+                    f"Trend line for {metric_label} across {n_waves} waves. "
+                    f"Waves and respondent counts: {wave_summaries}."
+                )
+
+                show_chart(
+                    fig,
+                    key=f"trend_{section_name}_{metric_label}",
+                    data_df=mdf[["wave_label", "wave_number", "wave_n", "value"]],
+                )
+
+    st.divider()
+    st.subheader("Debug: EDA vs WaveContext (Wave 2)")
+
+    with st.expander("Show comparison table for key metrics"):
+        # Use the full (unfiltered) dataset for a clean Wave 2 comparison
+        df_all = get_data()
+        rec = volunteer_recruitment_analysis(df_all)
+        wf = workforce_operations(df_all)
+
+        wave2_ctx = registry.get("Wave 2")
+
+        debug_rows = [
+            {
+                "metric": "Too few volunteers %",
+                "source": "EDA (pct_too_few)",
+                "value": rec["pct_too_few"],
+            },
+            {
+                "metric": "Too few volunteers %",
+                "source": "WaveContext (workforce.headline.too_few_volunteers_pct)",
+                "value": wave2_ctx.workforce.headline.too_few_volunteers_pct,
+            },
+            {
+                "metric": "Has reserves %",
+                "source": "EDA (reserves_yes_pct)",
+                "value": wf["reserves_yes_pct"],
+            },
+            {
+                "metric": "Has reserves %",
+                "source": "WaveContext (headline_kpis.financial_health.has_financial_reserves_pct)",
+                "value": wave2_ctx.headline_kpis.financial_health.has_financial_reserves_pct,
+            },
+            {
+                "metric": "Using reserves (of those with reserves) %",
+                "source": "EDA (using_reserves_pct)",
+                "value": wf["using_reserves_pct"],
+            },
+            {
+                "metric": "Using reserves (of those with reserves) %",
+                "source": "WaveContext (headline_kpis.financial_health.using_reserves_among_those_with_reserves_pct)",
+                "value": wave2_ctx.headline_kpis.financial_health.using_reserves_among_those_with_reserves_pct,
+            },
+        ]
+
+        debug_df = pd.DataFrame(debug_rows)
+
+        # Add a simple match flag (EDA vs WaveContext) within each metric
+        tolerance = 0.5  # allowed absolute difference for rounding
+        debug_df["match"] = ""
+        for metric_name in debug_df["metric"].unique():
+            subset = debug_df[debug_df["metric"] == metric_name]
+            if len(subset) == 2:
+                v1, v2 = subset["value"].iloc[0], subset["value"].iloc[1]
+                ok = abs(float(v1) - float(v2)) <= tolerance
+                debug_df.loc[subset.index, "match"] = ok
+        st.dataframe(debug_df, hide_index=True, width="stretch")
+        st.caption(
+            "EDA aggregates and WaveContext values should match (aside from integer rounding). "
+            "The 'match' column shows whether values agree within a small tolerance; "
+            "if it is False, it indicates a mapping or transformation issue."
+        )
+
+
+# =========================================================================
+# PAGE 6: Workforce & Operations
 # =========================================================================
 elif page == "Workforce & Operations":
     st.title("Workforce & Operations")
@@ -634,7 +876,7 @@ elif page == "Workforce & Operations":
 
 
 # =========================================================================
-# PAGE 5: Demographics & Types
+# PAGE 7: Demographics & Types
 # =========================================================================
 elif page == "Demographics & Types":
     st.title("Volunteer Demographics & Volunteering Types")
@@ -696,7 +938,7 @@ elif page == "Demographics & Types":
 
 
 # =========================================================================
-# PAGE 6: Earned Settlement
+# PAGE 8: Earned Settlement
 # =========================================================================
 elif page == "Earned Settlement":
     st.title("Earned Settlement Policy")
@@ -736,7 +978,7 @@ elif page == "Earned Settlement":
 
 
 # =========================================================================
-# PAGE 7: Executive Summary
+# PAGE 9: Executive Summary
 # =========================================================================
 elif page == "Executive Summary":
     st.title("Executive Summary — Key Findings")
@@ -859,7 +1101,7 @@ elif page == "Executive Summary":
 
 
 # =========================================================================
-# PAGE 8: Data Notes
+# PAGE 10: Data Notes
 # =========================================================================
 elif page == "Data Notes":
     st.title("Data Notes & Methodology")
