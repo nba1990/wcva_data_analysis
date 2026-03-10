@@ -16,12 +16,25 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.data_loader import load_dataset, data_quality_profile
 from src.config import (
-    DEMAND_ORDER, DIFFICULTY_ORDER, EARNED_SETTLEMENT_ORDER,
-    EXPECT_DEMAND_ORDER, EXPECT_FINANCIAL_ORDER,
-    FINANCIAL_ORDER, K_ANON_THRESHOLD, OPERATING_ORDER,
-    VOL_OBJECTIVES_ORDER, VOL_TYPEUSE_ORDER, WCVA_BRAND, ORG_SIZE_ORDER,
-    YES_NO_ORDER, SEVERITY_COLOURS, AltTextConfig, resolve_grouping,
-    CHART_FONT_SIZE, CHART_TITLE_SIZE,
+    DEMAND_ORDER,
+    DIFFICULTY_ORDER,
+    EARNED_SETTLEMENT_ORDER,
+    EXPECT_DEMAND_ORDER,
+    EXPECT_FINANCIAL_ORDER,
+    FINANCIAL_ORDER,
+    K_ANON_THRESHOLD,
+    OPERATING_ORDER,
+    VOL_OBJECTIVES_ORDER,
+    VOL_TYPEUSE_ORDER,
+    WCVA_BRAND,
+    ORG_SIZE_ORDER,
+    YES_NO_ORDER,
+    SEVERITY_COLOURS,
+    AltTextConfig,
+    resolve_grouping,
+    CHART_FONT_SIZE,
+    CHART_TITLE_SIZE,
+    CONCERNS_LABELS,
 )
 from src.wave_context import (
     WAVE1_CONTEXT,
@@ -104,6 +117,15 @@ selected_la_scope = st.sidebar.selectbox("Local primary authority scope", la_sco
 activity_options = ["All"] + sorted(df_full["mainactivity"].dropna().unique().tolist())
 selected_activity = st.sidebar.selectbox("Main activity", activity_options)
 
+paid_staff_options = ["All", "Has paid staff", "No paid staff"]
+selected_paid_staff = st.sidebar.selectbox("Paid staff", paid_staff_options)
+
+concern_label_options = list(CONCERNS_LABELS.values())
+selected_concerns = st.sidebar.multiselect(
+    "Organisations that cited concern",
+    options=concern_label_options,
+)
+
 df = df_full.copy()
 
 # Apply filters (if selected, default is "All")
@@ -115,6 +137,20 @@ if selected_la_scope != "All":
     df = df[df["location_la_primary"] == selected_la_scope]
 if selected_activity != "All":
     df = df[df["mainactivity"] == selected_activity]
+if selected_paid_staff == "Has paid staff":
+    df = df[df["paidworkforce"] == "Yes"]
+elif selected_paid_staff == "No paid staff":
+    df = df[df["paidworkforce"] == "No"]
+
+if selected_concerns:
+    label_to_column = {v: k for k, v in CONCERNS_LABELS.items()}
+    concern_columns = [label_to_column[label] for label in selected_concerns if label in label_to_column]
+    if concern_columns:
+        mask = pd.Series(False, index=df.index)
+        for col in concern_columns:
+            if col in df.columns:
+                mask = mask | df[col].notna()
+        df = df[mask]
 
 n = len(df)
 suppressed = n < K_ANON_THRESHOLD
@@ -202,11 +238,136 @@ if page == "At-a-Glance":
     rec = volunteer_recruitment_analysis(df)
     ret = volunteer_retention_analysis(df)
 
-    render_at_a_glance_infographic(n, dem, rec, ret)
+    # Enrich the infographic inputs with previous-wave benchmarks so that
+    # trend arrows and colours reflect the longer-term direction of travel.
+    # These benchmarks are wave-level (all organisations) rather than
+    # filter-specific, so they provide a stable reference even when filters
+    # are applied.
+    registry = get_wave_registry()
+    first_wave, latest_wave = registry.first_and_latest()
+
+    dem["demand_pct_increased_prev"] = first_wave.demand.headline.increasing_demand_for_services_pct
+    dem["financial_pct_deteriorated_prev"] = (
+        first_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
+    )
+
+    too_few_prev = first_wave.workforce.headline.too_few_volunteers_pct
+    rec_diff_prev = first_wave.workforce.headline.face_volunteer_recruitment_difficulties_pct
+    ret_diff_prev = first_wave.workforce.headline.face_volunteer_retention_difficulties_pct
+
+    # Only attach previous values where a benchmark exists; this keeps the
+    # infographic robust even if earlier waves lack a particular metric.
+    if too_few_prev is not None:
+        rec["pct_too_few_prev"] = too_few_prev
+    if rec_diff_prev is not None:
+        rec["pct_difficulty_prev"] = rec_diff_prev
+    if ret_diff_prev is not None:
+        ret["pct_difficulty_prev"] = ret_diff_prev
+
+    render_at_a_glance_infographic(
+        n,
+        dem,
+        rec,
+        ret,
+        height=720,
+        accessible=accessible_mode,
+    )
     st.caption(
         "Poster-style summary of how rising demand, finances, and volunteer gaps "
-        "interact in this filtered view of the survey."
+        "interact in this filtered view of the survey. "
+        "Arrows compare this picture with the previous wave; colours and short labels "
+        "indicate whether each percentage is relatively positive, mixed, or a high concern."
     )
+
+    # Optional context strip: explicit Wave 1 vs latest-wave percentages for
+    # the same indicators that drive the infographic cards. This keeps the
+    # cards clean but gives readers a transparent audit trail for the arrows.
+    def _delta_arrow(old: int, new: int, *, higher_is_good: bool) -> str:
+        """Return a coloured arrow HTML snippet mirroring the infographic logic."""
+        delta = new - old
+        if abs(delta) < 1:
+            return f"<span style='color:{WCVA_BRAND['mid_grey']}'>●</span>"
+
+        went_up = delta > 0
+        is_positive_change = went_up if higher_is_good else not went_up
+        symbol = "▲" if is_positive_change else "▼"
+        colour = WCVA_BRAND["amber"] if is_positive_change else WCVA_BRAND["coral"]
+        sign = "+" if delta > 0 else ""
+        return (
+            f"<span style='color:{colour};font-weight:700'>{symbol}</span> "
+            f"({sign}{delta} pts)"
+        )
+
+    with st.expander("Wave 1 vs latest wave context for these headline indicators"):
+        d_old = first_wave.demand.headline.increasing_demand_for_services_pct
+        d_new = latest_wave.demand.headline.increasing_demand_for_services_pct
+
+        f_old = first_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
+        f_new = latest_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
+
+        tf_old = first_wave.workforce.headline.too_few_volunteers_pct
+        tf_new = latest_wave.workforce.headline.too_few_volunteers_pct
+
+        rec_old = first_wave.workforce.headline.face_volunteer_recruitment_difficulties_pct
+        rec_new = latest_wave.workforce.headline.face_volunteer_recruitment_difficulties_pct
+
+        ret_old = first_wave.workforce.headline.face_volunteer_retention_difficulties_pct
+        ret_new = latest_wave.workforce.headline.face_volunteer_retention_difficulties_pct
+
+        # All of these are "pressure" metrics where higher values are concerning.
+        bullets = [
+            (
+                "Demand increased",
+                d_old,
+                d_new,
+                _delta_arrow(d_old, d_new, higher_is_good=False),
+            ),
+            (
+                "Finances deteriorated",
+                f_old,
+                f_new,
+                _delta_arrow(f_old, f_new, higher_is_good=False),
+            ),
+        ]
+
+        if tf_old is not None and tf_new is not None:
+            bullets.append(
+                (
+                    "Too few volunteers",
+                    tf_old,
+                    tf_new,
+                    _delta_arrow(tf_old, tf_new, higher_is_good=False),
+                )
+            )
+        bullets.append(
+            (
+                "Recruitment difficult",
+                rec_old,
+                rec_new,
+                _delta_arrow(rec_old, rec_new, higher_is_good=False),
+            )
+        )
+        bullets.append(
+            (
+                "Retention difficult",
+                ret_old,
+                ret_new,
+                _delta_arrow(ret_old, ret_new, higher_is_good=False),
+            )
+        )
+
+        lines = []
+        for label, old, new, arrow_html in bullets:
+            lines.append(
+                f"<li><strong>{label}</strong>: Wave 1 {old}% → latest wave {new}% {arrow_html}</li>"
+            )
+
+        st.markdown(
+            "<ul style='margin-top:4px;padding-left:18px;font-size:0.9rem;color:#333;'>"
+            + "".join(lines)
+            + "</ul>",
+            unsafe_allow_html=True,
+        )
 
     st.info(
         "These infographic headline percentages are drawn directly from the same aggregates used "
@@ -292,6 +453,9 @@ elif page == "Overview":
         st.stop()
 
     dem = demand_and_outlook(df)
+    wf_overview = workforce_operations(df)
+    rec_overview = volunteer_recruitment_analysis(df)
+    ret_overview = volunteer_retention_analysis(df)
 
     cols = st.columns(4)
     cols[0].markdown(kpi_card_html("Organisations", str(n), colour=WCVA_BRAND["teal"]), unsafe_allow_html=True)
@@ -306,6 +470,97 @@ elif page == "Overview":
         "the **Demand & Outlook** aggregates shown further down this page; they share the same base and "
         "filters as the stacked bar charts for recent experience and expectations."
     )
+
+    # Workforce coverage headline row (aligned with WaveContext.WorkforceHeadline)
+    st.divider()
+    st.subheader("Workforce coverage at a glance")
+    wc_cols = st.columns(3)
+    prof_wc = prof
+    wc_cols[0].markdown(
+        kpi_card_html(
+            "Has volunteers",
+            f"{prof_wc['has_volunteers_pct']}%",
+            colour=WCVA_BRAND["green"],
+        ),
+        unsafe_allow_html=True,
+    )
+    wc_cols[1].markdown(
+        kpi_card_html(
+            "Has paid staff",
+            f"{prof_wc['has_paid_staff_pct']}%",
+            colour=WCVA_BRAND["teal"],
+        ),
+        unsafe_allow_html=True,
+    )
+    wc_cols[2].markdown(
+        kpi_card_html(
+            "Too few volunteers",
+            f"{rec_overview['pct_too_few']}%",
+            colour=WCVA_BRAND["coral"],
+        ),
+        unsafe_allow_html=True,
+    )
+
+    wc_cols2 = st.columns(3)
+    wc_cols2[0].markdown(
+        kpi_card_html(
+            "Staff recruitment difficulty",
+            f"{wf_overview['staff_rec_difficulty_pct']:.1f}%",
+            colour=WCVA_BRAND["coral"],
+        ),
+        unsafe_allow_html=True,
+    )
+    wc_cols2[1].markdown(
+        kpi_card_html(
+            "Staff retention difficulty",
+            f"{wf_overview['staff_ret_difficulty_pct']:.1f}%",
+            colour=WCVA_BRAND["amber"],
+        ),
+        unsafe_allow_html=True,
+    )
+    wc_cols2[2].markdown(
+        kpi_card_html(
+            "Volunteer recruitment difficulty",
+            f"{wf_overview['vol_rec_difficulty_pct']:.1f}%",
+            colour=WCVA_BRAND["coral"],
+        ),
+        unsafe_allow_html=True,
+    )
+
+    # Distribution of paid staff numbers (among organisations with paid staff)
+    staff_with_paid = df[df["paidworkforce"] == "Yes"]["peopleemploy"].dropna()
+    if not staff_with_paid.empty:
+        st.divider()
+        st.subheader("Number of paid staff employed (organisations with paid staff)")
+        # Simple banding scheme, aligned with the idea of small / medium / larger workforces.
+        # Bin edges must be one longer than labels; we start bands at 1 because zero employees
+        # are excluded by the paidworkforce == "Yes" filter and the dropna() above.
+        bins = [1, 6, 21, 51, 251, float("inf")]
+        labels = ["1–5", "6–20", "21–50", "51–250", "251+"]
+        band_series = pd.cut(staff_with_paid, bins=bins, labels=labels, right=False)
+        band_counts = band_series.value_counts().reindex(labels).fillna(0).astype(int)
+        staff_base = int(band_counts.sum())
+        bands_df = (
+            pd.DataFrame(
+                {
+                    "Band": band_counts.index,
+                    "Count": band_counts.values,
+                }
+            )
+            .query("Count > 0")
+            .reset_index(drop=True)
+        )
+        if not bands_df.empty:
+            bands_df["pct"] = (bands_df["Count"] / max(staff_base, 1) * 100).round(1)
+            fig_staff = horizontal_bar_ranked(
+                bands_df,
+                "Band",
+                "Count",
+                "Distribution of paid staff numbers (only organisations with paid staff)",
+                staff_base,
+                mode=palette_mode,
+            )
+            show_chart(fig_staff, "overview_staff_bands", bands_df[["Band", "Count", "pct"]])
 
     # Cross-wave headline trend (Wave 1 vs Wave 2)
     with st.expander("Wave-to-wave headline trend (all organisations)"):
@@ -342,6 +597,28 @@ elif page == "Overview":
         lf = prof["legalform"]
         fig = donut_chart(list(lf.keys()), list(lf.values()), "Legal form distribution", n, mode=palette_mode)
         show_chart(fig, "overview_legalform", pd.DataFrame(lf.items(), columns=["Form", "Count"]))
+
+    st.divider()
+    st.subheader("Main activities of participating organisations")
+    main_activities = prof["mainactivity"]
+    if main_activities:
+        ma_df = (
+            pd.DataFrame(main_activities.items(), columns=["Activity", "Count"])
+            .sort_values("Count", ascending=False)
+            .reset_index(drop=True)
+        )
+        ma_df["pct"] = (ma_df["Count"] / max(n, 1) * 100).round(1)
+        fig = horizontal_bar_ranked(
+            ma_df,
+            "Activity",
+            "Count",
+            "Main activities of participating organisations",
+            n,
+            mode=palette_mode,
+        )
+        show_chart(fig, "overview_mainactivity", ma_df[["Activity", "Count", "pct"]])
+    else:
+        st.caption("No main activity data available for this filtered view.")
 
     st.divider()
     st.subheader("Geographic Distribution of Respondents")
@@ -880,6 +1157,25 @@ elif page == "Trends & Waves":
                     data_df=mdf[["wave_label", "wave_number", "wave_n", "value"]],
                 )
 
+    # Static Wave 1 income & expenditure breakdown (non-interactive benchmark)
+    st.divider()
+    st.subheader("Wave 1 income and expenditure breakdown (static benchmark)")
+    wave1_ctx = registry.get("Wave 1")
+    with st.expander("Show Wave 1 income and expenditure tables (unfiltered)"):
+        income_sources = pd.DataFrame(
+            list(wave1_ctx.finance.income_breakdown.sources_pct.items()),
+            columns=["Income source", "Percent of organisations"],
+        ).sort_values("Percent of organisations", ascending=False)
+        st.markdown("**Income by funding source (Wave 1)**")
+        st.dataframe(income_sources, hide_index=True, width="stretch")
+
+        exp_categories = pd.DataFrame(
+            list(wave1_ctx.finance.expenditure_breakdown.categories_pct.items()),
+            columns=["Cost category", "Percent of expenditure"],
+        ).sort_values("Percent of expenditure", ascending=False)
+        st.markdown("**Expenditure by cost category (Wave 1)**")
+        st.dataframe(exp_categories, hide_index=True, width="stretch")
+
     st.divider()
     st.subheader("Debug: EDA vs WaveContext (Wave 2)")
 
@@ -1053,6 +1349,22 @@ elif page == "Concerns & Risks":
         "about income, increasing demand, recruitment and retention concerns, and the "
         "operational impact of rising costs and shortages."
     )
+
+    # Top three concerns as headline cards (matches reference top-cards style)
+    if not wf["concerns"].empty:
+        top_concerns = wf["concerns"].head(3).reset_index(drop=True)
+        card_cols = st.columns(len(top_concerns))
+        for idx, row in top_concerns.iterrows():
+            label = str(row["label"])
+            pct = row["pct"]
+            card_cols[idx].markdown(
+                kpi_card_html(
+                    label,
+                    f"{pct}%",
+                    colour=WCVA_BRAND["amber"] if idx == 0 else WCVA_BRAND["teal"],
+                ),
+                unsafe_allow_html=True,
+            )
 
     st.divider()
     st.subheader("Operational Concerns (current wave / filtered view)")
