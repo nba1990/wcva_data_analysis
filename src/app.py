@@ -458,18 +458,72 @@ elif page == "Overview":
     ret_overview = volunteer_retention_analysis(df)
 
     cols = st.columns(4)
-    cols[0].markdown(kpi_card_html("Organisations", str(n), colour=WCVA_BRAND["teal"]), unsafe_allow_html=True)
-    cols[1].markdown(kpi_card_html("Demand increasing", f"{dem['demand_pct_increased']}%", colour=WCVA_BRAND["amber"]), unsafe_allow_html=True)
-    cols[2].markdown(kpi_card_html("Finances deteriorated", f"{dem['financial_pct_deteriorated']}%", colour=WCVA_BRAND["coral"]), unsafe_allow_html=True)
-    cols[3].markdown(kpi_card_html("Likely operating next yr", f"{dem['operating_pct_likely']}%", colour=WCVA_BRAND["teal"]), unsafe_allow_html=True)
+    cols[0].markdown(
+        kpi_card_html("Organisations", str(n), colour=WCVA_BRAND["teal"]),
+        unsafe_allow_html=True,
+    )
+    cols[1].markdown(
+        kpi_card_html("Demand increasing", f"{dem['demand_pct_increased']}%", colour=WCVA_BRAND["amber"]),
+        unsafe_allow_html=True,
+    )
+    cols[2].markdown(
+        kpi_card_html(
+            "Financial position deteriorated (last 3 months)",
+            f"{dem['financial_pct_deteriorated']}%",
+            colour=WCVA_BRAND["coral"],
+        ),
+        unsafe_allow_html=True,
+    )
+    cols[3].markdown(
+        kpi_card_html("Likely operating next yr", f"{dem['operating_pct_likely']}%", colour=WCVA_BRAND["teal"]),
+        unsafe_allow_html=True,
+    )
 
     st.divider()
 
-    st.info(
-        "The overview KPI tiles for demand, finances and likelihood of operating are calculated from "
-        "the **Demand & Outlook** aggregates shown further down this page; they share the same base and "
-        "filters as the stacked bar charts for recent experience and expectations."
-    )
+    # Explicit audit trail for the headline Overview KPIs
+    with st.expander("Show how these overview KPIs are calculated"):
+        demand_inc_count = int(df["demand_direction"].eq("Increased").sum())
+        demand_base = int(df["demand_direction"].notna().sum())
+        finance_det_count = int(df["financial_direction"].eq("Deteriorated").sum())
+        finance_base = int(df["financial_direction"].notna().sum())
+        operating_likely_count = int(
+            df["operating"].isin(["Very likely", "Quite likely"]).sum()
+        )
+        operating_base = int(df["operating"].notna().sum())
+
+        overview_rows = [
+            {
+                "Metric": "Demand increasing",
+                "Column / question": "demand_direction",
+                "Numerator (count)": demand_inc_count,
+                "Denominator (answered)": demand_base,
+                "Percentage": dem["demand_pct_increased"],
+            },
+            {
+                "Metric": "Financial position deteriorated (last 3 months)",
+                "Column / question": "financial_direction",
+                "Numerator (count)": finance_det_count,
+                "Denominator (answered)": finance_base,
+                "Percentage": dem["financial_pct_deteriorated"],
+            },
+            {
+                "Metric": "Likely operating next yr",
+                "Column / question": "operating",
+                "Numerator (count)": operating_likely_count,
+                "Denominator (answered)": operating_base,
+                "Percentage": dem["operating_pct_likely"],
+            },
+        ]
+        overview_df = pd.DataFrame(overview_rows)
+
+        st.markdown(
+            "- **Overview headline KPIs**  \n"
+            "  - These tiles use the same non-missing base as the stacked bar charts in the **Recent Experience** "
+            "and **Looking Ahead** sections below.  \n"
+            "  - The table shows the exact counts and bases used for each percentage."
+        )
+        st.dataframe(overview_df, hide_index=True, width="stretch")
 
     # Workforce coverage headline row (aligned with WaveContext.WorkforceHeadline)
     st.divider()
@@ -833,6 +887,53 @@ elif page == "Volunteer Recruitment":
     )
 
     st.divider()
+
+    # Audit trail for recruitment KPIs (difficulty and explicit shortage)
+    with st.expander("Show how these recruitment KPIs are calculated"):
+        # Difficulty: Likert-based, non-missing vol_rec base
+        vol_rec_series = df["vol_rec"]
+        diff_base = int(vol_rec_series.notna().sum())
+        diff_hard = int(
+            vol_rec_series.isin(["Somewhat difficult", "Extremely difficult"]).sum()
+        )
+        # Explicit shortage: shortage_vol_rec True among those with a recorded value
+        if "shortage_vol_rec" in df.columns:
+            shortage_series = df["shortage_vol_rec"]
+            shortage_base = int(shortage_series.notna().sum())
+            shortage_yes = int((shortage_series == "Yes").sum())
+        else:
+            shortage_base = 0
+            shortage_yes = 0
+
+        rec_rows = [
+            {
+                "Metric": "Find recruitment somewhat / very difficult",
+                "Column / question": "vol_rec (Likert)",
+                "Response(s) counted": "Somewhat difficult, Extremely difficult",
+                "Numerator (count)": diff_hard,
+                "Denominator (answered)": diff_base,
+                "Percentage": rec["pct_difficulty"],
+            },
+            {
+                "Metric": "Report shortage recruiting volunteers",
+                "Column / question": "shortage_vol_rec",
+                "Response(s) counted": "Yes",
+                "Numerator (count)": shortage_yes,
+                "Denominator (answered)": shortage_base,
+                "Percentage": rec["pct_shortage"],
+            },
+        ]
+        rec_df = pd.DataFrame(rec_rows)
+
+        st.markdown(
+            "- **Recruitment KPIs**  \n"
+            "  - The **difficulty** percentage uses only organisations that answered the Likert-scale `vol_rec` "
+            "question; the base matches the **Recruitment Difficulty** chart.  \n"
+            "  - The **shortage** percentage uses the binary `shortage_vol_rec` question, with its own non-missing "
+            "base.  \n"
+            "  - The table below shows the exact counts and bases used."
+        )
+        st.dataframe(rec_df, hide_index=True, width="stretch")
     alt_config = AltTextConfig(value_col="value", count_col="count", pct_col="pct", sample_size=n)
     col1, col2 = st.columns(2)
     with col1:
@@ -972,6 +1073,50 @@ elif page == "Volunteer Retention":
     )
 
     st.divider()
+
+    # Audit trail for retention KPIs (difficulty and explicit shortage)
+    with st.expander("Show how these retention KPIs are calculated"):
+        vol_ret_series = df["vol_ret"]
+        diff_base = int(vol_ret_series.notna().sum())
+        diff_hard = int(
+            vol_ret_series.isin(["Somewhat difficult", "Extremely difficult"]).sum()
+        )
+        if "shortage_vol_ret" in df.columns:
+            shortage_series = df["shortage_vol_ret"]
+            shortage_base = int(shortage_series.notna().sum())
+            shortage_yes = int((shortage_series == "Yes").sum())
+        else:
+            shortage_base = 0
+            shortage_yes = 0
+
+        ret_rows = [
+            {
+                "Metric": "Find retention somewhat / very difficult",
+                "Column / question": "vol_ret (Likert)",
+                "Response(s) counted": "Somewhat difficult, Extremely difficult",
+                "Numerator (count)": diff_hard,
+                "Denominator (answered)": diff_base,
+                "Percentage": ret["pct_difficulty"],
+            },
+            {
+                "Metric": "Report shortage retaining volunteers",
+                "Column / question": "shortage_vol_ret",
+                "Response(s) counted": "Yes",
+                "Numerator (count)": shortage_yes,
+                "Denominator (answered)": shortage_base,
+                "Percentage": ret["pct_shortage"],
+            },
+        ]
+        ret_df = pd.DataFrame(ret_rows)
+
+        st.markdown(
+            "- **Retention KPIs**  \n"
+            "  - The **difficulty** percentage uses only organisations that answered the Likert-scale `vol_ret` "
+            "question; the base matches the **Retention Difficulty** chart on this page.  \n"
+            "  - The **shortage** percentage uses the binary `shortage_vol_ret` question.  \n"
+            "  - The table below shows the exact counts and bases used."
+        )
+        st.dataframe(ret_df, hide_index=True, width="stretch")
 
     st.subheader("Retention Barriers")
     fig = horizontal_bar_ranked(ret["ret_barriers"], "label", "count", "Volunteers leave for life reasons; not dissatisfaction", n, mode=palette_mode)
@@ -1273,12 +1418,111 @@ elif page == "Workforce & Operations":
     )
 
     cols = st.columns(4)
-    cols[0].markdown(kpi_card_html("Finances deteriorated", f"{wf['finance_deteriorated_pct']}%", colour=WCVA_BRAND["coral"]), unsafe_allow_html=True)
-    cols[1].markdown(kpi_card_html("Have reserves", f"{wf['reserves_yes_pct']}%", colour=WCVA_BRAND["teal"]), unsafe_allow_html=True)
-    cols[2].markdown(kpi_card_html("Using reserves", f"{wf['using_reserves_pct']}%", delta="of those with reserves", colour=WCVA_BRAND["amber"]), unsafe_allow_html=True)
-    cols[3].markdown(kpi_card_html("Median reserves", f"{wf['median_months_reserves']:.0f} months" if pd.notna(wf['median_months_reserves']) else "N/A", colour=WCVA_BRAND["blue"]), unsafe_allow_html=True)
+    cols[0].markdown(
+        kpi_card_html(
+            "Finances deteriorated due to rising costs",
+            f"{wf['finance_deteriorated_pct']}%",
+            colour=WCVA_BRAND["coral"],
+        ),
+        unsafe_allow_html=True,
+    )
+    cols[1].markdown(
+        kpi_card_html("Have reserves", f"{wf['reserves_yes_pct']}%", colour=WCVA_BRAND["teal"]),
+        unsafe_allow_html=True,
+    )
+    cols[2].markdown(
+        kpi_card_html(
+            "Using reserves",
+            f"{wf['using_reserves_pct']}%",
+            delta="of those with reserves",
+            colour=WCVA_BRAND["amber"],
+        ),
+        unsafe_allow_html=True,
+    )
+    cols[3].markdown(
+        kpi_card_html(
+            "Median reserves",
+            f"{wf['median_months_reserves']:.0f} months" if pd.notna(wf['median_months_reserves']) else "N/A",
+            colour=WCVA_BRAND["blue"],
+        ),
+        unsafe_allow_html=True,
+    )
 
     st.divider()
+
+    # Audit trail for finance & reserves KPIs on this page
+    with st.expander("Show how these finance and reserves KPIs are calculated"):
+        finance_series = df.get("financedeteriorate")
+        if finance_series is not None:
+            finance_base = int(finance_series.notna().sum())
+            finance_yes = int((finance_series == "Yes").sum())
+        else:
+            finance_base = 0
+            finance_yes = 0
+
+        reserves_series = df.get("reserves")
+        if reserves_series is not None:
+            reserves_base = int(reserves_series.notna().sum())
+            reserves_yes = int((reserves_series == "Yes").sum())
+        else:
+            reserves_base = 0
+            reserves_yes = 0
+
+        # Using reserves is recorded in the same way as the EDA function:
+        # column name `usingreserves`, with the percentage calculated among
+        # organisations that have reserves (`reserves == "Yes"`).
+        using_reserves_series = df.get("usingreserves")
+        if using_reserves_series is not None and reserves_series is not None:
+            has_reserves_mask = reserves_series == "Yes"
+            using_base_with_reserves = int(has_reserves_mask.sum())
+            using_answered_base = int(using_reserves_series.notna().sum())
+            using_yes = int(
+                using_reserves_series[has_reserves_mask].eq("Yes").sum()
+            )
+        else:
+            using_base_with_reserves = 0
+            using_answered_base = 0
+            using_yes = 0
+
+        wf_rows = [
+            {
+                "Metric": "Finances deteriorated due to rising costs",
+                "Column / question": "financedeteriorate",
+                "Response(s) counted": "Yes",
+                "Numerator (count)": finance_yes,
+                "Denominator (answered)": finance_base,
+                "Denominator (with reserves)": "",
+                "Percentage": wf["finance_deteriorated_pct"],
+            },
+            {
+                "Metric": "Have reserves",
+                "Column / question": "reserves",
+                "Response(s) counted": "Yes",
+                "Numerator (count)": reserves_yes,
+                "Denominator (answered)": reserves_base,
+                "Denominator (with reserves)": "",
+                "Percentage": wf["reserves_yes_pct"],
+            },
+            {
+                "Metric": "Using reserves (of those with reserves)",
+                "Column / question": "usingreserves",
+                "Response(s) counted": "Yes (among reserves == 'Yes')",
+                "Numerator (count)": using_yes,
+                "Denominator (answered)": using_answered_base,
+                "Denominator (with reserves)": using_base_with_reserves,
+                "Percentage": wf["using_reserves_pct"],
+            },
+        ]
+        wf_df = pd.DataFrame(wf_rows)
+
+        st.markdown(
+            "- **Finance and reserves KPIs**  \n"
+            "  - These percentages are calculated directly from the `financedeteriorate`, `reserves` and "
+            "`using_reserves` questions that also underpin the **Actions Taken Due to Rising Costs** chart and "
+            "the executive summary finance highlights.  \n"
+            "  - The table shows the exact counts and bases used for each tile."
+        )
+        st.dataframe(wf_df, hide_index=True, width="stretch")
 
     st.subheader("Top 3 Concerns")
     fig = horizontal_bar_ranked(wf["concerns"], "label", "count", "Income dominates concerns, with demand and volunteer recruitment close behind", n, mode=palette_mode)
@@ -1654,6 +1898,7 @@ elif page == "Executive Summary":
         "It is not all about headlines; distributions by organisation type and smaller response categories are also informative."
     )
 
+    # Executive highlights for this (possibly filtered) view
     highlights = executive_highlights(df)
 
     for h in highlights:
@@ -1673,6 +1918,114 @@ elif page == "Executive Summary":
             f"{cross['pct_rec_difficulty_if_finance_deteriorated']}% find recruitment difficult, compared with "
             f"{cross['pct_rec_difficulty_if_finance_not_deteriorated']}% among those whose finances have not deteriorated."
         )
+
+    # Explicit audit trail for how the headline metrics are calculated (filtered-aware)
+    with st.expander("Show detailed calculations for these executive highlights"):
+        dem_exec = demand_and_outlook(df)
+        rec_exec = volunteer_recruitment_analysis(df)
+        ret_exec = volunteer_retention_analysis(df)
+        wf_exec = workforce_operations(df)
+        cross_exec = finance_recruitment_cross(df)
+
+        n_base = len(df)
+        demand_count = int(df["demand_direction"].eq("Increased").sum())
+        finance_det_count = int(df["financial_direction"].eq("Deteriorated").sum())
+        volobj_base = int(df["volobjectives"].notna().sum())
+        too_few_count = int(df["volobjectives"].isin(["Slightly too few volunteers", "Significantly too few volunteers"]).sum())
+        vol_rec_base = int(df["vol_rec"].notna().sum())
+        vol_rec_hard_count = int(df["vol_rec"].isin(["Somewhat difficult", "Extremely difficult"]).sum())
+        finance_rising_count = int(df["finance_deteriorated"].sum())
+        unplanned_row = wf_exec["actions"][wf_exec["actions"]["label"] == "Unplanned use of reserves"]
+        unplanned_count = int(unplanned_row["count"].iloc[0]) if not unplanned_row.empty else 0
+
+        st.caption(
+            "All values below use the current filtered dataset (n = " + str(n_base) + " organisations). "
+            "Changing sidebar filters updates these numbers. Each metric appears in at least one chart or table on the dashboard."
+        )
+
+        st.markdown(
+            "- **Demand vs finances (Highlight #2)**  \n"
+            f"  - **demand_pct_increased**: organisations where `demand_direction == \"Increased\"` (from the `demand` Likert question).  \n"
+            f"    Formula: **{demand_count} / {n_base} = {dem_exec['demand_pct_increased']}%**.  \n"
+            f"    _Shown in: Overview page — top KPI tile \"Demand increasing\" and the stacked bar \"Demand for services has mostly increased\" (Recent Experience)._  \n"
+            f"  - **financial_pct_deteriorated**: organisations where `financial_direction == \"Deteriorated\"` (from the `financial` Likert question).  \n"
+            f"    Formula: **{finance_det_count} / {n_base} = {dem_exec['financial_pct_deteriorated']}%**.  \n"
+            f"    _Shown in: Overview page — KPI tile \"Financial position deteriorated (last 3 months)\" and the stacked bar \"Finances mostly unchanged...\" (Recent Experience); At-a-Glance infographic._"
+        )
+
+        st.markdown(
+            "- **Volunteer gaps and recruitment difficulty (Highlight #3)**  \n"
+            f"  - **pct_too_few**: organisations who answered `volobjectives` and selected *Slightly too few* or *Significantly too few volunteers*.  \n"
+            f"    Formula: **{too_few_count} / {volobj_base} = {rec_exec['pct_too_few']}%** (base = those who answered the question).  \n"
+            f"    _Shown in: Volunteer Recruitment page — \"Volunteer Numbers vs. Need\" stacked bar and KPI tiles; At-a-Glance \"Key thematic metrics\" and infographic._  \n"
+            f"  - **pct_difficulty** (recruitment): organisations who answered `vol_rec` and selected *Somewhat difficult* or *Extremely difficult*.  \n"
+            f"    Formula: **{vol_rec_hard_count} / {vol_rec_base} = {rec_exec['pct_difficulty']}%** (base = those who answered the question).  \n"
+            f"    _Shown in: Volunteer Recruitment page — \"Recruitment Difficulty\" stacked bar and \"Find recruitment somewhat / very difficult\" KPI tile; At-a-Glance._"
+        )
+
+        st.markdown(
+            "- **Finances deteriorated due to rising costs (Highlight #6)**  \n"
+            f"  - **finance_deteriorated_pct**: organisations where `financedeteriorate == 'Yes'` (derived as `finance_deteriorated`).  \n"
+            f"    Formula: **{finance_rising_count} / {n_base} = {wf_exec['finance_deteriorated_pct']}%**.  \n"
+            f"    _Shown in: Workforce & Operations page — first KPI tile \"Finances deteriorated due to rising costs\"; Trends & Waves trend table._  \n"
+            f"  - **Unplanned use of reserves** (count used in the same highlight): organisations that selected this option in the actions multi-select.  \n"
+            f"    Count: **{unplanned_count}** organisations.  \n"
+            f"    _Shown in: Workforce & Operations and Concerns & Risks pages — \"Actions Taken Due to Rising Costs\" horizontal bar chart and data table._"
+        )
+
+        if cross_exec:
+            det_ans = df["financial_direction"].eq("Deteriorated") & df["vol_rec"].notna()
+            not_det_ans = (
+                ~df["financial_direction"].eq("Deteriorated")
+            ) & df["financial_direction"].notna() & df["vol_rec"].notna()
+            rec_hard = df["vol_rec"].isin(["Somewhat difficult", "Extremely difficult"])
+            det_hard = int(rec_hard[det_ans].sum())
+            not_det_hard = int(rec_hard[not_det_ans].sum())
+            det_ans_n = int(det_ans.sum())
+            not_det_ans_n = int(not_det_ans.sum())
+            n_det = cross_exec["n_finance_deteriorated"]
+            n_not_det = cross_exec["n_finance_not_deteriorated"]
+
+            # Small audit-table so the raw counts are visible
+            cross_rows = [
+                {
+                    "Finance group": "Finances deteriorated",
+                    "Orgs in group (n)": n_det,
+                    "Answered recruitment (vol_rec)": det_ans_n,
+                    "Recruitment difficult (count)": det_hard,
+                },
+                {
+                    "Finance group": "Finances not deteriorated",
+                    "Orgs in group (n)": n_not_det,
+                    "Answered recruitment (vol_rec)": not_det_ans_n,
+                    "Recruitment difficult (count)": not_det_hard,
+                },
+            ]
+            # Let pandas infer dtypes (mix of string + integer columns)
+            cross_df = pd.DataFrame(cross_rows)
+
+            st.markdown(
+                "- **Finance–recruitment cross metric (optional Highlight #7 and info box)**  \n"
+                f"  - Highlight #7 reports **n={n_det} vs {n_not_det}**: the number of organisations in each finance group (finances deteriorated vs not).  \n"
+                "  - The percentages use only those who answered the recruitment difficulty question (`vol_rec`).  \n"
+                f"  - **Finances deteriorated** group: {n_det} organisations, {det_ans_n} answered `vol_rec` → **{det_hard} / {det_ans_n} = {cross_exec['pct_rec_difficulty_if_finance_deteriorated']}%** find recruitment difficult.  \n"
+                f"  - **Finances not deteriorated** group: {n_not_det} organisations, {not_det_ans_n} answered `vol_rec` → **{not_det_hard} / {not_det_ans_n} = {cross_exec['pct_rec_difficulty_if_finance_not_deteriorated']}%** find recruitment difficult.  \n"
+                "  - The difference between these two percentages underpins the statement that recruitment challenges are higher where finances have deteriorated.  \n"
+                "  _Components shown in: Overview / Workforce & Operations (finance tiles); Volunteer Recruitment page (\"Recruitment Difficulty\" chart and table — the difficulty count used here is split by finance group in this Executive Summary); Concerns & Risks (concerns chart). The cross comparison itself is only in this Executive Summary and the info box above._"
+            )
+
+            st.dataframe(
+                cross_df,
+                hide_index=True,
+                width="stretch",
+            )
+        else:
+            st.markdown(
+                "- **Finance–recruitment cross metric**  \n"
+                "  - Not shown here because the filtered sample is too small for a reliable comparison "
+                "(we require minimum counts in each finance group and among those answering the `vol_rec` question)."
+            )
+
 
     st.divider()
     st.subheader("Wave context across waves")

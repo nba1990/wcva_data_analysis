@@ -97,13 +97,25 @@ def count_multiselect(df: pd.DataFrame, label_dict: dict[str, str]) -> pd.DataFr
     rows = []
     for col in cols:
         count = df[col].notna().sum()
-        rows.append({
-            "column": col,
-            "label": label_dict[col],
-            "count": int(count),
-            "pct": round(100 * count / n, 1) if n else 0,
-        })
-    result = pd.DataFrame(rows).sort_values("count", ascending=False).reset_index(drop=True)
+        rows.append(
+            {
+                "column": col,
+                "label": label_dict[col],
+                "count": int(count),
+                "pct": round(100 * count / n, 1) if n else 0,
+            }
+        )
+
+    if not rows:
+        # Return an empty but well-formed frame so downstream code that expects
+        # 'label' / 'count' / 'pct' columns continues to work.
+        return pd.DataFrame(columns=["column", "label", "count", "pct"])
+
+    result = (
+        pd.DataFrame(rows)
+        .sort_values("count", ascending=False)
+        .reset_index(drop=True)
+    )
     return result
 
 

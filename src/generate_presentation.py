@@ -475,6 +475,36 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "alt_text": "",
         },
         {
+            "title": "How Key Numbers Are Calculated",
+            "subtitle": "Summary of bases and definitions",
+            "body": (
+                "<ul>"
+                "<li><strong>Demand increasing / finances deteriorated</strong>: "
+                "percentages based on all organisations answering the `demand_direction` "
+                "and `financial_direction` questions in the last 3 months.</li> <br>"
+                "<li><strong>Recruitment and retention difficult</strong>: "
+                "share of organisations selecting “Somewhat difficult” or "
+                "“Extremely difficult” on the Likert questions `vol_rec` and `vol_ret`, "
+                "using only those who answered each question.</li> <br>"
+                "<li><strong>Too few volunteers</strong>: "
+                "share of organisations whose `volobjectives` response is "
+                "“Slightly too few volunteers” or “Significantly too few volunteers”, "
+                "again using a non-missing base.</li> <br>"
+                "<li><strong>Finances deteriorated due to rising costs</strong>: "
+                "share of organisations answering `financedeteriorate` as “Yes”; "
+                "reserves and using-reserves percentages are calculated among those "
+                "answering `reserves` and, for using reserves, among those with reserves.</li> <br>"
+                "<li><strong>Finance–recruitment cross metric</strong>: "
+                "compares the share finding recruitment difficult (`vol_rec` somewhat / "
+                "extremely difficult) between organisations whose `financial_direction` "
+                "is “Deteriorated” and those whose finances have not deteriorated.</li>"
+                "</ul>"
+            ),
+            "chart": None,
+            "notes": "High-level methodology summary to support auditability of the main figures.",
+            "alt_text": "Bulleted list describing how the main percentages in the presentation are calculated and what bases they use.",
+        },
+        {
             "title": "Questions & Next Steps",
             "subtitle": "",
             "body": f"<p>Full interactive dashboard: <code>streamlit run src/app.py</code></p> <br>"

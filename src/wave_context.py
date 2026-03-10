@@ -407,20 +407,30 @@ def build_wave_context_from_df(
             return 0
         return int(round(row["pct"].iloc[0]))
 
-    income_row = concerns_df[concerns_df["label"] == "Income"].iloc[0]
-    inc_demand_row = concerns_df[concerns_df["label"] == "Increasing demand"].iloc[0]
-    inflation_row = concerns_df[concerns_df["label"] == "Inflation (non-energy)"].iloc[0]
+    if concerns_df.empty:
+        key_concerns_top_cards = KeyOrganisationalConcernsTopCards(
+            income_pct=0,
+            increasing_demand_for_services_pct=0,
+            inflation_goods_and_services_prices_other_than_energy_pct=0,
+        )
+        ranked_concerns: list[RankedConcern] = []
+    else:
+        income_row = concerns_df[concerns_df["label"] == "Income"].iloc[0]
+        inc_demand_row = concerns_df[concerns_df["label"] == "Increasing demand"].iloc[0]
+        inflation_row = concerns_df[concerns_df["label"] == "Inflation (non-energy)"].iloc[0]
 
-    key_concerns_top_cards = KeyOrganisationalConcernsTopCards(
-        income_pct=int(round(income_row["pct"])),
-        increasing_demand_for_services_pct=int(round(inc_demand_row["pct"])),
-        inflation_goods_and_services_prices_other_than_energy_pct=int(round(inflation_row["pct"])),
-    )
+        key_concerns_top_cards = KeyOrganisationalConcernsTopCards(
+            income_pct=int(round(income_row["pct"])),
+            increasing_demand_for_services_pct=int(round(inc_demand_row["pct"])),
+            inflation_goods_and_services_prices_other_than_energy_pct=int(round(
+                inflation_row["pct"]
+            )),
+        )
 
-    ranked_concerns = [
-        RankedConcern(rank=i + 1, concern=row["label"], pct=int(round(row["pct"])))
-        for i, row in concerns_df.reset_index(drop=True).iterrows()
-    ]
+        ranked_concerns = [
+            RankedConcern(rank=i + 1, concern=row["label"], pct=int(round(row["pct"])))
+            for i, row in concerns_df.reset_index(drop=True).iterrows()
+        ]
 
     key_organisational_concerns = KeyOrganisationalConcerns(
         section_title="Operational Challenges",

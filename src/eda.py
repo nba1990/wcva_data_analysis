@@ -93,12 +93,31 @@ def profile_summary(df: pd.DataFrame) -> dict:
 
     # Share of organisations reporting any volunteers.
     # We treat strictly positive volunteer counts as having volunteers.
-    has_volunteers_pct = round(
-        100
-        * (df["peoplevol"].fillna(0) > 0).sum()
-        / n,
-        1,
-    ) if n else 0
+    if "peoplevol" in df.columns and n:
+        has_volunteers_pct = round(
+            100 * (df["peoplevol"].fillna(0) > 0).sum() / n,
+            1,
+        )
+    else:
+        has_volunteers_pct = 0
+
+    # Some smaller test DataFrames may not include all profile columns;
+    # in that case we fall back to 0% rather than raising a KeyError.
+    if "socialenterprise" in df.columns and n:
+        social_enterprise_pct = round(
+            100 * (df["socialenterprise"] == "Yes").sum() / n,
+            1,
+        )
+    else:
+        social_enterprise_pct = 0
+
+    if "paidworkforce" in df.columns and n:
+        has_paid_staff_pct = round(
+            100 * (df["paidworkforce"] == "Yes").sum() / n,
+            1,
+        )
+    else:
+        has_paid_staff_pct = 0
 
     return {
         "n": n,
@@ -110,8 +129,8 @@ def profile_summary(df: pd.DataFrame) -> dict:
         "region_distribution": region_distribution,
         "la_context": la_merged.to_dict(orient="records"),
         "est_vcse_orgs": la_merged[["local_authority", "est_vcse_orgs"]],
-        "social_enterprise_pct": round(100 * (df["socialenterprise"] == "Yes").sum() / n, 1),
-        "has_paid_staff_pct": round(100 * (df["paidworkforce"] == "Yes").sum() / n, 1),
+        "social_enterprise_pct": social_enterprise_pct,
+        "has_paid_staff_pct": has_paid_staff_pct,
         "has_volunteers_pct": has_volunteers_pct,
         "median_employees": df["peopleemploy"].median(),
         "median_volunteers": df["peoplevol"].median(),
@@ -123,20 +142,50 @@ def profile_summary(df: pd.DataFrame) -> dict:
 # ---------------------------------------------------------------------------
 
 def demand_and_outlook(df: pd.DataFrame) -> dict:
+    """
+    Aggregates for demand, finances, and operating outlook.
+
+    For percentage fields we guard against empty inputs by returning 0.0
+    rather than propagating NaNs from 0/0 divisions. This keeps KPI tiles
+    and tests stable when filters remove all rows.
+    """
+    n = len(df)
+
+    demand = _value_counts_ordered(df["demand"], DEMAND_ORDER) if "demand" in df.columns else _value_counts_ordered(pd.Series(dtype="object"), DEMAND_ORDER)  # type: ignore[arg-type]  # noqa: E501
+    financial = _value_counts_ordered(df["financial"], FINANCIAL_ORDER) if "financial" in df.columns else _value_counts_ordered(pd.Series(dtype="object"), FINANCIAL_ORDER)  # type: ignore[arg-type]  # noqa: E501
+    operating = _value_counts_ordered(df["operating"], OPERATING_ORDER) if "operating" in df.columns else _value_counts_ordered(pd.Series(dtype="object"), OPERATING_ORDER)  # type: ignore[arg-type]  # noqa: E501
+    workforce_change = _value_counts_ordered(df["workforce"], DEMAND_ORDER) if "workforce" in df.columns else _value_counts_ordered(pd.Series(dtype="object"), DEMAND_ORDER)  # type: ignore[arg-type]  # noqa: E501
+    expect_demand = _value_counts_ordered(df["expectdemand"], EXPECT_DEMAND_ORDER) if "expectdemand" in df.columns else _value_counts_ordered(pd.Series(dtype="object"), EXPECT_DEMAND_ORDER)  # type: ignore[arg-type]  # noqa: E501
+    expect_financial = _value_counts_ordered(df["expectfinancial"], EXPECT_FINANCIAL_ORDER) if "expectfinancial" in df.columns else _value_counts_ordered(pd.Series(dtype="object"), EXPECT_FINANCIAL_ORDER)  # type: ignore[arg-type]  # noqa: E501
+
+    if n == 0:
+        demand_pct_increased = 0.0
+        financial_pct_deteriorated = 0.0
+        operating_pct_likely = 0.0
+    else:
+        demand_pct_increased = round(
+            100 * df["demand_direction"].eq("Increased").sum() / n,
+            1,
+        )
+        financial_pct_deteriorated = round(
+            100 * df["financial_direction"].eq("Deteriorated").sum() / n,
+            1,
+        )
+        operating_pct_likely = round(
+            100 * df["operating"].isin(["Very likely", "Quite likely"]).sum() / n,
+            1,
+        )
+
     return {
-        "demand": _value_counts_ordered(df["demand"], DEMAND_ORDER),
-        "financial": _value_counts_ordered(df["financial"], FINANCIAL_ORDER),
-        "operating": _value_counts_ordered(df["operating"], OPERATING_ORDER),
-        "workforce_change": _value_counts_ordered(df["workforce"], DEMAND_ORDER),
-        "expect_demand": _value_counts_ordered(df["expectdemand"], EXPECT_DEMAND_ORDER),
-        "expect_financial": _value_counts_ordered(df["expectfinancial"], EXPECT_FINANCIAL_ORDER),
-        "demand_pct_increased": round(100 * df["demand_direction"].eq("Increased").sum() / len(df), 1),
-        "financial_pct_deteriorated": round(
-            100 * df["financial_direction"].eq("Deteriorated").sum() / len(df), 1
-        ),
-        "operating_pct_likely": round(
-            100 * df["operating"].isin(["Very likely", "Quite likely"]).sum() / len(df), 1
-        ),
+        "demand": demand,
+        "financial": financial,
+        "operating": operating,
+        "workforce_change": workforce_change,
+        "expect_demand": expect_demand,
+        "expect_financial": expect_financial,
+        "demand_pct_increased": demand_pct_increased,
+        "financial_pct_deteriorated": financial_pct_deteriorated,
+        "operating_pct_likely": operating_pct_likely,
     }
 
 
@@ -466,8 +515,13 @@ def executive_highlights(df: pd.DataFrame) -> list[dict]:
         },
         {
             "rank": 6,
-            "title": f"{wf['finance_deteriorated_pct']}% hit by rising costs",
-            "detail": f"{wf['actions'].query('label == \"Unplanned use of reserves\"')['count'].values[0]} organisations made unplanned use of reserves.",
+            "title": f"{wf['finance_deteriorated_pct']}% report finances deteriorated due to rising costs",
+            "detail": (
+                f"This is based on the specific 'finances deteriorated from rising costs' question "
+                f"(financedeteriorate = 'Yes'). "
+                f"{wf['actions'].query('label == \"Unplanned use of reserves\"')['count'].values[0]} "
+                f"organisations also report unplanned use of reserves as a response."
+            ),
             "type": "critical",
         },
     ]
