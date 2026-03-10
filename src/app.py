@@ -20,13 +20,15 @@ from src.config import (
     EXPECT_DEMAND_ORDER, EXPECT_FINANCIAL_ORDER,
     FINANCIAL_ORDER, K_ANON_THRESHOLD, OPERATING_ORDER,
     VOL_OBJECTIVES_ORDER, VOL_TYPEUSE_ORDER, WCVA_BRAND, ORG_SIZE_ORDER,
-    YES_NO_ORDER, WAVE1_CONTEXT, SEVERITY_COLOURS, AltTextConfig, resolve_grouping,
+    YES_NO_ORDER, SEVERITY_COLOURS, AltTextConfig, resolve_grouping,
     CHART_FONT_SIZE, CHART_TITLE_SIZE,
 )
+from src.wave_context import WAVE1_CONTEXT
 from src.eda import (
     profile_summary, demand_and_outlook, volunteer_recruitment_analysis,
     volunteer_retention_analysis, workforce_operations, volunteer_demographics,
     volunteering_types, executive_highlights, cross_segment_analysis,
+    finance_recruitment_cross,
 )
 from src.charts import (
     horizontal_bar_ranked, stacked_bar_ordinal, donut_chart,
@@ -155,7 +157,16 @@ pages = [
     "Data Notes",
 ]
 
-page = st.sidebar.radio("Navigate", pages, label_visibility="collapsed")
+if "current_page" not in st.session_state:
+    st.session_state["current_page"] = "Executive Summary"
+
+page = st.sidebar.radio(
+    "Navigate",
+    pages,
+    index=pages.index(st.session_state["current_page"]),
+    label_visibility="collapsed",
+)
+st.session_state["current_page"] = page
 
 prof = profile_summary(df)
 
@@ -163,7 +174,8 @@ prof = profile_summary(df)
 # PAGE 1: At-a-Glance Infographic
 # =========================================================================
 if page == "At-a-Glance":
-    st.title("Baromedr Cymru — At a Glance")
+    st.title("State of Volunteering in Wales — At a Glance")
+    st.caption("Baromedr Cymru — Wave 2 (organisational survey)")
 
     if suppressed:
         st.warning("Results suppressed due to small sample size. Adjust filters to see data.")
@@ -181,14 +193,15 @@ if page == "At-a-Glance":
 
     with st.expander("View metrics as table"):
         metrics_rows = [
-            {"Metric": "Organisations in view", "Value": n},
+            {"Metric": "Organisations in view", "Value": str(n)},
             {"Metric": "Demand increased", "Value": f"{dem['demand_pct_increased']}%"},
             {"Metric": "Finances deteriorated", "Value": f"{dem['financial_pct_deteriorated']}%"},
             {"Metric": "Too few volunteers for need", "Value": f"{rec['pct_too_few']}%"},
             {"Metric": "Recruitment difficult", "Value": f"{rec['pct_difficulty']}%"},
             {"Metric": "Retention difficult", "Value": f"{ret['pct_difficulty']}%"},
         ]
-        st.dataframe(pd.DataFrame(metrics_rows), hide_index=True, width="stretch")
+        metrics_df = pd.DataFrame(metrics_rows, dtype="string")
+        st.dataframe(metrics_df, hide_index=True, width="stretch")
 
     st.divider()
     st.subheader("Demand–Capacity Story in One View")
@@ -203,6 +216,30 @@ if page == "At-a-Glance":
         st.markdown(
             "- Use the filters on the left to see how this picture changes by size, scope, LA, or activity."
         )
+
+    st.divider()
+    st.subheader("Key questions for deeper analysis")
+    st.markdown(
+        "- How different are these pressures for smaller vs larger organisations, or by main activity?\n"
+        "- Among organisations whose finances have deteriorated, is recruitment difficulty higher than for those with stable finances?\n"
+        "- Where are volunteer shortages most acute, and which parts of the sector appear to be coping better?"
+    )
+
+    st.divider()
+    st.subheader("Explore findings")
+    nav_cols = st.columns(4)
+    if nav_cols[0].button("Volunteer recruitment", use_container_width=True):
+        st.session_state["current_page"] = "Volunteer Recruitment"
+        st.rerun()
+    if nav_cols[1].button("Volunteer retention", use_container_width=True):
+        st.session_state["current_page"] = "Volunteer Retention"
+        st.rerun()
+    if nav_cols[2].button("Workforce & operations", use_container_width=True):
+        st.session_state["current_page"] = "Workforce & Operations"
+        st.rerun()
+    if nav_cols[3].button("Policy & outlook", use_container_width=True):
+        st.session_state["current_page"] = "Earned Settlement"
+        st.rerun()
 
 
 # =========================================================================
@@ -354,7 +391,7 @@ elif page == "Overview":
 
     with col4:
         grouper, group_order = resolve_grouping(FINANCIAL_ORDER)
-        fig = stacked_bar_ordinal(dem["financial"], "Half report stable finances; a third are deteriorating", n,
+        fig = stacked_bar_ordinal(dem["financial"], "Finances mostly unchanged, but a third report deterioration", n,
                                   mode=palette_mode, alt_config=alt_config,
                                   grouper=grouper, group_order=group_order)
         show_chart(fig, "overview_financial", dem["financial"])
@@ -712,10 +749,11 @@ elif page == "Executive Summary":
     st.markdown(
         "This summary is based on an organisational survey. Headline claims about how many "
         "people in Wales volunteer (for example, that around one-third of adults volunteer) "
-        "depend on the age ranges and definitions used in those population surveys, and may "
-        "exclude under‑15s or blur boundaries with unpaid caring. In the longer term, "
+        "depend on the age ranges and definitions used in those population surveys; and it is important to know whether those surveys "
+        "have excluded under‑15s or blurred boundaries with unpaid caring. In the longer term, "
         "triangulating these organisational findings with surveys of individual volunteers "
-        "and non‑volunteers would give a fuller picture of volunteering in Wales."
+        "and non‑volunteers would give a fuller picture of volunteering in Wales. "
+        "It is not all about headlines; distributions by organisation type and smaller response categories are also informative."
     )
 
     highlights = executive_highlights(df)
@@ -730,11 +768,19 @@ elif page == "Executive Summary":
             unsafe_allow_html=True,
         )
 
+    cross = finance_recruitment_cross(df)
+    if cross:
+        st.info(
+            f"**Finance–recruitment link**: Among organisations reporting deteriorating finances, "
+            f"{cross['pct_rec_difficulty_if_finance_deteriorated']}% find recruitment difficult, compared with "
+            f"{cross['pct_rec_difficulty_if_finance_not_deteriorated']}% among those whose finances have not deteriorated."
+        )
+
     st.divider()
     st.subheader("Wave 1 Context")
-    for key, desc in WAVE1_CONTEXT.items():
-        if key.endswith("_desc"):
-            st.markdown(f"- {desc}")
+    wave1 = WAVE1_CONTEXT
+    for line in wave1.executive_context_callouts():
+        st.markdown(f"- {line}")
 
     st.divider()
     st.subheader("Key Metrics by Organisation Size")
@@ -756,14 +802,59 @@ elif page == "Executive Summary":
         if seg_rows:
             st.dataframe(pd.DataFrame(seg_rows), hide_index=True, width="stretch")
 
+    if "Main activity" in seg:
+        st.subheader("Key Metrics by Main activity")
+        act_data = seg["Main activity"]
+        act_rows = [
+            {
+                "Main activity": name,
+                "n": d["n"],
+                "Demand increased %": d["pct_demand_increased"],
+                "Finance deteriorated %": d["pct_finance_deteriorated"],
+                "Vol. recruitment difficulty %": d["pct_vol_rec_difficulty"],
+                "Too few volunteers %": d["pct_too_few_vols"],
+            }
+            for name, d in sorted(act_data.items(), key=lambda x: -x[1]["n"])[:10]
+        ]
+        if act_rows:
+            st.dataframe(pd.DataFrame(act_rows), hide_index=True, width="stretch")
+        st.caption("Top 10 activities by sample size. Smaller segments are also informative.")
+
     st.divider()
     st.subheader("Policy Recommendations")
-    st.markdown("""
+    # Derive dynamic metrics for volunteer offers (expenses vs financial signposting)
+    ret_offer = volunteer_retention_analysis(df)["vol_offer"]
+    exp_row = ret_offer[ret_offer["label"] == "Covering expenses"]
+    sign_row = ret_offer[ret_offer["label"] == "Financial advice signposting"]
+    expenses_pct = exp_row["pct"].iloc[0] if not exp_row.empty else None
+    signpost_pct = sign_row["pct"].iloc[0] if not sign_row.empty else None
+
+    if expenses_pct is not None and signpost_pct is not None:
+        funding_vol_sentence = (
+            f"Expenses coverage is widespread ({expenses_pct}% of organisations), "
+            f"but only {signpost_pct}% offer financial signposting."
+        )
+    elif signpost_pct is not None:
+        funding_vol_sentence = f"Only {signpost_pct}% of organisations offer financial signposting."
+    else:
+        funding_vol_sentence = (
+            "Expenses coverage is widespread but financial signposting remains relatively rare."
+        )
+
+    st.markdown(f"""
 1. **Invest in recruitment infrastructure** — Organisations are trying but getting low response. Centralised campaigns via TSSW/CVCs could boost reach.
-2. **Address the funding-volunteer gap** — Expenses coverage is widespread but only 17% offer financial signposting. Cost-of-living support for volunteers is a retention lever.
+2. **Address the funding-volunteer gap** — {funding_vol_sentence} Signposting to cost-of-living support for volunteers is a retention lever.
 3. **Build flexible volunteering models** — Retention barriers are largely external (life changes). Micro-volunteering, remote roles, and flexible commitments can accommodate these realities.
 4. **Prepare for earned settlement** — Sentiment is positive but capacity is low. Early guidance and resource allocation will determine whether this becomes an opportunity or a burden.
 5. **Monitor demand-capacity divergence** — Demand is rising, finances are flat or declining, and reserves are being depleted. Without intervention, service reductions will accelerate.
+""")
+
+    st.subheader("Future analysis opportunities")
+    st.markdown("""
+- **Segment by organisation type**: A deeper cut by main activity (e.g. environment vs health vs advice services)
+  could show where pressures are most acute and where resilience is strongest.
+- **Link finance and recruitment challenges**: Exploring how financial strain, staffing levels, and investment in
+  volunteer coordination interact would help target support more precisely.
 """)
 
 

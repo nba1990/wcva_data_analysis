@@ -655,18 +655,6 @@ MULTI_SELECT_GROUPS = {
 }
 
 # ---------------------------------------------------------------------------
-# Wave 1 context (from WCVA publications, for Executive Summary callouts)
-# ---------------------------------------------------------------------------
-WAVE1_CONTEXT = {
-    "vol_recruitment_concern_pct": 30,
-    "vol_recruitment_concern_desc": "30% of Wave 1 respondents listed volunteer recruitment in their top 3 concerns",
-    "demand_increased_pct": 62,
-    "demand_increased_desc": "62% reported increased demand in Wave 1",
-    "financial_deteriorated_pct": 35,
-    "financial_deteriorated_desc": "35% reported financial deterioration in Wave 1",
-}
-
-# ---------------------------------------------------------------------------
 # Welsh local authority region mapping
 # ---------------------------------------------------------------------------
 LA_TO_REGION = {

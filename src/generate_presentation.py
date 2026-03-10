@@ -26,12 +26,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.data_loader import load_dataset
 from src.config import (
     DEMAND_ORDER, EXPECT_DEMAND_ORDER, EXPECT_FINANCIAL_ORDER,
-    FINANCIAL_ORDER, OUTPUT_DIR, WCVA_BRAND, WAVE1_CONTEXT, AltTextConfig, resolve_grouping,
+    FINANCIAL_ORDER, OUTPUT_DIR, WCVA_BRAND, AltTextConfig, resolve_grouping,
 )
+from src.wave_context import WAVE1_CONTEXT
 from src.eda import (
     profile_summary, demand_and_outlook, volunteer_recruitment_analysis,
     volunteer_retention_analysis, workforce_operations, volunteering_types,
-    executive_highlights,
+    executive_highlights, finance_recruitment_cross,
 )
 from src.charts import (
     horizontal_bar_ranked, stacked_bar_ordinal, donut_chart,
@@ -100,6 +101,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
     wf = workforce_operations(df)
     vt = volunteering_types(df)
     highlights = executive_highlights(df)
+    cross = finance_recruitment_cross(df)
 
     highlights_html = render_executive_insights_list_html(
         highlights,
@@ -221,6 +223,12 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "body": (
                 "<p>High-level indicators summarising the squeeze between "
                 "rising demand, constrained finances, and volunteer gaps.</p>"
+                f"<p><strong>{n}</strong> organisations in view | "
+                f"<strong>{dem['demand_pct_increased']}%</strong> demand increased ▲ | "
+                f"<strong>{dem['financial_pct_deteriorated']}%</strong> finances deteriorated ▼ | "
+                f"<strong>{rec['pct_too_few']}%</strong> too few volunteers ▼ | "
+                f"<strong>{rec['pct_difficulty']}%</strong> recruitment difficult ▼ | "
+                f"<strong>{ret['pct_difficulty']}%</strong> retention difficult ▼</p>"
             ),
             "chart": fig_infographic,
             "notes": "Infographic-style slide to open conversations with senior stakeholders.",
@@ -229,15 +237,13 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         {
             "title": "Who Responded?",
             "subtitle": f"{n} organisations across Wales",
-            "body": f"<ul>"
-                    f"<li><strong>Organisation size mix</strong>: Small "
-                    f"{prof['org_size'].get('Small', 0)}, Medium "
-                    f"{prof['org_size'].get('Medium', 0)}, Large "
-                    f"{prof['org_size'].get('Large', 0)}</li> <br>"
-                    f"<li><strong>{prof['social_enterprise_pct']}%</strong> are social enterprises</li> <br>"
-                    f"<li><strong>{prof['has_paid_staff_pct']}%</strong> have paid staff</li> <br>"
-                    f"<li>Median <strong>{prof['median_volunteers']:.0f}</strong> volunteers per organisation</li> <br>"
-                    f"</ul>",
+            "body": (
+                f"<p>Respondents include a mix of small, medium and large organisations "
+                f"(Small {prof['org_size'].get('Small', 0)}, Medium {prof['org_size'].get('Medium', 0)}, "
+                f"Large {prof['org_size'].get('Large', 0)}). "
+                f"{prof['social_enterprise_pct']}% are social enterprises and {prof['has_paid_staff_pct']}% have paid staff; "
+                f"median volunteers per organisation is {prof['median_volunteers']:.0f}.</p>"
+            ),
             "chart": fig_size,
             "notes": "Sample composition. Emphasise mix of sizes.",
             "alt_text": getattr(fig_size, "_alt_text", ""),
@@ -251,7 +257,8 @@ def build_slides(df, palette_mode: str) -> list[dict]:
                     f"<li><strong>{dem['operating_pct_likely']}%</strong> confident they'll operate next year</li> <br>"
                     f"</ul>"
                     f"<p>{demand_finance_scissor_phrase(dem)}</p>"
-                    f"<p style='font-size:0.7em;color:#888'>Wave 1 context: {WAVE1_CONTEXT['demand_increased_desc']}</p>",
+                    f"<p style='font-size:0.7em;color:#888'>Wave 1 context: "
+                    f"{WAVE1_CONTEXT.demand_increased_callout()}</p>",
             "chart": fig_demand,
             "notes": "Demand-finance divergence. Wave 1 comparison available.",
             "alt_text": getattr(fig_demand, "_alt_text", ""),
@@ -264,7 +271,8 @@ def build_slides(df, palette_mode: str) -> list[dict]:
                     f"<li><strong>{wf['finance_deteriorated_pct']}%</strong> say finances worsened due to rising costs</li> <br>"
                     f"<li>Only {wf['reserves_yes_pct']}% have reserves; median {wf['median_months_reserves']:.0f} months</li> <br>"
                     f"</ul>"
-                    f"<p style='font-size:0.7em;color:#888'>Wave 1 context: {WAVE1_CONTEXT['financial_deteriorated_desc']}</p>",
+                    f"<p style='font-size:0.7em;color:#888'>Wave 1 context: "
+                    f"{WAVE1_CONTEXT.financial_deteriorated_callout()}</p>",
             "chart": fig_financial,
             "notes": "Financial position squeeze. Reserves runway is shrinking.",
             "alt_text": getattr(fig_financial, "_alt_text", ""),
@@ -284,11 +292,14 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         {
             "title": f"The Volunteer Gap: {rec['pct_too_few']}% Say Too Few",
             "subtitle": "Recruitment is the bigger challenge",
-            "body": f"<ul>"
-                    f"<li><strong>{rec['pct_difficulty']}%</strong> report difficulty recruiting</li> <br>"
-                    f"<li><strong>{ret['pct_difficulty']}%</strong> report difficulty retaining</li> <br>"
-                    f"<li>{recruitment_vs_retention_phrase(rec, ret)}</li> <br>"
-                    f"</ul>",
+            "body": (
+                f"<ul>"
+                f"<li><strong>{rec['pct_difficulty']}%</strong> report difficulty recruiting</li> <br>"
+                f"<li><strong>{ret['pct_difficulty']}%</strong> report difficulty retaining</li> <br>"
+                f"<li>{recruitment_vs_retention_phrase(rec, ret)}</li>"
+                + (f" <br><li>Among organisations with deteriorating finances, <strong>{cross['pct_rec_difficulty_if_finance_deteriorated']}%</strong> find recruitment difficult, vs <strong>{cross['pct_rec_difficulty_if_finance_not_deteriorated']}%</strong> where finances have not deteriorated.</li>" if cross else "")
+                + f"</ul>"
+            ),
             "chart": None,
             "notes": "Frame the recruitment/retention asymmetry.",
             "alt_text": "",
@@ -411,12 +422,14 @@ REVEAL_TEMPLATE = """<!doctype html>
   .reveal h1, .reveal h2 {{ color: {navy}; }}
   .reveal h3 {{ color: {teal}; font-size: 0.9em; }}
   .reveal .slides section {{
-    height: 100vh;
+    height: 100% !important;
     box-sizing: border-box;
     overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 20px;
   }}
-  .reveal .slide-content {{ text-align: left; padding: 0 40px; }}
-  .reveal img.chart {{ max-height: 60vh; margin: 10px auto; display: block; border-radius: 4px; }}
+  .reveal .slide-content {{ text-align: left; padding: 0 40px 20px 40px; }}
+  .reveal img.chart {{ max-height: 42vh; max-width: 100%; margin: 10px auto; display: block; border-radius: 4px; }}
   .reveal .subtitle {{ color: {teal}; font-size: 0.75em; margin-top: -10px; }}
   .reveal ul, .reveal ol {{ font-size: 0.75em; line-height: 1.5; }}
   .reveal .footer {{ position: fixed; bottom: 12px; left: 20px; font-size: 0.55em; color: #999; }}
@@ -430,7 +443,7 @@ REVEAL_TEMPLATE = """<!doctype html>
 <div class="footer">Baromedr Cymru Wave 2 | WCVA | {date}</div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
-<script>Reveal.initialize({{ hash: true, slideNumber: true, width: 1200, height: 900, margin: 0.04, minScale: 0.2, maxScale: 2.0 }});</script>
+<script>Reveal.initialize({{ hash: true, slideNumber: true, width: 1600, height: 1000, margin: 0.04, minScale: 0.8, maxScale: 1.0 }});</script>
 </body>
 </html>"""
 
@@ -440,7 +453,7 @@ def generate_html(slides: list[dict]) -> str:
     for s in slides:
         chart_html = ""
         if s["chart"] is not None:
-            b64 = _fig_to_base64(s["chart"], width=850, height=450)
+            b64 = _fig_to_base64(s["chart"], width=800, height=380)
             alt = s.get("alt_text", "")
             chart_html = f'<img class="chart" src="data:image/png;base64,{b64}" alt="{alt}">'
 
@@ -579,6 +592,9 @@ def _strip_html(text: str) -> str:
     text = text.replace("\u2018", "'").replace("\u2019", "'")
     text = text.replace("\u201c", '"').replace("\u201d", '"')
     text = text.replace("\u2022", "-").replace("\u2026", "...")
+    # Normalise non-Latin symbols that are not supported by the core Helvetica font
+    # used by fpdf2, to avoid Unicode encoding errors during PDF generation.
+    text = text.replace("▲", " [up] ").replace("▼", " [down] ")
     return text.strip()
 
 
@@ -586,14 +602,41 @@ def _render_toc(pdf, outline):
     """Callback for fpdf2's insert_toc_placeholder."""
     pdf.set_font("Helvetica", "B", 20)
     pdf.set_text_color(*_NAVY_RGB)
-    pdf.cell(0, 14, "Table of Contents", new_x="LMARGIN", new_y="NEXT")
-    pdf.ln(6)
+    # Title for the TOC page, then spacing so the first entry
+    # sits comfortably below the header rule.
+    pdf.cell(0, 10, "Table of Contents", new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(12)
+
     pdf.set_font("Helvetica", "", 11)
     pdf.set_text_color(50, 50, 50)
+
+    # Reserve a narrow right-hand column for the page number to avoid
+    # collisions or wrapping. The left cell holds the (possibly truncated)
+    # section title with indentation.
+    page_col_w = 20
+    max_title_chars = 80
+    line_h = 8
+    usable_bottom = pdf.h - pdf.b_margin
+
     for section in outline:
+        # Manual page break for the TOC to ensure that entries
+        # never collide with the header on a new page.
+        if pdf.get_y() + line_h > usable_bottom:
+            pdf.add_page()
+            pdf.set_font("Helvetica", "", 11)
+            pdf.set_text_color(50, 50, 50)
+            pdf.ln(12)
         indent = "  " * section.level
-        dots = "." * max(2, 70 - len(section.name) - len(indent))
-        pdf.cell(0, 8, f"{indent}{section.name} {dots} {section.page_number}",
+        name = section.name or ""
+        if len(name) > max_title_chars:
+            name = name[: max_title_chars - 1] + "…"
+        title = f"{indent}{name}"
+
+        # Width available for the title cell within page margins.
+        title_w = pdf.w - pdf.l_margin - pdf.r_margin - page_col_w
+        pdf.set_x(pdf.l_margin)
+        pdf.cell(title_w, 8, title, align="L")
+        pdf.cell(page_col_w, 8, str(section.page_number), align="R",
                  new_x="LMARGIN", new_y="NEXT")
 
 

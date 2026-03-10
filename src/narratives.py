@@ -66,7 +66,7 @@ def recruitment_vs_retention_phrase(rec: Mapping, ret: Mapping) -> str:
     if ratio >= 1.8:
         comparison = "almost twice as hard as"
     elif ratio >= 1.4:
-        comparison = "meaningfully harder than"
+        comparison = "significantly harder than"
     elif ratio >= 1.1:
         comparison = "a bit harder than"
     elif ratio >= 0.9:

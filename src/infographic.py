@@ -20,6 +20,10 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
             ),
             "icon": "🏢",
             "theme": "neutral",
+            "gauge_fill": 100,
+            "gauge_colour": "#E0E5EC",
+            "trend_symbol": "●",
+            "trend_class": "wcva-trend-neutral",
         },
         {
             "id": "demand",
@@ -28,6 +32,10 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
             "caption": "Report increased demand for their services",
             "icon": "📈",
             "theme": "demand",
+            "gauge_fill": float(dem["demand_pct_increased"]),
+            "gauge_colour": WCVA_BRAND["amber"],
+            "trend_symbol": "▲",
+            "trend_class": "wcva-trend-up",
         },
         {
             "id": "finance",
@@ -36,6 +44,10 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
             "caption": "Say their financial position has worsened",
             "icon": "💷",
             "theme": "finance",
+            "gauge_fill": float(dem["financial_pct_deteriorated"]),
+            "gauge_colour": WCVA_BRAND["coral"],
+            "trend_symbol": "▼",
+            "trend_class": "wcva-trend-down",
         },
         {
             "id": "too_few",
@@ -46,6 +58,10 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
             ),
             "icon": "🙋",
             "theme": "volunteers",
+            "gauge_fill": float(rec["pct_too_few"]),
+            "gauge_colour": WCVA_BRAND["coral"],
+            "trend_symbol": "▼",
+            "trend_class": "wcva-trend-down",
         },
         {
             "id": "rec_diff",
@@ -56,6 +72,10 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
             ),
             "icon": "🧩",
             "theme": "volunteers",
+            "gauge_fill": float(rec["pct_difficulty"]),
+            "gauge_colour": WCVA_BRAND["amber"],
+            "trend_symbol": "▼",
+            "trend_class": "wcva-trend-down",
         },
         {
             "id": "ret_diff",
@@ -66,6 +86,10 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
             ),
             "icon": "🔄",
             "theme": "volunteers",
+            "gauge_fill": float(ret["pct_difficulty"]),
+            "gauge_colour": WCVA_BRAND["amber"],
+            "trend_symbol": "▼",
+            "trend_class": "wcva-trend-down",
         },
     ]
 
@@ -134,14 +158,51 @@ def render_at_a_glance_infographic(n: int, dem: Mapping, rec: Mapping, ret: Mapp
             color: {navy};
           }}
           .wcva-card-value {{
-            font-size: 1.8rem;
+            font-size: 2.1rem;
             font-weight: 700;
             color: {navy};
             margin: 2px 0 4px 0;
           }}
+          .wcva-card-value-row {{
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }}
+          .wcva-trend-icon {{
+            font-size: 1.2rem;
+            font-weight: 800;
+            line-height: 1;
+          }}
+          .wcva-trend-up {{
+            color: {amber};
+          }}
+          .wcva-trend-down {{
+            color: {coral};
+          }}
+          .wcva-trend-neutral {{
+            color: #888888;
+          }}
           .wcva-card-caption {{
             font-size: 0.8rem;
             color: #555555;
+          }}
+          .wcva-pill-bar {{
+            position: relative;
+            width: 100%;
+            max-width: 140px;
+            height: 10px;
+            margin-top: 6px;
+            border-radius: 999px;
+            background: #E8EDF3;
+            overflow: hidden;
+          }}
+          .wcva-pill-fill {{
+            position: absolute;
+            inset: 0;
+            width: calc(var(--wcva-gauge-fill, 0) * 1%);
+            max-width: 100%;
+            border-radius: inherit;
+            background: var(--wcva-gauge-colour, {teal});
           }}
         </style>
         """
@@ -157,7 +218,17 @@ def render_at_a_glance_infographic(n: int, dem: Mapping, rec: Mapping, ret: Mapp
                 <div class="wcva-card-icon" aria-hidden="true">{m.get("icon", "")}</div>
                 <div class="wcva-card-label">{m['label']}</div>
               </div>
-              <div class="wcva-card-value">{m['value']}</div>
+              <div class="wcva-card-value-row">
+                <div class="wcva-card-value">{m['value']}</div>
+                <div class="wcva-trend-icon {m.get('trend_class', '')}"
+                     aria-hidden="true">{m.get('trend_symbol', '')}</div>
+              </div>
+              <div class="wcva-pill-bar">
+                <div class="wcva-pill-fill"
+                     style="--wcva-gauge-fill: {m.get('gauge_fill', 0)}; "
+                           "--wcva-gauge-colour: {m.get('gauge_colour', teal)};">
+                </div>
+              </div>
               <div class="wcva-card-caption">{m['caption']}</div>
             </div>
             """

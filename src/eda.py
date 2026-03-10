@@ -261,30 +261,70 @@ def volunteering_types(df: pd.DataFrame) -> dict:
 # 8. Cross-segment analysis
 # ---------------------------------------------------------------------------
 
-def cross_segment_analysis(df: pd.DataFrame) -> dict:
-    """Key metrics broken down by org_size, scope, and activity."""
-    segments = {}
+def _segment_metrics(subset: pd.DataFrame, n: int) -> dict:
+    """Shared metrics for a subset (n = len(subset))."""
+    return {
+        "n": n,
+        "pct_vol_rec_difficulty": round(100 * subset["has_vol_rec_difficulty"].sum() / n, 1),
+        "pct_vol_ret_difficulty": round(100 * subset["has_vol_ret_difficulty"].sum() / n, 1),
+        "pct_demand_increased": round(100 * subset["demand_direction"].eq("Increased").sum() / n, 1),
+        "pct_finance_deteriorated": round(100 * subset["financial_direction"].eq("Deteriorated").sum() / n, 1),
+        "pct_too_few_vols": round(100 * subset["volobjectives"].isin([
+            "Slightly too few volunteers", "Significantly too few volunteers"
+        ]).sum() / n, 1),
+    }
 
-    for seg_col, seg_name in [("org_size", "Organisation Size"), ("wales_scope", "Geographic Scope")]:
+
+def cross_segment_analysis(df: pd.DataFrame) -> dict:
+    """Key metrics broken down by org_size, scope, and main activity."""
+    segments = {}
+    min_n = 3  # avoid tiny segments
+
+    for seg_col, seg_name in [
+        ("org_size", "Organisation Size"),
+        ("wales_scope", "Geographic Scope"),
+        ("mainactivity", "Main activity"),
+    ]:
+        if seg_col not in df.columns:
+            continue
         seg_data = {}
         for seg_val in df[seg_col].dropna().unique():
             subset = df[df[seg_col] == seg_val]
             n = len(subset)
-            if n < 1:
+            if n < min_n:
                 continue
-            seg_data[seg_val] = {
-                "n": n,
-                "pct_vol_rec_difficulty": round(100 * subset["has_vol_rec_difficulty"].sum() / n, 1),
-                "pct_vol_ret_difficulty": round(100 * subset["has_vol_ret_difficulty"].sum() / n, 1),
-                "pct_demand_increased": round(100 * subset["demand_direction"].eq("Increased").sum() / n, 1),
-                "pct_finance_deteriorated": round(100 * subset["financial_direction"].eq("Deteriorated").sum() / n, 1),
-                "pct_too_few_vols": round(100 * subset["volobjectives"].isin([
-                    "Slightly too few volunteers", "Significantly too few volunteers"
-                ]).sum() / n, 1),
-            }
+            seg_data[seg_val] = _segment_metrics(subset, n)
         segments[seg_name] = seg_data
 
     return segments
+
+
+def finance_recruitment_cross(df: pd.DataFrame) -> dict | None:
+    """
+    Among orgs whose finances deteriorated vs not, what % find recruitment difficult?
+    Returns None if counts are too small for a sensible comparison.
+    """
+    n = len(df)
+    if n < 10:
+        return None
+    det = df["financial_direction"] == "Deteriorated"
+    not_det = ~det & df["financial_direction"].notna()
+    rec_hard = df["vol_rec"].isin(["Somewhat difficult", "Extremely difficult"])
+    n_det = det.sum()
+    n_not_det = not_det.sum()
+    if n_det < 3 or n_not_det < 3:
+        return None
+    # Among those who answered the recruitment difficulty question
+    det_answered = det & df["vol_rec"].notna()
+    not_det_answered = not_det & df["vol_rec"].notna()
+    pct_det = round(100 * rec_hard[det_answered].sum() / max(1, det_answered.sum()), 1)
+    pct_not_det = round(100 * rec_hard[not_det_answered].sum() / max(1, not_det_answered.sum()), 1)
+    return {
+        "pct_rec_difficulty_if_finance_deteriorated": pct_det,
+        "pct_rec_difficulty_if_finance_not_deteriorated": pct_not_det,
+        "n_finance_deteriorated": int(n_det),
+        "n_finance_not_deteriorated": int(n_not_det),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -298,6 +338,7 @@ def executive_highlights(df: pd.DataFrame) -> list[dict]:
     ret = volunteer_retention_analysis(df)
     wf = workforce_operations(df)
     dem = demand_and_outlook(df)
+    cross = finance_recruitment_cross(df)
 
     top_concern = wf["concerns"].iloc[0]
     top_rec_barrier = rec["rec_barriers"].iloc[0]
@@ -321,7 +362,8 @@ def executive_highlights(df: pd.DataFrame) -> list[dict]:
             "detail": (
                 f"{dem['demand_pct_increased']}% report increased demand, while "
                 f"{dem['financial_pct_deteriorated']}% already report worsening finances. "
-                "Demand is outpacing the resources organisations have to respond."
+                "The gap between income concern and those reporting worsening finances reflects that many organisations are anxious about funding before deterioration shows in the figures. "
+                "Demand is outpacing the resources organisations have to respond with."
             ),
             "type": "critical",
         },
@@ -338,15 +380,15 @@ def executive_highlights(df: pd.DataFrame) -> list[dict]:
             "title": "Recruitment problem isn't lack of effort",
             "detail": (
                 f"The top barrier is '{top_rec_barrier['label']}' "
-                f"({top_rec_barrier['count']} organisations), even though "
-                f"{top_rec_method['count']} use {top_rec_method['label'].lower()} to reach people."
+                f"({top_rec_barrier['count']} organisations); "
+                f"{top_rec_method['count']} organisations using {top_rec_method['label'].lower()} to reach people."
             ),
             "type": "warning",
         },
         {
             "rank": 5,
             "title": "Retention barriers are largely external",
-            "detail": f"Top retention barrier: '{top_ret_barrier['label']}' ({top_ret_barrier['count']} orgs). Factors outside typical organisational control.",
+            "detail": f"Top retention barrier: '{top_ret_barrier['label']}' ({top_ret_barrier['count']} organisations). Factors outside typical organisational control.",
             "type": "neutral",
         },
         {
@@ -356,4 +398,20 @@ def executive_highlights(df: pd.DataFrame) -> list[dict]:
             "type": "critical",
         },
     ]
+    if cross:
+        diff = abs(
+            cross["pct_rec_difficulty_if_finance_deteriorated"]
+            - cross["pct_rec_difficulty_if_finance_not_deteriorated"]
+        )
+        if diff >= 5:
+            highlights.append({
+                "rank": 7,
+                "title": "Recruitment difficulty is higher where finances have deteriorated",
+                "detail": (
+                    f"Among organisations reporting deteriorating finances, {cross['pct_rec_difficulty_if_finance_deteriorated']}% "
+                    f"find recruitment difficult, compared with {cross['pct_rec_difficulty_if_finance_not_deteriorated']}% "
+                    f"among those whose finances have not deteriorated (n={cross['n_finance_deteriorated']} vs {cross['n_finance_not_deteriorated']})."
+                ),
+                "type": "warning",
+            })
     return highlights
