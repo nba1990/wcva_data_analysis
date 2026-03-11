@@ -277,8 +277,8 @@ if page == "At-a-Glance":
     st.caption(
         "Poster-style summary of how rising demand, finances, and volunteer gaps "
         "interact in this filtered view of the survey. "
-        "Arrows compare this picture with the previous wave; colours and short labels "
-        "indicate whether each percentage is relatively positive, mixed, or a high concern."
+        "Arrows show whether each percentage is higher or lower than the previous wave; "
+        "colours and short labels indicate whether that change represents a pressure or a positive."
     )
 
     # Show how these At-a-Glance KPIs are calculated (same pattern as Overview)
@@ -349,22 +349,27 @@ if page == "At-a-Glance":
         st.dataframe(at_glance_df, hide_index=True, width="stretch")
 
     # Wave 1 vs "This view" (card values) so numbers match the cards and definitions are clear
-    def _delta_arrow(old: float, new: float, *, higher_is_good: bool) -> str:
-        """Return a coloured arrow HTML snippet mirroring the infographic logic."""
-        delta = round(float(new) - float(old), 1)
-        if abs(delta) < 0.1:
-            return f"<span style='color:{WCVA_BRAND['mid_grey']}'>●</span>"
+        def _delta_arrow(old: float, new: float, *, higher_is_good: bool) -> str:
+            """Return a coloured arrow HTML snippet.
 
-        went_up = delta > 0
-        is_positive_change = went_up if higher_is_good else not went_up
-        symbol = "▲" if is_positive_change else "▼"
-        colour = WCVA_BRAND["amber"] if is_positive_change else WCVA_BRAND["coral"]
-        sign = "+" if delta > 0 else ""
-        delta_str = f"{delta:.1f}".rstrip("0").rstrip(".")  # 16.8 -> "16.8", 12.0 -> "12"
-        return (
-            f"<span style='color:{colour};font-weight:700'>{symbol}</span> "
-            f"({sign}{delta_str} pts)"
-        )
+            - ▲ / ▼ always show direction of change (higher vs lower than Wave 1).
+            - Colour reflects whether that change is positive or a pressure
+              for the metric in question.
+            """
+            delta = round(float(new) - float(old), 1)
+            if abs(delta) < 0.1:
+                return f"<span style='color:{WCVA_BRAND['mid_grey']}'>●</span>"
+
+            went_up = delta > 0
+            symbol = "▲" if went_up else "▼"
+            is_positive_change = went_up if higher_is_good else not went_up
+            colour = WCVA_BRAND["amber"] if is_positive_change else WCVA_BRAND["coral"]
+            sign = "+" if delta > 0 else ""
+            delta_str = f"{delta:.1f}".rstrip("0").rstrip(".")
+            return (
+                f"<span style='color:{colour};font-weight:700'>{symbol}</span> "
+                f"({sign}{delta_str} pts)"
+            )
 
     with st.expander("Wave 1 vs this view (same definitions as the cards)"):
         # "This view" = current filtered card values so they always match the infographic
@@ -2199,7 +2204,7 @@ elif page == "Executive Summary":
         )
 
     st.markdown(f"""
-1. **Invest in recruitment infrastructure** — Organisations are trying but getting low response. Centralised campaigns via TSSW/CVCs could boost reach.
+1. **Invest in volunteering infrastructure** — Organisations are trying but getting low response. Centralised campaigns via TSSW/CVCs could boost reach.
 2. **Address the funding-volunteer gap** — {funding_vol_sentence} Signposting to cost-of-living support for volunteers is a retention lever.
 3. **Build flexible volunteering models** — Retention barriers are largely external (life changes). Micro-volunteering, remote roles, and flexible commitments can accommodate these realities.
 4. **Prepare for earned settlement** — Sentiment is positive but capacity is low. Early guidance and resource allocation will determine whether this becomes an opportunity or a burden.

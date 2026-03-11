@@ -398,7 +398,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         },
         {
             "title": "Recruitment: What Works, What Blocks",
-            "subtitle": "Effort is high, but response is low",
+            "subtitle": "Response appears to be low",
             "body": f"<p><strong>Top method</strong>: {rec['rec_methods'].iloc[0]['label']} <br>"
                     f"({rec['rec_methods'].iloc[0]['count']} orgs)</p> <br>"
                     f"<p><strong>Top barrier</strong>: {rec['rec_barriers'].iloc[0]['label']} <br>"
@@ -421,12 +421,12 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "alt_text": getattr(fig_ret_barriers, "_alt_text", ""),
         },
         {
-            "title": "What Organisations Are Doing (and Need)",
+            "title": "What Concerns Organisations",
             "subtitle": "Rising costs are forcing hard choices",
             "body": f"<ul>"
                     f"<li><strong>{wf['finance_deteriorated_pct']}%</strong> report finances deteriorated due to rising costs</li> <br>"
-                    f"<li>Only {wf['reserves_yes_pct']}% have reserves; median "
-                    f"{wf['median_months_reserves']:.0f} months of cover among those with reserves</li> <br>"
+                    f"<li>Only {wf['reserves_yes_pct']}% have reserves (median "
+                    f"{wf['median_months_reserves']:.0f} months of cover) with {wf['using_reserves_pct']}% already using their reserves</li> <br>"
                     f"</ul>",
             "chart": fig_concerns,
             "notes": "Financial sustainability is the underpinning risk.",
@@ -434,7 +434,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         },
         {
             "title": "Impact of Shortages on Operations",
-            "subtitle": "Shortages are not abstract; they cause real operational harm",
+            "subtitle": "Shortages are not abstract; they cause real pressure on volunteers",
             "body": f"<ul>"
                     f"<li>Top consequence: {wf['shortage_affect'].iloc[0]['label']} ({wf['shortage_affect'].iloc[0]['count']} orgs)</li> <br>"
                     f"<li>Organisations are stretching existing staff and volunteers to cover gaps</li> <br>"
@@ -471,7 +471,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "title": "Recommendations for WCVA Policy Team",
             "subtitle": "Data-grounded next steps",
             "body": "<ol>"
-                    "<li>Invest in centralised recruitment campaigns via TSSW/CVCs</li> <br>"
+                    "<li>Invest in volunteering infrastructure. e.g: Centralised recruitment campaigns via TSSW/CVCs</li> <br>"
                     "<li>Address the cost-of-living barrier for volunteers (expenses + signposting)</li> <br>"
                     "<li>Promote flexible/micro/remote volunteering models for retention</li> <br>"
                     "<li>Develop early guidance and resource packages for earned settlement</li> <br>"

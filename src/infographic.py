@@ -16,14 +16,18 @@ def _compute_trend(
     current: float | None,
     previous: float | None,
     *,
-    higher_is_good: bool,
+    higher_is_good: bool,  # noqa: ARG001  (kept for clarity; colour semantics handled separately)
 ) -> Tuple[str, str]:
     """
-    Derive a trend symbol and CSS class from the direction of change.
+    Derive a trend symbol and CSS class from the *direction* of change only.
 
-    - If previous is missing, we keep things neutral (no arrow, grey dot).
-    - For "good" metrics (higher_is_good=True) an increase is positive.
-    - For "risk" metrics (higher_is_good=False) an increase is negative.
+    - ▲ always means the percentage is higher than in the previous wave.
+    - ▼ always means the percentage is lower than in the previous wave.
+    - ● is used when there is no comparable previous value or essentially no change.
+
+    Colour is handled separately based on whether higher values are reassuring
+    or concerning for that metric, so users don't have to infer sign from the
+    arrow shape.
     """
     if current is None or previous is None:
         return "●", "wcva-trend-neutral"
@@ -33,12 +37,9 @@ def _compute_trend(
         return "●", "wcva-trend-neutral"
 
     went_up = delta > 0
-    is_positive_change = went_up if higher_is_good else not went_up
-
-    if is_positive_change:
+    if went_up:
         return "▲", "wcva-trend-up"
-    else:
-        return "▼", "wcva-trend-down"
+    return "▼", "wcva-trend-down"
 
 
 def _trend_vs_wave_text(
@@ -47,16 +48,16 @@ def _trend_vs_wave_text(
     *,
     higher_is_good: bool,
 ) -> str:
-    """Return a short 'vs Wave 1' line for the card (e.g. '▼ 12 pts vs Wave 1')."""
+    """Return a short 'vs Wave 1' line for the card (e.g. '▲ 12 pts vs Wave 1')."""
     if current is None or previous is None:
-        return "vs Wave 1 (no prior wave)"
+        return ""
     delta = round(float(current) - float(previous), 1)
     if abs(delta) < 0.1:
         return "● little change vs Wave 1"
     pts_str = f"{abs(delta):.1f}".rstrip("0").rstrip(".")  # e.g. 12.0 -> 12, 0.2 -> 0.2
     if delta > 0:
-        return f"▼ {pts_str} pts vs Wave 1" if not higher_is_good else f"▲ {pts_str} pts vs Wave 1"
-    return f"▲ {pts_str} pts vs Wave 1" if not higher_is_good else f"▼ {pts_str} pts vs Wave 1"
+        return f"▲ {pts_str} pts vs Wave 1"
+    return f"▼ {pts_str} pts vs Wave 1"
 
 
 def _classify_severity(
@@ -473,7 +474,7 @@ def render_at_a_glance_infographic(
     html = f"""
     <div class="wcva-info-root">
       <div class="wcva-info-legend">
-        <span><strong>Arrows:</strong> change vs previous wave — ▼ more of the sector in this situation (worsening), ▲ less (improving), ● little change</span>
+        <span><strong>Arrows:</strong> change vs previous wave — ▲ higher than Wave 1, ▼ lower than Wave 1, ● little change / no comparison</span>
         <span><strong>Colours:</strong> teal = relatively positive, amber = mixed, coral = high concern</span>
       </div>
       <div class="wcva-info-grid">
