@@ -4,6 +4,7 @@ __pycache__/
 .coverage
 .pytest_cache/
 
-output/presentation.html
-output/presentation.pdf
+output/*.html
+output/*.pdf
 output/Screenshots/
+/output/policy_panel_5min_script.md
