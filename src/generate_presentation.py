@@ -146,7 +146,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         trends_html_rows.append(f"<tr>{header_cells}</tr>")
         # Data rows (iterate as dicts to avoid namedtuple field-name issues)
         for _, row in trends_pivot[cols].iterrows():
-            cells = [f"<td>{row[c]}</td>" for c in cols]
+            cells = [f"<td>{'N/A' if pd.isna(row[c]) else row[c]}</td>" for c in cols]
             trends_html_rows.append(f"<tr>{''.join(cells)}</tr>")
         trends_table_html = (
             "<table style='font-size:0.75em;border-collapse:collapse;'>"
@@ -187,9 +187,14 @@ def build_slides(df, palette_mode: str) -> list[dict]:
     alt_config = AltTextConfig(value_col="value", count_col="count", pct_col="pct", sample_size=n)
     
     # --- Pre-generate chart images ---
+    org_size_counts = list(prof["org_size"].values())
+    org_size_labels = list(prof["org_size"].keys())
+    org_size_base = sum(org_size_counts)
     fig_size = donut_chart(
-        list(prof["org_size"].keys()), list(prof["org_size"].values()),
-        "Respondent profile by organisation size", n,
+        org_size_labels,
+        org_size_counts,
+        "Respondent profile by organisation size",
+        org_size_base,
     )
     grouper, group_order = resolve_grouping(DEMAND_ORDER)
     TITLE = "Demand change (last 3 months)"
@@ -326,7 +331,8 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "body": (
                 f"<p>Respondents include a mix of small, medium and large organisations "
                 f"(Small {prof['org_size'].get('Small', 0)}, Medium {prof['org_size'].get('Medium', 0)}, "
-                f"Large {prof['org_size'].get('Large', 0)}). "
+                f"Large {prof['org_size'].get('Large', 0)}; org size reported for {org_size_base} "
+                f"of {n} organisations). "
                 f"{prof['social_enterprise_pct']}% are social enterprises and {prof['has_paid_staff_pct']}% have paid staff; "
                 f"median volunteers per organisation is {prof['median_volunteers']:.0f}.</p>"
             ),
@@ -368,7 +374,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "subtitle": "Expectations for the next 3 months",
             "body": f"<ul>"
                     f"<li>Organisations expect demand to continue rising</li> <br>"
-                    f"<li>Few expect financial improvement</li> <br>"
+                    f"<li>Fewer expect financial improvement than stability or deterioration combined</li> <br>"
                     f"<li>The scissor effect is expected to widen, not close</li> <br>"
                     f"</ul>",
             "chart": fig_expect_demand,
@@ -480,13 +486,26 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "subtitle": "Summary of bases and definitions",
             "body": (
                 "<ul>"
-                "<li><strong>Demand increasing</strong>: share answering `demand_direction` as “Increased” (last 3 months).</li> <br>"
-                "<li><strong>Financial position deteriorated (last 3 months)</strong>: share answering `financial_direction` as “Deteriorated” (Likert; different from rising-cost question below).</li> <br>"
+                "<li><strong>Demand increasing</strong>: share of organisations whose `demand` response is "
+                "“Increased a lot” or “Increased a little”, recoded via `demand_direction` as “Increased” "
+                "(base = all organisations in this cut).</li> <br>"
+                "<li><strong>Financial position deteriorated (last 3 months)</strong>: share of organisations whose "
+                "`financial` response is “Deteriorated a lot” or “Deteriorated a little”, recoded via "
+                "`financial_direction` as “Deteriorated” (base = all organisations in this cut; this is a separate "
+                "question from rising-costs deterioration below).</li> <br>"
                 "<li><strong>Recruitment and retention difficult</strong>: "
-                "share selecting “Somewhat difficult” or “Extremely difficult” on `vol_rec` and `vol_ret`.</li> <br>"
-                "<li><strong>Too few volunteers</strong>: share whose `volobjectives` is “Slightly too few” or “Significantly too few”.</li> <br>"
-                "<li><strong>Finances deteriorated due to rising costs</strong>: share answering `financedeteriorate` as “Yes”; reserves and using-reserves use their own bases.</li> <br>"
-                "<li><strong>Finance–recruitment cross</strong>: recruitment-difficulty share among those with `financial_direction` “Deteriorated” vs not.</li>"
+                "share of respondents selecting “Somewhat difficult” or “Extremely difficult” on `vol_rec` and "
+                "`vol_ret` (base = those who answered each question).</li> <br>"
+                "<li><strong>Too few volunteers</strong>: share of respondents whose `volobjectives` is "
+                "“Slightly too few volunteers” or “Significantly too few volunteers” "
+                "(base = those who answered `volobjectives`).</li> <br>"
+                "<li><strong>Finances deteriorated due to rising costs</strong>: share of all organisations with "
+                "`financedeteriorate` = “Yes” (base = all organisations; one missing response is treated as not selected); "
+                "reserves and using-reserves metrics use their own bases as shown in the dashboard.</li> <br>"
+                "<li><strong>Finance–recruitment cross</strong>: among organisations whose `financial` response "
+                "(recoded via `financial_direction`) is “Deteriorated” vs not, comparison of the share finding "
+                "recruitment difficult based on `vol_rec` (base = those who answered the recruitment difficulty "
+                "question in each group).</li>"
                 "</ul>"
             ),
             "chart": None,
@@ -496,9 +515,12 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         {
             "title": "Questions & Next Steps",
             "subtitle": "",
-            "body": f"<p>Full interactive dashboard: <code>streamlit run src/app.py</code></p> <br>"
-                    f"<p>Dataset: {n} organisations, 162 variables</p> <br>"
-                    f"<p>Source: Baromedr Cymru Wave 2, NTU VCSE Observatory / WCVA</p> <br>",
+            "body": (
+                f"<p>Full interactive dashboard: <code>streamlit run src/app.py</code></p> <br>"
+                f"<p>Dataset: {n} organisations, 144 columns in the original CSV "
+                f"and {df.shape[1]} variables in the analysis dataset (including derived fields).</p> <br>"
+                f"<p>Source: Baromedr Cymru Wave 2, NTU VCSE Observatory / WCVA</p> <br>"
+            ),
             "chart": None,
             "notes": "Close. Invite questions. Point to dashboard for deep-dives.",
             "alt_text": "",
@@ -509,8 +531,12 @@ def build_slides(df, palette_mode: str) -> list[dict]:
 
 def _earned_settlement_body(vt: dict) -> str:
     es = vt["earned_settlement"]
-    agree = es[es["value"].str.contains("agree", case=False) & ~es["value"].str.contains("disagree", case=False)]["count"].sum()
-    disagree = es[es["value"].str.contains("disagree", case=False)]["count"].sum()
+    agree = es[
+        es["value"].isin(["Strongly agree", "Somewhat agree"])
+    ]["count"].sum()
+    disagree = es[
+        es["value"].isin(["Somewhat disagree", "Strongly disagree"])
+    ]["count"].sum()
     cap = vt["settlement_capacity"]
     return (
         f"<ul>"

@@ -29,7 +29,7 @@ def demand_finance_scissor_phrase(dem: Mapping) -> str:
         )
     if finance_pct:
         parts.append(
-            f"{finance_pct:.1f}% report overall financial position deteriorated (last 3 months)"
+            f"{finance_pct:.1f}% report their finances have deteriorated (last 3 months)"
         )
 
     core = "; ".join(parts)
@@ -64,11 +64,11 @@ def recruitment_vs_retention_phrase(rec: Mapping, ret: Mapping) -> str:
     ratio = rec_pct / ret_pct if ret_pct else 0
 
     if ratio >= 1.8:
-        comparison = "almost twice as hard as"
+        comparison = "more commonly reported as difficult than"
     elif ratio >= 1.4:
-        comparison = "significantly harder than"
+        comparison = "more commonly reported as difficult than"
     elif ratio >= 1.1:
-        comparison = "a bit harder than"
+        comparison = "a bit more commonly reported as difficult than"
     elif ratio >= 0.9:
         comparison = "about as hard as"
     else:

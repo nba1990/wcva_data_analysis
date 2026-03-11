@@ -83,7 +83,7 @@ def get_wave_registry() -> WaveRegistry:
     """Shared cross-wave registry for trend analysis and narratives."""
     return build_wave_registry_from_current_data()
 
-df_full = get_data()  # Shape of dataset: (111, 162) (111 organisations, 162 variables) # noqa
+df_full = get_data()  # Analysis DataFrame used throughout the app (includes derived columns). # noqa
 
 # ---------------------------------------------------------------------------
 # Sidebar: filters + accessibility toggle
