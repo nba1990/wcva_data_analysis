@@ -7,10 +7,10 @@ import streamlit.components.v1 as components
 
 from src.config import WCVA_BRAND
 
-
 # -----------------------------------------------------------------------------
 # Helper utilities for dynamic colours and trend arrows
 # -----------------------------------------------------------------------------
+
 
 def _compute_trend(
     current: float | None,
@@ -191,9 +191,7 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
             "id": "orgs",
             "label": "Organisations in view",
             "value": f"{n}",
-            "caption": (
-                "Respondents in this filtered cut of the dataset"
-            ),
+            "caption": ("Respondents in this filtered cut of the dataset"),
             "icon": "🏢",
             "theme": "neutral",
             "gauge_fill": 100,
@@ -234,9 +232,7 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
             "id": "too_few",
             "label": "Share with too few volunteers",
             "value": f"{rec['pct_too_few']}%",
-            "caption": (
-                "Say they have too few volunteers for their objectives"
-            ),
+            "caption": ("Say they have too few volunteers for their objectives"),
             "icon": "🙋",
             "theme": "volunteers",
             "gauge_fill": too_few_now,
@@ -250,9 +246,7 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
             "id": "rec_diff",
             "label": "Share finding recruitment difficult",
             "value": f"{rec['pct_difficulty']}%",
-            "caption": (
-                "Find recruiting volunteers somewhat or very difficult"
-            ),
+            "caption": ("Find recruiting volunteers somewhat or very difficult"),
             "icon": "🧩",
             "theme": "volunteers",
             "gauge_fill": rec_diff_now,
@@ -266,9 +260,7 @@ def _build_metrics(n: int, dem: Mapping, rec: Mapping, ret: Mapping) -> list[dic
             "id": "ret_diff",
             "label": "Share finding retention difficult",
             "value": f"{ret['pct_difficulty']}%",
-            "caption": (
-                "Find retaining volunteers somewhat or very difficult"
-            ),
+            "caption": ("Find retaining volunteers somewhat or very difficult"),
             "icon": "🔄",
             "theme": "volunteers",
             "gauge_fill": ret_diff_now,
@@ -298,7 +290,7 @@ def render_at_a_glance_infographic(
 
     if accessible:
         # High-contrast palette aligned with the broader dashboard accessible mode.
-        teal = "#009E73"   # teal-green from ACCESSIBLE_SEQUENCE
+        teal = "#009E73"  # teal-green from ACCESSIBLE_SEQUENCE
         coral = "#DC267F"  # magenta
         amber = "#FFB000"  # gold
     else:
@@ -306,8 +298,7 @@ def render_at_a_glance_infographic(
         coral = WCVA_BRAND["coral"]
         amber = WCVA_BRAND["amber"]
 
-    css = dedent(
-        f"""
+    css = dedent(f"""
         <style>
           .wcva-info-root {{
             width: 100%;
@@ -431,8 +422,7 @@ def render_at_a_glance_infographic(
             background: var(--wcva-gauge-colour, {teal});
           }}
         </style>
-        """
-    )
+        """)
 
     severity_phrases = {
         "positive": "Relatively positive",
@@ -444,9 +434,10 @@ def render_at_a_glance_infographic(
     for m in metrics:
         theme_class = "wcva-card-theme-" + m["theme"] if m.get("theme") else ""
         vs_wave = m.get("trend_vs_wave") or ""
-        vs_wave_line = f'<div class="wcva-card-vs-wave">{vs_wave}</div>' if vs_wave else ""
-        card_html_parts.append(
-            f"""
+        vs_wave_line = (
+            f'<div class="wcva-card-vs-wave">{vs_wave}</div>' if vs_wave else ""
+        )
+        card_html_parts.append(f"""
             <div class="wcva-card {theme_class}">
               <div class="wcva-card-header">
                 <div class="wcva-card-icon" aria-hidden="true">{m.get("icon", "")}</div>
@@ -468,8 +459,7 @@ def render_at_a_glance_infographic(
                 {severity_phrases.get(m.get('severity', ''), '')}
               </div>
             </div>
-            """
-        )
+            """)
 
     html = f"""
     <div class="wcva-info-root">

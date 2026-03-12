@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Mapping
+from typing import Any, Dict, Mapping, Optional
 
 import pandas as pd
-from pydantic import BaseModel, Field, ConfigDict
+import streamlit as st
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class StrictBaseModel(BaseModel):
     model_config = ConfigDict(
@@ -21,6 +23,7 @@ CountField = Field(ge=0)
 # Shared schema
 # ============================================================
 
+
 class Meta(StrictBaseModel):
     title: str
     subtitle: str
@@ -34,7 +37,9 @@ class HeadlineFinancialHealth(StrictBaseModel):
     financial_position_deteriorated_due_to_rising_costs_pct: int = PctField
     using_reserves_to_cover_operational_costs_pct: int = PctField
     has_financial_reserves_pct: int | None = Field(default=None, ge=0, le=100)
-    using_reserves_among_those_with_reserves_pct: int | None = Field(default=None, ge=0, le=100)
+    using_reserves_among_those_with_reserves_pct: int | None = Field(
+        default=None, ge=0, le=100
+    )
 
 
 class HeadlineKPIs(StrictBaseModel):
@@ -87,7 +92,9 @@ class ExpenditureBreakdown(StrictBaseModel):
     def model_post_init(self, __context) -> None:
         for key, value in self.categories_pct.items():
             if not 0 <= value <= 100:
-                raise ValueError(f"Expenditure percentage out of range for '{key}': {value}")
+                raise ValueError(
+                    f"Expenditure percentage out of range for '{key}': {value}"
+                )
 
 
 class Likert5Change(StrictBaseModel):
@@ -145,7 +152,9 @@ class AbilityToMeetDemand(StrictBaseModel):
     section_title: str
     we_expect_to_meet_demand_with_limited_no_spare_capacity_pct: int = PctField
     we_expect_to_almost_meet_demand_pct: int = PctField
-    we_expect_to_fall_significantly_short_in_our_ability_to_meet_demand_pct: int = PctField
+    we_expect_to_fall_significantly_short_in_our_ability_to_meet_demand_pct: int = (
+        PctField
+    )
     we_expect_to_meet_demand_with_significant_spare_capacity_pct: int = PctField
 
 
@@ -219,7 +228,9 @@ class RespondentProfile(StrictBaseModel):
         for group_name, mapping in groups.items():
             for key, value in mapping.items():
                 if not 0 <= value <= 100:
-                    raise ValueError(f"Profile percentage out of range for '{group_name}.{key}': {value}")
+                    raise ValueError(
+                        f"Profile percentage out of range for '{group_name}.{key}': {value}"
+                    )
 
 
 class WaveContext(StrictBaseModel):
@@ -244,28 +255,36 @@ class WaveContext(StrictBaseModel):
         return self.meta.wave_response_desc
 
     def staff_recruitment_concern_callout(self) -> str:
-        pct = self.workforce.recruitment_and_retention_concerns.staff_recruitment_concern_pct
+        pct = (
+            self.workforce.recruitment_and_retention_concerns.staff_recruitment_concern_pct
+        )
         return (
             f"{pct}% of {self.meta.wave_label} respondents listed staff recruitment "
             "as a key concern"
         )
 
     def staff_retention_concern_callout(self) -> str:
-        pct = self.workforce.recruitment_and_retention_concerns.staff_retention_concern_pct
+        pct = (
+            self.workforce.recruitment_and_retention_concerns.staff_retention_concern_pct
+        )
         return (
             f"{pct}% of {self.meta.wave_label} respondents listed staff retention "
             "as a key concern"
         )
 
     def volunteer_recruitment_concern_callout(self) -> str:
-        pct = self.workforce.recruitment_and_retention_concerns.volunteer_recruitment_concern_pct
+        pct = (
+            self.workforce.recruitment_and_retention_concerns.volunteer_recruitment_concern_pct
+        )
         return (
             f"{pct}% of {self.meta.wave_label} respondents listed volunteer recruitment "
             "as a key concern"
         )
 
     def volunteer_retention_concern_callout(self) -> str:
-        pct = self.workforce.recruitment_and_retention_concerns.volunteer_retention_concern_pct
+        pct = (
+            self.workforce.recruitment_and_retention_concerns.volunteer_retention_concern_pct
+        )
         return (
             f"{pct}% of {self.meta.wave_label} respondents listed volunteer retention "
             "as a key concern"
@@ -279,7 +298,9 @@ class WaveContext(StrictBaseModel):
         )
 
     def financial_deteriorated_callout(self) -> str:
-        pct = self.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
+        pct = (
+            self.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
+        )
         return (
             f"{pct}% of organisations reported their financial position deteriorated "
             f"due to rising costs in {self.meta.wave_label}"
@@ -303,6 +324,7 @@ class WaveContext(StrictBaseModel):
 # ============================================================
 # Loader / registry utilities
 # ============================================================
+
 
 class WaveRegistry(StrictBaseModel):
     waves: Dict[str, WaveContext]
@@ -344,9 +366,9 @@ def build_wave_context_from_df(
     """
     from src.eda import (
         demand_and_outlook,
-        workforce_operations,
         profile_summary,
         volunteer_recruitment_analysis,
+        workforce_operations,
     )
 
     prof = profile_summary(df)
@@ -366,24 +388,40 @@ def build_wave_context_from_df(
     )
 
     financial_health = HeadlineFinancialHealth(
-        financial_position_deteriorated_due_to_rising_costs_pct=int(round(wf["finance_deteriorated_pct"])),
-        using_reserves_to_cover_operational_costs_pct=int(round(wf["using_reserves_pct"])),
+        financial_position_deteriorated_due_to_rising_costs_pct=int(
+            round(wf["finance_deteriorated_pct"])
+        ),
+        using_reserves_to_cover_operational_costs_pct=int(
+            round(wf["using_reserves_pct"])
+        ),
         has_financial_reserves_pct=int(round(wf["reserves_yes_pct"])),
-        using_reserves_among_those_with_reserves_pct=int(round(wf["using_reserves_pct"])),
+        using_reserves_among_those_with_reserves_pct=int(
+            round(wf["using_reserves_pct"])
+        ),
     )
 
     workforce_headline = WorkforceHeadline(
         has_volunteers_pct=int(round(prof["has_volunteers_pct"])),
         has_paid_staff_pct=int(round(prof["has_paid_staff_pct"])),
-        face_staff_recruitment_difficulties_pct=int(round(wf["staff_rec_difficulty_pct"])),
-        face_staff_retention_difficulties_pct=int(round(wf["staff_ret_difficulty_pct"])),
-        face_volunteer_recruitment_difficulties_pct=int(round(wf["vol_rec_difficulty_pct"])),
-        face_volunteer_retention_difficulties_pct=int(round(wf["vol_ret_difficulty_pct"])),
+        face_staff_recruitment_difficulties_pct=int(
+            round(wf["staff_rec_difficulty_pct"])
+        ),
+        face_staff_retention_difficulties_pct=int(
+            round(wf["staff_ret_difficulty_pct"])
+        ),
+        face_volunteer_recruitment_difficulties_pct=int(
+            round(wf["vol_rec_difficulty_pct"])
+        ),
+        face_volunteer_retention_difficulties_pct=int(
+            round(wf["vol_ret_difficulty_pct"])
+        ),
         too_few_volunteers_pct=int(round(rec["pct_too_few"])),
     )
 
     operations_headline = OperationsHeadline(
-        likelihood_of_operating_this_time_next_year_pct=int(round(dem["operating_pct_likely"])),
+        likelihood_of_operating_this_time_next_year_pct=int(
+            round(dem["operating_pct_likely"])
+        ),
         # Wave 2 does not currently have a direct analogue for this KPI;
         # we default to 0 and can refine once a question is added.
         report_insufficient_capacity_to_meet_demand_next_3_months_pct=0,
@@ -416,15 +454,19 @@ def build_wave_context_from_df(
         ranked_concerns: list[RankedConcern] = []
     else:
         income_row = concerns_df[concerns_df["label"] == "Income"].iloc[0]
-        inc_demand_row = concerns_df[concerns_df["label"] == "Increasing demand"].iloc[0]
-        inflation_row = concerns_df[concerns_df["label"] == "Inflation (non-energy)"].iloc[0]
+        inc_demand_row = concerns_df[concerns_df["label"] == "Increasing demand"].iloc[
+            0
+        ]
+        inflation_row = concerns_df[
+            concerns_df["label"] == "Inflation (non-energy)"
+        ].iloc[0]
 
         key_concerns_top_cards = KeyOrganisationalConcernsTopCards(
             income_pct=int(round(income_row["pct"])),
             increasing_demand_for_services_pct=int(round(inc_demand_row["pct"])),
-            inflation_goods_and_services_prices_other_than_energy_pct=int(round(
-                inflation_row["pct"]
-            )),
+            inflation_goods_and_services_prices_other_than_energy_pct=int(
+                round(inflation_row["pct"])
+            ),
         )
 
         ranked_concerns = [
@@ -452,8 +494,12 @@ def build_wave_context_from_df(
     # populated incrementally as needed.
     demand_section = DemandSection(
         headline=demand_headline,
-        change_past_3_months=Likert5Change(section_title="Change in Service Demand Past 3 Months"),
-        expected_change_next_3_months=Likert5Change(section_title="Expected Change in Service Demand Over the Next 3 Months"),
+        change_past_3_months=Likert5Change(
+            section_title="Change in Service Demand Past 3 Months"
+        ),
+        expected_change_next_3_months=Likert5Change(
+            section_title="Expected Change in Service Demand Over the Next 3 Months"
+        ),
         ability_to_meet_demand_next_3_months=AbilityToMeetDemand(
             section_title="Ability to meet demand over the next 3 months",
             we_expect_to_meet_demand_with_limited_no_spare_capacity_pct=0,
@@ -499,9 +545,13 @@ def build_wave_context_from_df(
     )
 
     finance_headline = FinanceHeadline(
-        using_reserves_to_cover_operational_costs_pct=int(round(wf["using_reserves_pct"])),
+        using_reserves_to_cover_operational_costs_pct=int(
+            round(wf["using_reserves_pct"])
+        ),
         no_reserves_available_pct=0,
-        financial_position_deteriorated_due_to_rising_costs_pct=int(round(wf["finance_deteriorated_pct"])),
+        financial_position_deteriorated_due_to_rising_costs_pct=int(
+            round(wf["finance_deteriorated_pct"])
+        ),
     )
 
     income_breakdown = IncomeBreakdown(
@@ -520,7 +570,9 @@ def build_wave_context_from_df(
         headline=finance_headline,
         income_breakdown=income_breakdown,
         expenditure_breakdown=expenditure_breakdown,
-        change_past_3_months=Likert5Change(section_title="Change in financial position past 3 months"),
+        change_past_3_months=Likert5Change(
+            section_title="Change in financial position past 3 months"
+        ),
         expected_change_next_3_months=Likert5Change(
             section_title="Expected Change in Financial Position Over the Next 3 Months"
         ),
@@ -574,7 +626,7 @@ def load_wave_registry(raw_waves: Mapping[str, Mapping]) -> WaveRegistry:
     return WaveRegistry(waves=validated)
 
 
-def build_wave_registry_from_current_data() -> WaveRegistry:
+def build_wave_registry_from_current_data(df: Optional[pd.DataFrame]) -> WaveRegistry:
     """
     Build a global WaveRegistry combining the hand-crafted Wave 1 context
     with Wave 2+ contexts derived from the current dataset.
@@ -583,13 +635,17 @@ def build_wave_registry_from_current_data() -> WaveRegistry:
     Streamlit or PDF/HTML rendering so it can be reused across the
     dashboard and presentation layers.
     """
-    from src.data_loader import load_dataset  # local import to avoid cycles
 
-    df_all = load_dataset()
+    # Load dataset again only if no data is passed in.
+    if df is None:
+        from src.data_loader import load_dataset  # local import to avoid cycles
+
+        df = load_dataset()
+
     # Wave 2 is currently derived from the full dataset; additional waves
     # can be appended here as the tracking series grows.
     wave2_ctx = build_wave_context_from_df(
-        df_all,
+        df,
         wave_label="Wave 2",
         wave_number=2,
     )
@@ -600,17 +656,30 @@ def build_wave_registry_from_current_data() -> WaveRegistry:
     return WaveRegistry(waves=waves)
 
 
+@st.cache_data
+def get_wave_registry(df: Optional[pd.DataFrame]) -> WaveRegistry:
+    """Shared cross-wave registry for trend analysis and narratives."""
+    return build_wave_registry_from_current_data(df)
+
+
 # ============================================================
 # Useful comparison helpers
 # ============================================================
+
 
 def pct_point_change(old: int, new: int) -> int:
     return new - old
 
 
-def compare_financial_deterioration(old_wave: WaveContext, new_wave: WaveContext) -> dict[str, int | str]:
-    old_val = old_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
-    new_val = new_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
+def compare_financial_deterioration(
+    old_wave: WaveContext, new_wave: WaveContext
+) -> dict[str, int | str]:
+    old_val = (
+        old_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
+    )
+    new_val = (
+        new_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
+    )
 
     return {
         "metric": "financial_position_deteriorated_due_to_rising_costs_pct",
@@ -622,7 +691,9 @@ def compare_financial_deterioration(old_wave: WaveContext, new_wave: WaveContext
     }
 
 
-def compare_demand_increase(old_wave: WaveContext, new_wave: WaveContext) -> dict[str, int | str]:
+def compare_demand_increase(
+    old_wave: WaveContext, new_wave: WaveContext
+) -> dict[str, int | str]:
     old_val = old_wave.demand.headline.increasing_demand_for_services_pct
     new_val = new_wave.demand.headline.increasing_demand_for_services_pct
 
@@ -636,9 +707,15 @@ def compare_demand_increase(old_wave: WaveContext, new_wave: WaveContext) -> dic
     }
 
 
-def compare_staff_recruitment(old_wave: WaveContext, new_wave: WaveContext) -> dict[str, int | str]:
-    old_val = old_wave.workforce.recruitment_and_retention_concerns.staff_recruitment_concern_pct
-    new_val = new_wave.workforce.recruitment_and_retention_concerns.staff_recruitment_concern_pct
+def compare_staff_recruitment(
+    old_wave: WaveContext, new_wave: WaveContext
+) -> dict[str, int | str]:
+    old_val = (
+        old_wave.workforce.recruitment_and_retention_concerns.staff_recruitment_concern_pct
+    )
+    new_val = (
+        new_wave.workforce.recruitment_and_retention_concerns.staff_recruitment_concern_pct
+    )
 
     return {
         "metric": "staff_recruitment_concern_pct",
@@ -738,22 +815,21 @@ def build_trend_pivot(trend_df: pd.DataFrame) -> pd.DataFrame:
     if trend_df.empty:
         return trend_df.copy()
 
-    wide = (
-        trend_df.pivot_table(
-            index=["wave_number", "wave_label"],
-            columns="metric_label",
-            values="value",
-        )
-        .sort_index()
-    )
+    wide = trend_df.pivot_table(
+        index=["wave_number", "wave_label"],
+        columns="metric_label",
+        values="value",
+    ).sort_index()
 
     wave_counts = (
         trend_df[["wave_number", "wave_label", "wave_n"]]
         .drop_duplicates(subset=["wave_number", "wave_label"])
         .set_index(["wave_number", "wave_label"])
     )
-    wide = wide.join(wave_counts).reset_index().rename(
-        columns={"wave_label": "Wave", "wave_n": "n_organisations"}
+    wide = (
+        wide.join(wave_counts)
+        .reset_index()
+        .rename(columns={"wave_label": "Wave", "wave_n": "n_organisations"})
     )
     return wide
 
@@ -930,7 +1006,11 @@ WAVE1_RAW = {
         "ranked_concerns": [
             {"rank": 1, "concern": "Income", "pct": 90},
             {"rank": 2, "concern": "Increasing demand for services", "pct": 56},
-            {"rank": 3, "concern": "Inflation of goods and services prices (other than energy)", "pct": 38},
+            {
+                "rank": 3,
+                "concern": "Inflation of goods and services prices (other than energy)",
+                "pct": 38,
+            },
             {"rank": 4, "concern": "Recruitment of volunteers", "pct": 30},
             {"rank": 5, "concern": "Other (please specify)", "pct": 23},
             {"rank": 6, "concern": "Retention of paid staff", "pct": 23},

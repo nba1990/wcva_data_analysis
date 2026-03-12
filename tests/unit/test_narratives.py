@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from src.narratives import demand_finance_scissor_phrase, recruitment_vs_retention_phrase
+from src.narratives import (
+    demand_finance_scissor_phrase,
+    recruitment_vs_retention_phrase,
+)
 
 
 def test_demand_finance_scissor_phrase_no_data() -> None:
@@ -30,4 +33,3 @@ def test_recruitment_vs_retention_phrase_various_cases() -> None:
         {"pct_difficulty": 50}, {"pct_difficulty": 48}
     )
     assert "about as hard as" in msg_balanced
-

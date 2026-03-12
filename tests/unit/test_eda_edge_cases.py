@@ -4,14 +4,14 @@ import pandas as pd
 
 from src.data_loader import _derive_columns
 from src.eda import (
+    cross_segment_analysis,
     demand_and_outlook,
+    finance_recruitment_cross,
+    volunteer_demographics,
     volunteer_recruitment_analysis,
     volunteer_retention_analysis,
-    workforce_operations,
-    volunteer_demographics,
     volunteering_types,
-    cross_segment_analysis,
-    finance_recruitment_cross,
+    workforce_operations,
 )
 
 
@@ -122,4 +122,3 @@ def test_finance_recruitment_cross_positive_case() -> None:
     assert result["n_finance_not_deteriorated"] == 5
     assert 0 <= result["pct_rec_difficulty_if_finance_deteriorated"] <= 100
     assert 0 <= result["pct_rec_difficulty_if_finance_not_deteriorated"] <= 100
-

@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from src.infographic import _classify_severity, _compute_trend, _compute_gauge_colour, _build_metrics
+from src.infographic import (
+    _build_metrics,
+    _classify_severity,
+    _compute_gauge_colour,
+    _compute_trend,
+)
 
 
 def test_classify_severity_risk_metric_thresholds() -> None:
@@ -15,15 +20,15 @@ def test_compute_trend_neutral_and_directions() -> None:
     assert symbol == "●"
     assert css == "wcva-trend-neutral"
 
-    # Risk metric: increase is bad -> down arrow
+    # Risk metric: increase is bad -> up arrow
     symbol, css = _compute_trend(70, 50, higher_is_good=False)
-    assert symbol == "▼"
-    assert css == "wcva-trend-down"
-
-    # Risk metric: decrease is good -> up arrow
-    symbol, css = _compute_trend(40, 60, higher_is_good=False)
     assert symbol == "▲"
     assert css == "wcva-trend-up"
+
+    # Risk metric: decrease is good -> down arrow
+    symbol, css = _compute_trend(40, 60, higher_is_good=False)
+    assert symbol == "▼"
+    assert css == "wcva-trend-down"
 
 
 def test_compute_gauge_colour_aligns_with_severity() -> None:
@@ -56,4 +61,3 @@ def test_build_metrics_basic_structure() -> None:
     assert demand_card["gauge_fill"] == 60.0
     assert "severity" in demand_card
     assert demand_card["trend_symbol"] in {"▲", "▼", "●"}
-

@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import pandas as pd
 
-from src.data_loader import _clean, _derive_columns, count_multiselect, count_multiselect_by_segment
-from src.config import MULTI_SELECT_GROUPS, LA_TO_REGION
+from src.config import LA_TO_REGION, MULTI_SELECT_GROUPS
+from src.data_loader import (
+    _clean,
+    _derive_columns,
+    count_multiselect,
+    count_multiselect_by_segment,
+)
 
 
 def test_clean_converts_empty_strings_and_numeric_columns() -> None:
@@ -92,4 +97,3 @@ def test_count_multiselect_by_segment() -> None:
 
     # For c2, only segment Y has selections: 2 of 2 rows -> 100%
     assert row_c2["Y"] == 100.0
-

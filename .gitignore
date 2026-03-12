@@ -3,7 +3,8 @@ __pycache__/
 
 .coverage
 .pytest_cache/
-
+/.idea
+.venv/
 output/*.html
 output/*.pdf
 output/Screenshots/

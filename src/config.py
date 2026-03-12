@@ -6,13 +6,12 @@ column-to-question mappings, response orderings, and chart defaults.
 """
 
 from __future__ import annotations
-from pathlib import Path
 
 from dataclasses import dataclass
-from typing import Callable, Iterable
+from pathlib import Path
+from typing import Callable, Iterable, TypeVar
 
 import pandas as pd
-
 
 LabelGrouper = Callable[[str], str]
 
@@ -30,6 +29,31 @@ OUTPUT_DIR.mkdir(exist_ok=True)
 # K-anonymity threshold (matches Baromedr dashboard suppression rule)
 # ---------------------------------------------------------------------------
 K_ANON_THRESHOLD = 5
+
+
+@dataclass()
+class StreamlitAppUISharedConfigState:
+    """Configuration dataclass storing the Streamlit application UI application configuration states."""
+
+    base_size_n: int = 0
+    text_size_mode: str = ""
+    text_scale: float = 0.0
+    accessible_mode: bool = False
+    palette_mode: str = "brand"
+    size_options: list[str] = list
+    selected_size: TypeVar | str | None = ""
+    la_scope_options: list[str] = list
+    selected_la_scope: TypeVar | str | None = ""
+    activity_options: list[str] = list
+    selected_activity: TypeVar | str | None = ""
+    paid_staff_options: list[str] = list
+    selected_paid_staff: TypeVar | str | None = ""
+    concern_label_options: list[str] = list
+    selected_concerns: TypeVar | str | None = ""
+    suppressed = base_size_n < K_ANON_THRESHOLD
+
+
+GlobalStreamlitAppUISharedConfigState = StreamlitAppUISharedConfigState()
 
 # ---------------------------------------------------------------------------
 # Colour palettes
@@ -109,7 +133,7 @@ def get_likert_colours(mode: str = "brand") -> list[str]:
 
 def _relative_luminance(hex_colour: str) -> float:
     """WCAG 2.1 relative luminance from a hex colour."""
-    r, g, b = (int(hex_colour[i:i+2], 16) / 255 for i in (1, 3, 5))
+    r, g, b = (int(hex_colour[i : i + 2], 16) / 255 for i in (1, 3, 5))
     components = []
     for c in (r, g, b):
         components.append(c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4)
@@ -125,8 +149,9 @@ def contrast_ratio(fg: str, bg: str) -> float:
     return (lighter + 0.05) / (darker + 0.05)
 
 
-def validate_palette_contrast(palette: list[str], bg: str = "#FFFFFF",
-                               min_ratio: float = 3.0) -> dict[str, float]:
+def validate_palette_contrast(
+    palette: list[str], bg: str = "#FFFFFF", min_ratio: float = 3.0
+) -> dict[str, float]:
     """Check each palette colour against a background.  Returns {colour: ratio}."""
     return {c: round(contrast_ratio(c, bg), 2) for c in palette}
 
@@ -145,49 +170,81 @@ CHART_MARGIN = dict(l=20, r=20, t=60, b=20)
 # Response orderings (for consistent axis ordering in charts)
 # ---------------------------------------------------------------------------
 DEMAND_ORDER = [
-    "Increased a lot", "Increased a little", "Stayed the same",
-    "Decreased a little", "Decreased a lot", "Don't know",
+    "Increased a lot",
+    "Increased a little",
+    "Stayed the same",
+    "Decreased a little",
+    "Decreased a lot",
+    "Don't know",
 ]
 
 FINANCIAL_ORDER = [
-    "Improved a lot", "Improved a little", "Stayed the same",
-    "Deteriorated a little", "Deteriorated a lot", "Don't know",
+    "Improved a lot",
+    "Improved a little",
+    "Stayed the same",
+    "Deteriorated a little",
+    "Deteriorated a lot",
+    "Don't know",
 ]
 
 EXPECT_DEMAND_ORDER = [
-    "Increase a lot", "Increase a little", "Stay the same",
-    "Decrease a little", "Decrease a lot", "Don't know",
+    "Increase a lot",
+    "Increase a little",
+    "Stay the same",
+    "Decrease a little",
+    "Decrease a lot",
+    "Don't know",
 ]
 
 EXPECT_FINANCIAL_ORDER = [
-    "Improve a lot", "Improve a little", "Stay the same",
-    "Deteriorate a little", "Deteriorate a lot", "Don't know",
+    "Improve a lot",
+    "Improve a little",
+    "Stay the same",
+    "Deteriorate a little",
+    "Deteriorate a lot",
+    "Don't know",
 ]
 
 DIFFICULTY_ORDER = [
-    "Extremely easy", "Somewhat easy", "Neither easy nor difficult",
-    "Somewhat difficult", "Extremely difficult", "Don't know",
+    "Extremely easy",
+    "Somewhat easy",
+    "Neither easy nor difficult",
+    "Somewhat difficult",
+    "Extremely difficult",
+    "Don't know",
 ]
 
 OPERATING_ORDER = [
-    "Very likely", "Quite likely", "Neither likely nor unlikely",
-    "Quite unlikely", "Very unlikely", "Don't know",
+    "Very likely",
+    "Quite likely",
+    "Neither likely nor unlikely",
+    "Quite unlikely",
+    "Very unlikely",
+    "Don't know",
 ]
 
 VOL_OBJECTIVES_ORDER = [
-    "More than enough volunteers", "About the right number of volunteers",
-    "Slightly too few volunteers", "Significantly too few volunteers",
+    "More than enough volunteers",
+    "About the right number of volunteers",
+    "Slightly too few volunteers",
+    "Significantly too few volunteers",
     "Don't know",
 ]
 
 VOL_TYPEUSE_ORDER = [
-    "Featured heavily", "Featured to a moderate extent",
-    "Featured to a limited extent", "Did not feature",
+    "Featured heavily",
+    "Featured to a moderate extent",
+    "Featured to a limited extent",
+    "Did not feature",
 ]
 
 EARNED_SETTLEMENT_ORDER = [
-    "Strongly agree", "Somewhat agree", "Neither agree nor disagree",
-    "Somewhat disagree", "Strongly disagree", "Don't know / too early to say",
+    "Strongly agree",
+    "Somewhat agree",
+    "Neither agree nor disagree",
+    "Somewhat disagree",
+    "Strongly disagree",
+    "Don't know / too early to say",
 ]
 
 ORG_SIZE_ORDER = ["Small", "Medium", "Large"]
@@ -199,9 +256,11 @@ YES_NO_ORDER = ["Yes", "No", "Don't know"]
 # Alt text accessibility text configuration dataclasses and helper functions (for consistency)  # noqa
 # ---------------------------------------------------------------------------
 
+
 @dataclass(frozen=True, slots=True)
 class AltTextConfig:
     """Configuration dataclass for generating alt-text for charts."""
+
     value_col: str
     count_col: str
     pct_col: str
@@ -215,13 +274,7 @@ class AltTextConfig:
 
 def normalise_label(value: str) -> str:
     """Normalise a label string for consistent alt-text."""
-    return (
-        str(value)
-        .strip()
-        .lower()
-        .replace("’", "'")
-        .replace("‘", "'")
-    )
+    return str(value).strip().lower().replace("’", "'").replace("‘", "'")
 
 
 def make_pattern_grouper(
@@ -291,13 +344,23 @@ GROUPERS: dict[str, LabelGrouper] = {
     "volunteer_sufficiency": make_pattern_grouper(
         [
             ("Enough volunteers", ("more than enough", "about the right number")),
-            ("Too few volunteers", ("slightly too few", "significantly too few", "too few")),
+            (
+                "Too few volunteers",
+                ("slightly too few", "significantly too few", "too few"),
+            ),
             ("Don't know", ("don't know", "dont know", "not sure")),
         ]
     ),
     "feature_use": make_pattern_grouper(
         [
-            ("Featured", ("featured heavily", "featured to a moderate extent", "featured to a limited extent")),  # noqa
+            (
+                "Featured",
+                (
+                    "featured heavily",
+                    "featured to a moderate extent",
+                    "featured to a limited extent",
+                ),
+            ),  # noqa
             ("Did not feature", ("did not feature",)),
         ]
     ),
@@ -344,7 +407,9 @@ ORDER_TO_GROUPING_KEY: dict[tuple[str, ...], str] = {
 }
 
 
-def resolve_grouping(order: Iterable[str]) -> tuple[LabelGrouper | None, list[str] | None]:
+def resolve_grouping(
+    order: Iterable[str],
+) -> tuple[LabelGrouper | None, list[str] | None]:
     """Resolve a response ordering to a grouping key and group order."""
     key = ORDER_TO_GROUPING_KEY.get(tuple(order))
     if key is None:
@@ -372,10 +437,7 @@ def summarise_stacked_categories(
     else:
         working["group"] = working[value_col].map(grouper)
 
-    grouped = (
-        working.groupby("group", as_index=False)[[count_col, pct_col]]
-        .sum()
-    )
+    grouped = working.groupby("group", as_index=False)[[count_col, pct_col]].sum()
 
     if drop_zero:
         grouped = grouped[grouped[pct_col] > 0].copy()
@@ -383,7 +445,9 @@ def summarise_stacked_categories(
     if group_order:
         rank = {name: i for i, name in enumerate(group_order)}
         grouped["_rank"] = grouped["group"].map(lambda x: rank.get(x, len(rank)))
-        grouped = grouped.sort_values(["_rank", pct_col], ascending=[True, False]).drop(columns="_rank")
+        grouped = grouped.sort_values(["_rank", pct_col], ascending=[True, False]).drop(
+            columns="_rank"
+        )
     else:
         grouped = grouped.sort_values(pct_col, ascending=False)
 
@@ -452,10 +516,8 @@ def make_stacked_bar_alt(
         max_groups=config.max_groups,
     )
 
-    return (
-        f"{config.chart_type}: {title}. "
-        f"{summary}. n={config.sample_size}."
-    )
+    return f"{config.chart_type}: {title}. " f"{summary}. n={config.sample_size}."
+
 
 # ---------------------------------------------------------------------------
 # Column-to-question mappings

@@ -13,4 +13,3 @@ def test_app_module_imports() -> None:
     flaky in headless CI environments.
     """
     __import__("src.app")
-

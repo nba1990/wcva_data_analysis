@@ -5,10 +5,10 @@ import pandas as pd
 from src.data_loader import _derive_columns
 from src.eda import (
     demand_and_outlook,
+    finance_recruitment_cross,
     volunteer_recruitment_analysis,
     volunteer_retention_analysis,
     workforce_operations,
-    finance_recruitment_cross,
 )
 
 
@@ -25,7 +25,9 @@ def test_demand_and_outlook_basic_percentages(tiny_df: pd.DataFrame) -> None:
     assert dem["demand_pct_increased"] > 0
 
 
-def test_volunteer_recruitment_analysis_pcts_use_non_missing_bases(tiny_df: pd.DataFrame) -> None:
+def test_volunteer_recruitment_analysis_pcts_use_non_missing_bases(
+    tiny_df: pd.DataFrame,
+) -> None:
     derived = _derive_columns(tiny_df.copy())
     rec = volunteer_recruitment_analysis(derived)
 
@@ -38,7 +40,9 @@ def test_volunteer_recruitment_analysis_pcts_use_non_missing_bases(tiny_df: pd.D
     assert rec["pct_shortage"] == 66.7
 
 
-def test_volunteer_retention_analysis_pcts_use_non_missing_bases(tiny_df: pd.DataFrame) -> None:
+def test_volunteer_retention_analysis_pcts_use_non_missing_bases(
+    tiny_df: pd.DataFrame,
+) -> None:
     derived = _derive_columns(tiny_df.copy())
     ret = volunteer_retention_analysis(derived)
 
@@ -76,4 +80,3 @@ def test_finance_recruitment_cross_handles_small_samples() -> None:
 
     # Below minimum n=10 threshold, returns None
     assert finance_recruitment_cross(df_small) is None
-

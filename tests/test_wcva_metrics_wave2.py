@@ -3,11 +3,11 @@ import pandas as pd
 from src.data_loader import load_dataset
 from src.eda import (
     demand_and_outlook,
+    finance_recruitment_cross,
     volunteer_recruitment_analysis,
     volunteer_retention_analysis,
-    workforce_operations,
     volunteering_types,
-    finance_recruitment_cross,
+    workforce_operations,
 )
 
 
@@ -57,5 +57,3 @@ def test_wave2_headline_metrics_match_qa_expectations() -> None:
     assert cross["pct_rec_difficulty_if_finance_not_deteriorated"] == 48.5
     assert cross["n_finance_deteriorated"] == 39
     assert cross["n_finance_not_deteriorated"] == 72
-
-

@@ -3,8 +3,8 @@ from __future__ import annotations
 from src.data_loader import _derive_columns
 from src.eda import (
     demand_and_outlook,
-    workforce_operations,
     volunteer_recruitment_analysis,
+    workforce_operations,
 )
 from src.wave_context import build_wave_context_from_df
 
@@ -28,5 +28,6 @@ def test_wave_context_headlines_align_with_eda(tiny_df) -> None:
         ctx.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
         == int(round(wf["finance_deteriorated_pct"]))
     )
-    assert ctx.workforce.headline.too_few_volunteers_pct == int(round(rec["pct_too_few"]))
-
+    assert ctx.workforce.headline.too_few_volunteers_pct == int(
+        round(rec["pct_too_few"])
+    )

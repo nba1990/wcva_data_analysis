@@ -24,9 +24,7 @@ def demand_finance_scissor_phrase(dem: Mapping) -> str:
 
     parts: list[str] = []
     if demand_pct:
-        parts.append(
-            f"{demand_pct:.1f}% of organisations report increased demand"
-        )
+        parts.append(f"{demand_pct:.1f}% of organisations report increased demand")
     if finance_pct:
         parts.append(
             f"{finance_pct:.1f}% report their finances have deteriorated (last 3 months)"
@@ -35,9 +33,8 @@ def demand_finance_scissor_phrase(dem: Mapping) -> str:
     core = "; ".join(parts)
     if demand_pct and finance_pct:
         return (
-            core
-            + ". Together, this widens the 'scissor effect' between "
-              "rising demand and squeezed resources."
+            core + ". Together, this widens the 'scissor effect' between "
+            "rising demand and squeezed resources."
         )
     return core + "."
 
@@ -79,5 +76,3 @@ def recruitment_vs_retention_phrase(rec: Mapping, ret: Mapping) -> str:
         f"{comparison} retaining them "
         f"({rec_pct:.1f}% vs. {ret_pct:.1f}% reporting difficulty)."
     )
-
-

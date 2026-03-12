@@ -3,18 +3,18 @@ from __future__ import annotations
 import pandas as pd
 
 from src.config import (
-    WCVA_BRAND,
-    get_palette,
-    get_likert_colours,
-    contrast_ratio,
-    validate_palette_contrast,
     DEMAND_ORDER,
     FINANCIAL_ORDER,
-    resolve_grouping,
+    WCVA_BRAND,
     AltTextConfig,
-    summarise_stacked_categories,
+    contrast_ratio,
     format_group_summary,
+    get_likert_colours,
+    get_palette,
     make_stacked_bar_alt,
+    resolve_grouping,
+    summarise_stacked_categories,
+    validate_palette_contrast,
 )
 
 
@@ -119,4 +119,3 @@ def test_make_stacked_bar_alt_includes_title_and_sample_size() -> None:
     )
     assert "Stacked bar: Change in demand." in alt
     assert "n=40" in alt
-

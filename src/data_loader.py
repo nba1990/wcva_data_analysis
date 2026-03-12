@@ -5,15 +5,10 @@ Baromedr Cymru Wave 2 anonymised dataset.
 
 from __future__ import annotations
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
-
-from src.config import DATASET_PATH, DATA_DIR, LA_TO_REGION, MULTI_SELECT_GROUPS
+from src.config import DATA_DIR, DATASET_PATH, LA_TO_REGION, MULTI_SELECT_GROUPS
 
 
 def load_dataset(path: str | None = None) -> pd.DataFrame:
@@ -57,15 +52,19 @@ def _clean(df: pd.DataFrame) -> pd.DataFrame:
 def _derive_columns(df: pd.DataFrame) -> pd.DataFrame:
     """Add derived analytical columns."""
     demand_map = {
-        "Increased a lot": "Increased", "Increased a little": "Increased",
+        "Increased a lot": "Increased",
+        "Increased a little": "Increased",
         "Stayed the same": "Stayed the same",
-        "Decreased a little": "Decreased", "Decreased a lot": "Decreased",
+        "Decreased a little": "Decreased",
+        "Decreased a lot": "Decreased",
         "Don't know": "Don't know",
     }
     financial_map = {
-        "Improved a lot": "Improved", "Improved a little": "Improved",
+        "Improved a lot": "Improved",
+        "Improved a little": "Improved",
         "Stayed the same": "Stayed the same",
-        "Deteriorated a little": "Deteriorated", "Deteriorated a lot": "Deteriorated",
+        "Deteriorated a little": "Deteriorated",
+        "Deteriorated a lot": "Deteriorated",
         "Don't know": "Don't know",
     }
 
@@ -112,9 +111,7 @@ def count_multiselect(df: pd.DataFrame, label_dict: dict[str, str]) -> pd.DataFr
         return pd.DataFrame(columns=["column", "label", "count", "pct"])
 
     result = (
-        pd.DataFrame(rows)
-        .sort_values("count", ascending=False)
-        .reset_index(drop=True)
+        pd.DataFrame(rows).sort_values("count", ascending=False).reset_index(drop=True)
     )
     return result
 
@@ -158,30 +155,52 @@ def data_quality_profile(df: pd.DataFrame) -> dict:
 
     question_blocks = {
         "Organisational Profile": [
-            "legalform", "mainactivity", "socialenterprise", "paidworkforce",
-            "org_size", "location_la_primary", "wales_scope",
+            "legalform",
+            "mainactivity",
+            "socialenterprise",
+            "paidworkforce",
+            "org_size",
+            "location_la_primary",
+            "wales_scope",
         ],
         "Experience (last 3 months)": [
-            "demand", "workforce", "volunteers", "financial",
+            "demand",
+            "workforce",
+            "volunteers",
+            "financial",
         ],
         "Expectations (next 3 months)": [
-            "expectdemand", "expectworkforce", "expectvolunteers", "expectfinancial", "op_demand",
+            "expectdemand",
+            "expectworkforce",
+            "expectvolunteers",
+            "expectfinancial",
+            "op_demand",
         ],
         "Operational Challenges": [
-            "shortage_staff_rec", "shortage_staff_ret", "shortage_vol_rec", "shortage_vol_ret",
+            "shortage_staff_rec",
+            "shortage_staff_ret",
+            "shortage_vol_rec",
+            "shortage_vol_ret",
             "operating",
         ],
         "Finances": [
-            "financedeteriorate", "reserves", "usingreserves", "monthsreserves",
+            "financedeteriorate",
+            "reserves",
+            "usingreserves",
+            "monthsreserves",
         ],
         "Volunteering (recruitment)": [
-            "volobjectives", "vol_manager", "vol_rec",
+            "volobjectives",
+            "vol_manager",
+            "vol_rec",
         ],
         "Volunteering (retention)": [
-            "vol_ret", "vol_time",
+            "vol_ret",
+            "vol_time",
         ],
         "Earned Settlement": [
-            "earnedsettlement", "settlement_capacity",
+            "earnedsettlement",
+            "settlement_capacity",
         ],
     }
 
@@ -191,7 +210,9 @@ def data_quality_profile(df: pd.DataFrame) -> dict:
         if existing:
             answered = df[existing].notna().sum().sum()
             possible = n * len(existing)
-            block_completeness[block_name] = round(100 * answered / possible, 1) if possible else 0
+            block_completeness[block_name] = (
+                round(100 * answered / possible, 1) if possible else 0
+            )
 
     profile["block_completeness"] = block_completeness
     return profile

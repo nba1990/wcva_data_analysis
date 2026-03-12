@@ -3,12 +3,12 @@ from __future__ import annotations
 import pandas as pd
 
 from src.charts import (
-    horizontal_bar_ranked,
-    stacked_bar_ordinal,
     donut_chart,
     grouped_bar,
     heatmap_matrix,
+    horizontal_bar_ranked,
     kpi_card_html,
+    stacked_bar_ordinal,
 )
 from src.config import AltTextConfig
 
@@ -166,4 +166,3 @@ def test_kpi_card_html_renders_label_value_and_delta() -> None:
     assert "42%" in html
     assert "of organisations" in html
     assert "#123456" in html
-

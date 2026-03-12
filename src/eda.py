@@ -9,20 +9,34 @@ from __future__ import annotations
 
 import pandas as pd
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 from src.config import (
-    CONCERNS_LABELS, ACTIONS_LABELS, SHORTAGE_AFFECT_LABELS,
-    REC_METHODS_LABELS, REC_BARRIERS_LABELS, RET_BARRIERS_LABELS,
-    VOL_OFFER_LABELS, VOL_DEM_LABELS, VOL_DEM_CHANGE_LABELS,
-    VOL_TYPEUSE_LABELS, DEMAND_ORDER, FINANCIAL_ORDER, DIFFICULTY_ORDER,
-    OPERATING_ORDER, VOL_OBJECTIVES_ORDER, VOL_TYPEUSE_ORDER,
-    EARNED_SETTLEMENT_ORDER, ORG_SIZE_ORDER, YES_NO_ORDER,
-    EXPECT_DEMAND_ORDER, EXPECT_FINANCIAL_ORDER,
+    ACTIONS_LABELS,
+    CONCERNS_LABELS,
+    DEMAND_ORDER,
+    DIFFICULTY_ORDER,
+    EARNED_SETTLEMENT_ORDER,
+    EXPECT_DEMAND_ORDER,
+    EXPECT_FINANCIAL_ORDER,
+    FINANCIAL_ORDER,
+    OPERATING_ORDER,
+    ORG_SIZE_ORDER,
+    REC_BARRIERS_LABELS,
+    REC_METHODS_LABELS,
+    RET_BARRIERS_LABELS,
+    SHORTAGE_AFFECT_LABELS,
+    VOL_DEM_CHANGE_LABELS,
+    VOL_DEM_LABELS,
+    VOL_OBJECTIVES_ORDER,
+    VOL_OFFER_LABELS,
+    VOL_TYPEUSE_LABELS,
+    VOL_TYPEUSE_ORDER,
+    YES_NO_ORDER,
 )
-from src.data_loader import count_multiselect, count_multiselect_by_segment, load_la_context
+from src.data_loader import (
+    count_multiselect,
+    count_multiselect_by_segment,
+    load_la_context,
+)
 
 
 def _value_counts_ordered(series: pd.Series, order: list[str]) -> pd.DataFrame:
@@ -32,7 +46,9 @@ def _value_counts_ordered(series: pd.Series, order: list[str]) -> pd.DataFrame:
     rows = []
     for val in order:
         count = int(vc.get(val, 0))
-        rows.append({"value": val, "count": count, "pct": round(100 * count / n, 1) if n else 0})
+        rows.append(
+            {"value": val, "count": count, "pct": round(100 * count / n, 1) if n else 0}
+        )
     return pd.DataFrame(rows)
 
 
@@ -56,11 +72,19 @@ def _share_true(series: pd.Series) -> float:
 # 1. Profile summary
 # ---------------------------------------------------------------------------
 
+
 def profile_summary(df: pd.DataFrame) -> dict:
     n = len(df)
 
     # Basic distributions used throughout the app
-    org_size = df["org_size"].value_counts().reindex(ORG_SIZE_ORDER).fillna(0).astype(int).to_dict()
+    org_size = (
+        df["org_size"]
+        .value_counts()
+        .reindex(ORG_SIZE_ORDER)
+        .fillna(0)
+        .astype(int)
+        .to_dict()
+    )
     legalform = df["legalform"].value_counts().head(6).to_dict()
     wales_scope = df["wales_scope"].value_counts().to_dict()
     mainactivity = df["mainactivity"].value_counts().head(10).to_dict()
@@ -84,8 +108,12 @@ def profile_summary(df: pd.DataFrame) -> dict:
 
     la_merged["sample_share_pct"] = la_merged["sample_count"] / total_sample * 100.0
     la_merged["pop_share_pct"] = la_merged["population_2024"] / total_pop * 100.0
-    la_merged["sample_per_100k"] = la_merged["sample_count"] / la_merged["population_2024"] * 100000.0
-    la_merged["orgs_per_10k_pop"] = la_merged["est_vcse_orgs"] / la_merged["population_2024"] * 10000.0
+    la_merged["sample_per_100k"] = (
+        la_merged["sample_count"] / la_merged["population_2024"] * 100000.0
+    )
+    la_merged["orgs_per_10k_pop"] = (
+        la_merged["est_vcse_orgs"] / la_merged["population_2024"] * 10000.0
+    )
     # Over/under-representation index (100 = proportional to population)
     la_merged["representation_index"] = (
         la_merged["sample_share_pct"] / la_merged["pop_share_pct"]
@@ -141,6 +169,7 @@ def profile_summary(df: pd.DataFrame) -> dict:
 # 2. Demand and outlook
 # ---------------------------------------------------------------------------
 
+
 def demand_and_outlook(df: pd.DataFrame) -> dict:
     """
     Aggregates for demand, finances, and operating outlook.
@@ -193,6 +222,7 @@ def demand_and_outlook(df: pd.DataFrame) -> dict:
 # 3. Volunteer recruitment
 # ---------------------------------------------------------------------------
 
+
 def volunteer_recruitment_analysis(df: pd.DataFrame) -> dict:
     n = len(df)
     shortage_series = df["has_vol_rec_difficulty"]
@@ -206,14 +236,22 @@ def volunteer_recruitment_analysis(df: pd.DataFrame) -> dict:
         "n": n,
         "shortage_vol_rec": _value_counts_ordered(df["shortage_vol_rec"], YES_NO_ORDER),
         "vol_rec_difficulty": _value_counts_ordered(df["vol_rec"], DIFFICULTY_ORDER),
-        "vol_objectives": _value_counts_ordered(df["volobjectives"], VOL_OBJECTIVES_ORDER),
+        "vol_objectives": _value_counts_ordered(
+            df["volobjectives"], VOL_OBJECTIVES_ORDER
+        ),
         "rec_methods": count_multiselect(df, REC_METHODS_LABELS),
         "rec_barriers": count_multiselect(df, REC_BARRIERS_LABELS),
-        "rec_barriers_by_size": count_multiselect_by_segment(df, REC_BARRIERS_LABELS, "org_size"),
-        "rec_methods_by_size": count_multiselect_by_segment(df, REC_METHODS_LABELS, "org_size"),
+        "rec_barriers_by_size": count_multiselect_by_segment(
+            df, REC_BARRIERS_LABELS, "org_size"
+        ),
+        "rec_methods_by_size": count_multiselect_by_segment(
+            df, REC_METHODS_LABELS, "org_size"
+        ),
         # Share finding recruitment somewhat or extremely difficult (Likert-based, non-missing base)
         "difficulty_base": likert_base,
-        "pct_difficulty": round(100 * likert_hard / likert_base, 1) if likert_base else 0,
+        "pct_difficulty": (
+            round(100 * likert_hard / likert_base, 1) if likert_base else 0
+        ),
         # Share explicitly reporting a shortage recruiting volunteers (non-missing base)
         "pct_shortage": _share_true(shortage_series),
         "pct_too_few": (
@@ -221,7 +259,10 @@ def volunteer_recruitment_analysis(df: pd.DataFrame) -> dict:
                 round(
                     100
                     * series.isin(
-                        ["Slightly too few volunteers", "Significantly too few volunteers"]
+                        [
+                            "Slightly too few volunteers",
+                            "Significantly too few volunteers",
+                        ]
                     ).sum()
                     / series.notna().sum(),
                     1,
@@ -236,6 +277,7 @@ def volunteer_recruitment_analysis(df: pd.DataFrame) -> dict:
 # ---------------------------------------------------------------------------
 # 4. Volunteer retention
 # ---------------------------------------------------------------------------
+
 
 def volunteer_retention_analysis(df: pd.DataFrame) -> dict:
     n = len(df)
@@ -252,11 +294,17 @@ def volunteer_retention_analysis(df: pd.DataFrame) -> dict:
         "vol_ret_difficulty": _value_counts_ordered(df["vol_ret"], DIFFICULTY_ORDER),
         "ret_barriers": count_multiselect(df, RET_BARRIERS_LABELS),
         "vol_offer": count_multiselect(df, VOL_OFFER_LABELS),
-        "ret_barriers_by_size": count_multiselect_by_segment(df, RET_BARRIERS_LABELS, "org_size"),
-        "vol_offer_by_size": count_multiselect_by_segment(df, VOL_OFFER_LABELS, "org_size"),
+        "ret_barriers_by_size": count_multiselect_by_segment(
+            df, RET_BARRIERS_LABELS, "org_size"
+        ),
+        "vol_offer_by_size": count_multiselect_by_segment(
+            df, VOL_OFFER_LABELS, "org_size"
+        ),
         # Share finding retention somewhat or extremely difficult (Likert-based, non-missing base)
         "difficulty_base": likert_base,
-        "pct_difficulty": round(100 * likert_hard / likert_base, 1) if likert_base else 0,
+        "pct_difficulty": (
+            round(100 * likert_hard / likert_base, 1) if likert_base else 0
+        ),
         # Share explicitly reporting a shortage retaining volunteers (non-missing base)
         "pct_shortage": _share_true(shortage_series),
     }
@@ -266,20 +314,29 @@ def volunteer_retention_analysis(df: pd.DataFrame) -> dict:
 # 5. Workforce and operations
 # ---------------------------------------------------------------------------
 
+
 def workforce_operations(df: pd.DataFrame) -> dict:
     n = len(df)
     with_staff = df[df["paidworkforce"] == "Yes"]
     n_staff = len(with_staff)
 
-    staff_rec_difficulty = _value_counts_ordered(with_staff["shortage_staff_rec"], YES_NO_ORDER)
-    staff_ret_difficulty = _value_counts_ordered(with_staff["shortage_staff_ret"], YES_NO_ORDER)
+    staff_rec_difficulty = _value_counts_ordered(
+        with_staff["shortage_staff_rec"], YES_NO_ORDER
+    )
+    staff_ret_difficulty = _value_counts_ordered(
+        with_staff["shortage_staff_ret"], YES_NO_ORDER
+    )
 
     # Among organisations with paid staff, share reporting recruitment/retention difficulties.
     if n_staff:
         rec_yes_row = staff_rec_difficulty[staff_rec_difficulty["value"] == "Yes"]
         ret_yes_row = staff_ret_difficulty[staff_ret_difficulty["value"] == "Yes"]
-        staff_rec_difficulty_pct = float(rec_yes_row["pct"].iloc[0]) if not rec_yes_row.empty else 0.0
-        staff_ret_difficulty_pct = float(ret_yes_row["pct"].iloc[0]) if not ret_yes_row.empty else 0.0
+        staff_rec_difficulty_pct = (
+            float(rec_yes_row["pct"].iloc[0]) if not rec_yes_row.empty else 0.0
+        )
+        staff_ret_difficulty_pct = (
+            float(ret_yes_row["pct"].iloc[0]) if not ret_yes_row.empty else 0.0
+        )
     else:
         staff_rec_difficulty_pct = 0.0
         staff_ret_difficulty_pct = 0.0
@@ -301,11 +358,20 @@ def workforce_operations(df: pd.DataFrame) -> dict:
         "shortage_affect": count_multiselect(df, SHORTAGE_AFFECT_LABELS),
         "concerns": count_multiselect(df, CONCERNS_LABELS),
         "actions": count_multiselect(df, ACTIONS_LABELS),
-        "finance_deteriorated_pct": round(100 * df["finance_deteriorated"].sum() / n, 1),
+        "finance_deteriorated_pct": round(
+            100 * df["finance_deteriorated"].sum() / n, 1
+        ),
         "reserves_yes_pct": round(100 * (df["reserves"] == "Yes").sum() / n, 1),
-        "using_reserves_pct": round(
-            100 * (df["usingreserves"] == "Yes").sum() / df["reserves"].eq("Yes").sum(), 1
-        ) if df["reserves"].eq("Yes").sum() > 0 else 0,
+        "using_reserves_pct": (
+            round(
+                100
+                * (df["usingreserves"] == "Yes").sum()
+                / df["reserves"].eq("Yes").sum(),
+                1,
+            )
+            if df["reserves"].eq("Yes").sum() > 0
+            else 0
+        ),
         "median_months_reserves": df["monthsreserves"].median(),
         "workforce_change": _value_counts_ordered(df["workforce"], DEMAND_ORDER),
     }
@@ -315,13 +381,18 @@ def workforce_operations(df: pd.DataFrame) -> dict:
 # 6. Volunteer demographics
 # ---------------------------------------------------------------------------
 
+
 def volunteer_demographics(df: pd.DataFrame) -> dict:
     dem_presence = count_multiselect(df, VOL_DEM_LABELS)
 
     # Build a change matrix: rows = demographic group, cols = change category
     change_order = [
-        "Increased a lot", "Increased a little", "Stayed the same",
-        "Decreased a little", "Decreased a lot", "Not applicable",
+        "Increased a lot",
+        "Increased a little",
+        "Stayed the same",
+        "Decreased a little",
+        "Decreased a lot",
+        "Not applicable",
     ]
     change_matrix = []
     for col, label in VOL_DEM_CHANGE_LABELS.items():
@@ -340,8 +411,14 @@ def volunteer_demographics(df: pd.DataFrame) -> dict:
         "change_order": change_order,
         "vol_time": _value_counts_ordered(
             df["vol_time"],
-            ["Increased a lot", "Increased a little", "Stayed the same",
-             "Decreased a little", "Decreased a lot", "Don't know"],
+            [
+                "Increased a lot",
+                "Increased a little",
+                "Stayed the same",
+                "Decreased a little",
+                "Decreased a lot",
+                "Don't know",
+            ],
         ),
     }
 
@@ -349,6 +426,7 @@ def volunteer_demographics(df: pd.DataFrame) -> dict:
 # ---------------------------------------------------------------------------
 # 7. Volunteering types and earned settlement
 # ---------------------------------------------------------------------------
+
 
 def volunteering_types(df: pd.DataFrame) -> dict:
     type_data = {}
@@ -359,7 +437,9 @@ def volunteering_types(df: pd.DataFrame) -> dict:
     return {
         "n": len(df),
         "type_data": type_data,
-        "earned_settlement": _value_counts_ordered(df["earnedsettlement"], EARNED_SETTLEMENT_ORDER),
+        "earned_settlement": _value_counts_ordered(
+            df["earnedsettlement"], EARNED_SETTLEMENT_ORDER
+        ),
         "settlement_capacity": df["settlement_capacity"].value_counts().to_dict(),
     }
 
@@ -367,6 +447,7 @@ def volunteering_types(df: pd.DataFrame) -> dict:
 # ---------------------------------------------------------------------------
 # 8. Cross-segment analysis
 # ---------------------------------------------------------------------------
+
 
 def _segment_metrics(subset: pd.DataFrame, n: int) -> dict:
     """Shared metrics for a subset (n = len(subset))."""
@@ -381,7 +462,9 @@ def _segment_metrics(subset: pd.DataFrame, n: int) -> dict:
         "pct_vol_rec_difficulty": _share_true(rec_diff),
         "pct_vol_ret_difficulty": _share_true(ret_diff),
         "pct_demand_increased": _share_true(subset["demand_direction"].eq("Increased")),
-        "pct_finance_deteriorated": _share_true(subset["financial_direction"].eq("Deteriorated")),
+        "pct_finance_deteriorated": _share_true(
+            subset["financial_direction"].eq("Deteriorated")
+        ),
         "pct_too_few_vols": (
             round(
                 100
@@ -440,7 +523,9 @@ def finance_recruitment_cross(df: pd.DataFrame) -> dict | None:
     det_answered = det & df["vol_rec"].notna()
     not_det_answered = not_det & df["vol_rec"].notna()
     pct_det = round(100 * rec_hard[det_answered].sum() / max(1, det_answered.sum()), 1)
-    pct_not_det = round(100 * rec_hard[not_det_answered].sum() / max(1, not_det_answered.sum()), 1)
+    pct_not_det = round(
+        100 * rec_hard[not_det_answered].sum() / max(1, not_det_answered.sum()), 1
+    )
     return {
         "pct_rec_difficulty_if_finance_deteriorated": pct_det,
         "pct_rec_difficulty_if_finance_not_deteriorated": pct_not_det,
@@ -452,6 +537,7 @@ def finance_recruitment_cross(df: pd.DataFrame) -> dict | None:
 # ---------------------------------------------------------------------------
 # 9. Executive summary highlights
 # ---------------------------------------------------------------------------
+
 
 def executive_highlights(df: pd.DataFrame) -> list[dict]:
     """Return a ranked list of key insights for the executive summary."""
@@ -531,14 +617,16 @@ def executive_highlights(df: pd.DataFrame) -> list[dict]:
             - cross["pct_rec_difficulty_if_finance_not_deteriorated"]
         )
         if diff >= 5:
-            highlights.append({
-                "rank": 7,
-                "title": "Recruitment difficulty is higher where financial position has deteriorated",
-                "detail": (
-                    f"Among organisations whose financial position deteriorated (last 3 months), {cross['pct_rec_difficulty_if_finance_deteriorated']}% "
-                    f"find recruitment difficult, compared with {cross['pct_rec_difficulty_if_finance_not_deteriorated']}% "
-                    f"among those whose financial position has not deteriorated (n={cross['n_finance_deteriorated']} vs {cross['n_finance_not_deteriorated']})."
-                ),
-                "type": "warning",
-            })
+            highlights.append(
+                {
+                    "rank": 7,
+                    "title": "Recruitment difficulty is higher where financial position has deteriorated",
+                    "detail": (
+                        f"Among organisations whose financial position deteriorated (last 3 months), {cross['pct_rec_difficulty_if_finance_deteriorated']}% "
+                        f"find recruitment difficult, compared with {cross['pct_rec_difficulty_if_finance_not_deteriorated']}% "
+                        f"among those whose financial position has not deteriorated (n={cross['n_finance_deteriorated']} vs {cross['n_finance_not_deteriorated']})."
+                    ),
+                    "type": "warning",
+                }
+            )
     return highlights

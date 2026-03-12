@@ -10,22 +10,29 @@ that controls the colour palette.  All charts include:
 
 from __future__ import annotations
 
-import plotly.graph_objects as go
-import plotly.express as px
 import pandas as pd
-
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import plotly.graph_objects as go
+import streamlit as st
 
 from src.config import (
-    AltTextConfig, LabelGrouper, get_palette, get_likert_colours,
-    WCVA_BRAND, CHART_FONT, CHART_FONT_SIZE, CHART_TITLE_SIZE,
-    CHART_BG, CHART_GRID, CHART_MARGIN, make_stacked_bar_alt,
+    CHART_BG,
+    CHART_FONT,
+    CHART_FONT_SIZE,
+    CHART_GRID,
+    CHART_TITLE_SIZE,
+    WCVA_BRAND,
+    AltTextConfig,
+    GlobalStreamlitAppUISharedConfigState,
+    LabelGrouper,
+    get_likert_colours,
+    get_palette,
+    make_stacked_bar_alt,
 )
 
 
-def _base_layout(title: str, n: int, height: int = 450, width: int | None = None) -> dict:
+def _base_layout(
+    title: str, n: int, height: int = 450, width: int | None = None
+) -> dict:
     """Shared layout defaults."""
     layout = dict(
         title=dict(
@@ -56,6 +63,7 @@ def _set_alt_text(fig: go.Figure, text: str) -> go.Figure:
 # 1. Horizontal bar (ranked)
 # ---------------------------------------------------------------------------
 
+
 def horizontal_bar_ranked(
     df: pd.DataFrame,
     label_col: str,
@@ -76,7 +84,11 @@ def horizontal_bar_ranked(
     palette = get_palette(mode)
     colour = palette[0]
 
-    text_vals = [f"{row[value_col]}  ({row[pct_col]}%)" for _, row in data.iterrows()] if pct_col else [str(v) for v in data[value_col]]
+    text_vals = (
+        [f"{row[value_col]}  ({row[pct_col]}%)" for _, row in data.iterrows()]
+        if pct_col
+        else [str(v) for v in data[value_col]]
+    )
 
     fig = go.Figure(
         go.Bar(
@@ -91,9 +103,13 @@ def horizontal_bar_ranked(
         )
     )
 
-    fig.update_layout(**_base_layout(title, n, height=max(height, len(data) * 40 + 110)))
+    fig.update_layout(
+        **_base_layout(title, n, height=max(height, len(data) * 40 + 110))
+    )
     fig.update_yaxes(autorange="reversed", tickfont=dict(size=13))
-    fig.update_xaxes(showgrid=True, gridcolor=CHART_GRID, zeroline=False, showticklabels=False)
+    fig.update_xaxes(
+        showgrid=True, gridcolor=CHART_GRID, zeroline=False, showticklabels=False
+    )
 
     alt = f"Bar chart: {title}. Top item: {data.iloc[0][label_col]} ({data.iloc[0][value_col]}). Based on {n} organisations."
     return _set_alt_text(fig, alt)
@@ -123,41 +139,53 @@ def stacked_bar_ordinal(
         label = row[alt_config.value_col]
         count = row[alt_config.count_col]
         pct = row[alt_config.pct_col]
-        fig.add_trace(go.Bar(
-            y=[""],
-            x=[pct],
-            orientation="h",
-            name=label,
-            text=f"{label}: {pct}%" if pct >= 4 else "",
-            textposition="inside",
-            textfont=dict(size=12, color="white" if i not in (2,) else WCVA_BRAND["navy"]),
-            marker_color=colour,
-            hovertemplate=f"{label}: {count} ({pct}%)<extra></extra>",
-        ))
+        fig.add_trace(
+            go.Bar(
+                y=[""],
+                x=[pct],
+                orientation="h",
+                name=label,
+                text=f"{label}: {pct}%" if pct >= 4 else "",
+                textposition="inside",
+                textfont=dict(
+                    size=12, color="white" if i not in (2,) else WCVA_BRAND["navy"]
+                ),
+                marker_color=colour,
+                hovertemplate=f"{label}: {count} ({pct}%)<extra></extra>",
+            )
+        )
 
     base = _base_layout(title, n, height=height)
     base["showlegend"] = True
     fig.update_layout(
         **base,
         barmode="stack",
-        legend=dict(orientation="h", yanchor="top", y=-0.3, xanchor="left", x=0, font=dict(size=12)),
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.3,
+            xanchor="left",
+            x=0,
+            font=dict(size=12),
+        ),
     )
     fig.update_xaxes(showticklabels=False, showgrid=False, range=[0, 100])
     fig.update_yaxes(showticklabels=False)
     ALT_TEXT = make_stacked_bar_alt(
-            df=df,
-            title=title,
-            config=alt_config,
-            grouper=grouper,
-            group_order=group_order,
-        )
-    
+        df=df,
+        title=title,
+        config=alt_config,
+        grouper=grouper,
+        group_order=group_order,
+    )
+
     return _set_alt_text(fig, ALT_TEXT)
 
 
 # ---------------------------------------------------------------------------
 # 3. Donut chart
 # ---------------------------------------------------------------------------
+
 
 def donut_chart(
     labels: list[str],
@@ -169,16 +197,18 @@ def donut_chart(
 ) -> go.Figure:
     """Donut chart showing distribution based on sizes."""
     palette = get_palette(mode)
-    fig = go.Figure(go.Pie(
-        labels=labels,
-        values=values,
-        hole=0.45,
-        textinfo="label+percent",
-        textposition="outside",
-        textfont=dict(size=13),
-        marker=dict(colors=palette[:len(labels)]),
-        hovertemplate="%{label}: %{value} (%{percent})<extra></extra>",
-    ))
+    fig = go.Figure(
+        go.Pie(
+            labels=labels,
+            values=values,
+            hole=0.45,
+            textinfo="label+percent",
+            textposition="outside",
+            textfont=dict(size=13),
+            marker=dict(colors=palette[: len(labels)]),
+            hovertemplate="%{label}: %{value} (%{percent})<extra></extra>",
+        )
+    )
 
     fig.update_layout(**_base_layout(title, n, height=height))
     fig.update_layout(showlegend=False)
@@ -192,6 +222,7 @@ def donut_chart(
 # ---------------------------------------------------------------------------
 # 4. Grouped bar (segment comparison)
 # ---------------------------------------------------------------------------
+
 
 def grouped_bar(
     df: pd.DataFrame,
@@ -209,28 +240,20 @@ def grouped_bar(
     fig = go.Figure()
 
     for i, seg in enumerate(segment_cols):
-        fig.add_trace(go.Bar(
-            y=data[label_col],
-            x=data[seg],
-            orientation="h",
-            name=seg,
-            text=[f"{v}%" for v in data[seg]],
-            textposition="outside",
-            textfont=dict(size=11),
-            marker_color=palette[i % len(palette)],
-            cliponaxis=False,
-        ))
+        fig.add_trace(
+            go.Bar(
+                y=data[label_col],
+                x=data[seg],
+                orientation="h",
+                name=seg,
+                text=[f"{v}%" for v in data[seg]],
+                textposition="outside",
+                textfont=dict(size=11),
+                marker_color=palette[i % len(palette)],
+                cliponaxis=False,
+            )
+        )
 
-    # _base_layout() already returns showlegend=False, and then grouped_bar() passes showlegend=True again
-    #  - in the same update_layout() call. Passing Plotly two values for the same keyword argument.
-    
-    # fig.update_layout(
-    #     **_base_layout(title, n, height=max(height, len(data) * 50 + 120)),
-    #     barmode="group",
-    #     showlegend=True,
-    #     legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="left", x=0),
-    # )
-    
     base = _base_layout(title, n, height=max(height, len(data) * 50 + 120))
     base["showlegend"] = True
 
@@ -251,43 +274,6 @@ def grouped_bar(
 # 5. Heatmap matrix
 # ---------------------------------------------------------------------------
 
-# def heatmap_matrix(
-#     df: pd.DataFrame,
-#     row_col: str,
-#     value_cols: list[str],
-#     title: str,
-#     n: int,
-#     mode: str = "brand",
-#     height: int = 500,
-# ) -> go.Figure:
-#     """Heatmap for demographic change matrix."""
-#     z = df[value_cols].values
-#     palette = get_palette(mode)
-
-#     fig = go.Figure(go.Heatmap(
-#         z=z,
-#         x=value_cols,
-#         y=df[row_col].tolist(),
-#         text=z.astype(str),
-#         texttemplate="%{text}",
-#         textfont=dict(size=11),
-#         colorscale=[
-#             [0, palette[0]],
-#             [0.5, "#F0F2F5"],
-#             [1, palette[1]],
-#         ],
-#         showscale=True,
-#         hovertemplate="Group: %{y}<br>Change: %{x}<br>Count: %{z}<extra></extra>",
-#     ))
-
-#     fig.update_layout(
-#         **_base_layout(title, n, height=height),
-#         xaxis=dict(tickfont=dict(size=10), tickangle=-30),
-#         yaxis=dict(tickfont=dict(size=11), autorange="reversed"),
-#     )
-
-#     alt = f"Heatmap: {title}. Shows counts across {len(value_cols)} change categories for {len(df)} groups. n={n}."
-#     return _set_alt_text(fig, alt)
 
 def heatmap_matrix(
     df: pd.DataFrame,
@@ -344,9 +330,13 @@ def heatmap_matrix(
         decreased_cols = [c for c in decreased_candidates if c in counts.columns]
 
         collapsed = pd.DataFrame(index=data.index)
-        collapsed["Increased"] = counts[increased_cols].sum(axis=1) if increased_cols else 0
+        collapsed["Increased"] = (
+            counts[increased_cols].sum(axis=1) if increased_cols else 0
+        )
         collapsed["Stayed the same"] = counts[same_cols].sum(axis=1) if same_cols else 0
-        collapsed["Decreased"] = counts[decreased_cols].sum(axis=1) if decreased_cols else 0
+        collapsed["Decreased"] = (
+            counts[decreased_cols].sum(axis=1) if decreased_cols else 0
+        )
 
         plot_counts = collapsed
         x_labels = ["Increased", "Stayed the same", "Decreased"]
@@ -359,13 +349,12 @@ def heatmap_matrix(
     # Silent dtype downcasting during operations like .fillna() is being removed in future versions of pandas.
     # In future, pandas will not automatically convert object arrays back to numeric types and this needs to be handled explicitly.
     pct = (
-        plot_counts
-        .div(row_totals.replace(0, pd.NA), axis=0)
+        plot_counts.div(row_totals.replace(0, pd.NA), axis=0)
         .fillna(0)
         .infer_objects(copy=False)
         * 100
     )
-    
+
     # Determine row labels
     if row_col in data.columns:
         labels = data[row_col].tolist()
@@ -376,8 +365,7 @@ def heatmap_matrix(
 
     if show_row_bases:
         y_labels = [
-            f"{label} (n={int(base)})"
-            for label, base in zip(labels, row_totals)
+            f"{label} (n={int(base)})" for label, base in zip(labels, row_totals)
         ]
     else:
         y_labels = labels
@@ -390,7 +378,7 @@ def heatmap_matrix(
         for i in range(len(data))
     ]
 
-    customdata = [
+    custom_data = [
         [
             [
                 int(plot_counts.iloc[i, j]),
@@ -413,32 +401,34 @@ def heatmap_matrix(
         [1.00, heat_colour],
     ]
 
-    fig = go.Figure(go.Heatmap(
-        z=pct.values,
-        x=x_labels,
-        y=y_labels,
-        text=text,
-        texttemplate="%{text}",
-        textfont=dict(size=11),
-        colorscale=colorscale,
-        zmin=0,
-        zmax=100,
-        showscale=True,
-        colorbar=dict(
-            title="% of row",
-            tickmode="array",
-            tickvals=[0, 25, 50, 75, 100],
-            ticksuffix="%"
-        ),
-        customdata=customdata,
-        hovertemplate=(
-            "Group: %{y}<br>"
-            "Change: %{x}<br>"
-            "Percentage: %{z:.1f}%<br>"
-            "Count: %{customdata[0]}<br>"
-            "Row base: %{customdata[2]}<extra></extra>"
-        ),
-    ))
+    fig = go.Figure(
+        go.Heatmap(
+            z=pct.values,
+            x=x_labels,
+            y=y_labels,
+            text=text,
+            texttemplate="%{text}",
+            textfont=dict(size=11),
+            colorscale=colorscale,
+            zmin=0,
+            zmax=100,
+            showscale=True,
+            colorbar=dict(
+                title="% of row",
+                tickmode="array",
+                tickvals=[0, 25, 50, 75, 100],
+                ticksuffix="%",
+            ),
+            customdata=custom_data,
+            hovertemplate=(
+                "Group: %{y}<br>"
+                "Change: %{x}<br>"
+                "Percentage: %{z:.1f}%<br>"
+                "Count: %{custom_data[0]}<br>"
+                "Row base: %{custom_data[2]}<extra></extra>"
+            ),
+        )
+    )
 
     fig.update_layout(
         **_base_layout(title, n, height=height),
@@ -462,14 +452,20 @@ def heatmap_matrix(
     )
     return _set_alt_text(fig, alt)
 
+
 # ---------------------------------------------------------------------------
 # 6. KPI metric card (for Streamlit)
 # ---------------------------------------------------------------------------
 
+
 def kpi_card_html(label: str, value: str, delta: str = "", colour: str = "") -> str:
     """Generate HTML for a single KPI metric card."""
     c = colour or WCVA_BRAND["navy"]
-    delta_html = f"<div style='font-size:14px;color:#666;margin-top:2px'>{delta}</div>" if delta else ""
+    delta_html = (
+        f"<div style='font-size:14px;color:#666;margin-top:2px'>{delta}</div>"
+        if delta
+        else ""
+    )
     return f"""
     <div style='background:#F7F8FA;border-left:4px solid {c};
                 padding:16px 20px;border-radius:6px;min-width:140px'>
@@ -477,3 +473,49 @@ def kpi_card_html(label: str, value: str, delta: str = "", colour: str = "") -> 
         <div style='font-size:28px;font-weight:700;color:{c}'>{value}</div>
         {delta_html}
     </div>"""
+
+
+# ---------------------------------------------------------------------------
+# Helper: chart display with download
+# ---------------------------------------------------------------------------
+
+
+def show_chart(fig, key: str, data_df: pd.DataFrame | None = None):
+    """Display a Plotly chart with optional download buttons."""
+    # Apply dynamic text scaling from sidebar control
+    if GlobalStreamlitAppUISharedConfigState.text_scale != 1.0:
+        fig.update_layout(
+            font=dict(
+                size=CHART_FONT_SIZE * GlobalStreamlitAppUISharedConfigState.text_scale
+            ),
+            title_font_size=CHART_TITLE_SIZE
+            * GlobalStreamlitAppUISharedConfigState.text_scale,
+            legend=dict(
+                font=dict(
+                    size=CHART_FONT_SIZE
+                    * GlobalStreamlitAppUISharedConfigState.text_scale
+                )
+            ),
+        )
+        fig.update_xaxes(
+            tickfont_size=CHART_FONT_SIZE
+            * GlobalStreamlitAppUISharedConfigState.text_scale
+        )
+        fig.update_yaxes(
+            tickfont_size=CHART_FONT_SIZE
+            * GlobalStreamlitAppUISharedConfigState.text_scale
+        )
+
+    st.plotly_chart(fig, width="stretch", key=key)
+    if hasattr(fig, "_alt_text"):
+        st.caption(f"Accessibility: {fig._alt_text}")
+
+    if data_df is not None:
+        with st.expander("View/download data table"):
+            # st.dataframe(data_df, use_container_width=True)
+            # use_container_width=True is deprecated and is already removed in Streamlit since 2025-12-31
+            st.dataframe(data_df, width="stretch")
+            csv = data_df.to_csv(index=False)
+            st.download_button(
+                "Download CSV", csv, f"{key}.csv", "text/csv", key=f"dl_{key}"
+            )

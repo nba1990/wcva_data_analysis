@@ -10,21 +10,18 @@ Run with:
     python -m src.debug_metrics
 """
 
+import sys
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 import pandas as pd
 
-import sys
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-
 from src.data_loader import load_dataset  # noqa: E402
-from src.eda import (  # noqa: E402
-    volunteer_recruitment_analysis,
-    workforce_operations,
-)
-from src.wave_context import (  # noqa: E402
-    build_wave_context_from_df,
-)
+from src.eda import volunteer_recruitment_analysis, workforce_operations  # noqa: E402
+from src.wave_context import build_wave_context_from_df  # noqa: E402
 
 
 def main() -> None:
@@ -84,4 +81,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

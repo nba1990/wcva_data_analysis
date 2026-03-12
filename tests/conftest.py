@@ -6,9 +6,10 @@ from typing import Iterator
 import pandas as pd
 import pytest
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-TASK_ROOT = PROJECT_ROOT / "legacy_project_root"
+TASK_ROOT = (
+    PROJECT_ROOT / "legacy_project_root"
+)
 
 
 # Ensure the Task root (parent of `src`) is on sys.path as soon as tests
@@ -41,7 +42,11 @@ def tiny_df() -> pd.DataFrame:
         "financial": ["Deteriorated a little", "Stayed the same", "Improved a little"],
         "operating": ["Very likely", "Quite likely", "Quite unlikely"],
         "expectdemand": ["Increase a lot", "Stay the same", "Decrease a little"],
-        "expectfinancial": ["Deteriorate a little", "Stay the same", "Improve a little"],
+        "expectfinancial": [
+            "Deteriorate a little",
+            "Stay the same",
+            "Improve a little",
+        ],
         "workforce": ["Increased a lot", "Stayed the same", "Decreased a little"],
         "volobjectives": [
             "Slightly too few volunteers",
@@ -50,8 +55,16 @@ def tiny_df() -> pd.DataFrame:
         ],
         "shortage_vol_rec": ["Yes", "No", "Yes"],
         "shortage_vol_ret": ["No", "No", "Yes"],
-        "vol_rec": ["Somewhat difficult", "Neither easy nor difficult", "Extremely difficult"],
-        "vol_ret": ["Somewhat difficult", "Somewhat easy", "Neither easy nor difficult"],
+        "vol_rec": [
+            "Somewhat difficult",
+            "Neither easy nor difficult",
+            "Extremely difficult",
+        ],
+        "vol_ret": [
+            "Somewhat difficult",
+            "Somewhat easy",
+            "Neither easy nor difficult",
+        ],
         "paidworkforce": ["Yes", "No", "Yes"],
         "shortage_staff_rec": ["Yes", "No", "No"],
         "shortage_staff_ret": ["No", "No", "Yes"],
@@ -61,8 +74,16 @@ def tiny_df() -> pd.DataFrame:
         "monthsreserves": [6, 3, 0],
         "peopleemploy": [5, 0, 12],
         "peoplevol": [20, 0, 5],
-        "earnedsettlement": ["Strongly agree", "Neither agree nor disagree", "Somewhat disagree"],
-        "settlement_capacity": ["Would need additional funding", "Already able to support", "Not able to support"],
+        "earnedsettlement": [
+            "Strongly agree",
+            "Neither agree nor disagree",
+            "Somewhat disagree",
+        ],
+        "settlement_capacity": [
+            "Would need additional funding",
+            "Already able to support",
+            "Not able to support",
+        ],
     }
     return pd.DataFrame(data)
 
@@ -82,4 +103,3 @@ def la_context_csv(tmp_path: Path) -> Iterator[Path]:
     )
     df.to_csv(csv_path, index=False)
     yield csv_path
-

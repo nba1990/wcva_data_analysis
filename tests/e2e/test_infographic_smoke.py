@@ -46,5 +46,6 @@ def test_render_at_a_glance_infographic_smoke(monkeypatch) -> None:
     )
 
     assert calls
-    assert "State of Volunteering" not in calls[0]["html"] or "<style>" in calls[0]["html"]
-
+    assert (
+        "State of Volunteering" not in calls[0]["html"] or "<style>" in calls[0]["html"]
+    )
