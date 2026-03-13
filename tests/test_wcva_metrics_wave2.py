@@ -1,4 +1,3 @@
-import pandas as pd
 
 from src.data_loader import load_dataset
 from src.eda import (

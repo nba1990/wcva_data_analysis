@@ -225,7 +225,7 @@ elif page == "Volunteer Retention":
 # PAGE 5: Trends & Waves
 # =========================================================================
 elif page == "Trends & Waves":
-    render_trends_and_waves(df_full)
+    render_trends_and_waves(df)
 
 # =========================================================================
 # PAGE 6: Workforce & Operations
@@ -262,4 +262,4 @@ elif page == "Executive Summary":
 # PAGE 11: Data Notes
 # =========================================================================
 elif page == "Data Notes":
-    render_data_notes(df_full)
+    render_data_notes(df)

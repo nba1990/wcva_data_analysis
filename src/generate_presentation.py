@@ -451,11 +451,11 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         {
             "title": "Looking Ahead: The Outlook Is Not Improving",
             "subtitle": "Expectations for the next 3 months",
-            "body": f"<ul>"
-            f"<li>Organisations expect demand to continue rising</li> <br>"
-            f"<li>Fewer expect financial improvement than stability or deterioration combined</li> <br>"
-            f"<li>The scissor effect is expected to widen, not close</li> <br>"
-            f"</ul>",
+            "body": "<ul>"
+            "<li>Organisations expect demand to continue rising</li> <br>"
+            "<li>Fewer expect financial improvement than stability or deterioration combined</li> <br>"
+            "<li>The scissor effect is expected to widen, not close</li> <br>"
+            "</ul>",
             "chart": fig_expect_demand,
             "notes": "Forward-looking data. Policy intervention needed before next wave.",
             "alt_text": getattr(fig_expect_demand, "_alt_text", ""),
@@ -473,7 +473,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
                     if cross
                     else ""
                 )
-                + f"</ul>"
+                + "</ul>"
             ),
             "chart": None,
             "notes": "Frame the recruitment/retention asymmetry.",
