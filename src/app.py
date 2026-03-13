@@ -16,17 +16,6 @@ if str(ROOT) not in sys.path:
 import pandas as pd
 import streamlit as st
 
-from src.section_pages.at_a_glance import render_at_a_glance
-from src.section_pages.concerns_and_risks import render_concerns_and_risks
-from src.section_pages.data_notes import render_data_notes
-from src.section_pages.demographics_and_types import render_demographics_and_types
-from src.section_pages.earned_settlement import render_earned_settlement
-from src.section_pages.overview import render_overview
-from src.section_pages.trends_and_waves import render_trends_and_waves
-from src.section_pages.volunteer_recruitment import render_volunteer_recruitment
-from src.section_pages.volunteer_retention import render_volunteer_retention
-from src.section_pages.workforce_and_operations import render_workforce_and_operations
-
 from src.config import (
     CONCERNS_LABELS,
     K_ANON_THRESHOLD,
@@ -36,7 +25,18 @@ from src.config import (
 from src.data_loader import load_dataset
 from src.eda import profile_summary
 from src.navigation import get_default_page, render_sidebar_nav
+from src.section_pages.at_a_glance import render_at_a_glance
+from src.section_pages.concerns_and_risks import render_concerns_and_risks
+from src.section_pages.data_notes import render_data_notes
+from src.section_pages.demographics_and_types import render_demographics_and_types
+from src.section_pages.earned_settlement import render_earned_settlement
 from src.section_pages.executive_summary import render_executive_summary
+from src.section_pages.overview import render_overview
+from src.section_pages.sroi_references import render_sroi_references
+from src.section_pages.trends_and_waves import render_trends_and_waves
+from src.section_pages.volunteer_recruitment import render_volunteer_recruitment
+from src.section_pages.volunteer_retention import render_volunteer_retention
+from src.section_pages.workforce_and_operations import render_workforce_and_operations
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -259,7 +259,14 @@ elif page == "Executive Summary":
 
 
 # =========================================================================
-# PAGE 11: Data Notes
+# PAGE 11: SROI & References
+# =========================================================================
+elif page == "SROI & References":
+    render_sroi_references()
+
+
+# =========================================================================
+# PAGE 12: Data Notes
 # =========================================================================
 elif page == "Data Notes":
     render_data_notes(df)

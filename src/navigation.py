@@ -80,6 +80,12 @@ NAV_ITEMS: List[NavItem] = [
         "Volunteering for earned settlement",
         "🏛️",
     ),
+    NavItem(
+        "SROI & References",
+        "SROI & References",
+        "Evidence base and SROI context",
+        "📚",
+    ),
     NavItem("Data Notes", "Data Notes", "Technical notes and methods", "📑"),
 ]
 

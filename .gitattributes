@@ -16,3 +16,8 @@ references/SROI_Wales_Voluntary_Sector/output/volunteering_value.png filter=lfs 
 references/SROI_Wales_Voluntary_Sector/output/wcva_key_dates.png filter=lfs diff=lfs merge=lfs -text
 references/SROI_Wales_Voluntary_Sector/output/wcva_wg_funding.png filter=lfs diff=lfs merge=lfs -text
 references/SROI_Wales_Voluntary_Sector/docs/SROI_Wales_Voluntary_Sector.pdf filter=lfs diff=lfs merge=lfs -text
+references/SROI_Wales_Voluntary_Sector/docs/WCVA_FreePlane_MindMap.html_files/hide.png filter=lfs diff=lfs merge=lfs -text
+references/SROI_Wales_Voluntary_Sector/docs/WCVA_FreePlane_MindMap.html_files/ilink.png filter=lfs diff=lfs merge=lfs -text
+references/SROI_Wales_Voluntary_Sector/docs/WCVA_FreePlane_MindMap.html_files/image.png filter=lfs diff=lfs merge=lfs -text
+references/SROI_Wales_Voluntary_Sector/docs/WCVA_FreePlane_MindMap.html_files/leaf.png filter=lfs diff=lfs merge=lfs -text
+references/SROI_Wales_Voluntary_Sector/docs/WCVA_FreePlane_MindMap.html_files/show.png filter=lfs diff=lfs merge=lfs -text

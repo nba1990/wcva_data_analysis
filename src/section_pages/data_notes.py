@@ -34,11 +34,17 @@ def render_data_notes(df: pd.DataFrame) -> None:
     st.subheader("Methodology Notes")
     st.markdown("""
     - **Survey**: Baromedr Cymru Wave 2, conducted in collaboration with NTU VCSE Observatory
+    
     - **Likert Scale**: A psychometric, often 5 or 7-point, survey rating system used to measure attitudes, opinions, and behaviors by gauging the level of agreement, frequency, or satisfaction. **Refer:** [Likert Scale](https://en.wikipedia.org/wiki/Likert_scale) for more information.
+    
     - **Period**: January–February 2026
+    
     - **Sample**: 111 Welsh voluntary sector organisations (self-selected; not a random sample)
+    
     - **Format**: Online survey via Qualtrics; 10–15 minute completion time
+    
     - **Multi-select questions**: Presented in wide format (one column per option; non-null = selected)
+    
     - **Privacy**: All data anonymised prior to analysis. Results suppressed when filtered sample < 5 organisations (k-anonymity)
     """)
 
@@ -46,9 +52,11 @@ def render_data_notes(df: pd.DataFrame) -> None:
     st.markdown("""
     - **Volunteering vs unpaid caring**: This analysis follows the Baromedr definition of volunteering
       and does not treat unpaid caring roles (for family members, for example) as volunteering.
+    
     - **Formal and informal activity**: Many real-world examples (e.g. community clean-ups, emergency response,
       neighbourhood action) can sit on the boundary between formal and informal volunteering. Where possible,
       Baromedr questions focus on activity that organisations can reasonably observe and report.
+    
     - **Age ranges**: Headline figures from other sources about the share of people who volunteer often use specific
       age bands (for example 16–74 or 15–85). Under‑15s and very elderly volunteers may therefore be under-represented
       in population estimates, even if organisations rely on them in practice.
@@ -57,22 +65,34 @@ def render_data_notes(df: pd.DataFrame) -> None:
     st.subheader("Caveats")
     st.markdown("""
     - **Self-selection bias**: Respondents chose to participate; findings may not represent all Welsh voluntary sector organisations
+    
     - **Cardiff over-representation (raw counts)**: 23% of respondents are Cardiff-based; interpret geographic patterns with caution
+    
     - **Powys over-representation (proportional to population)**: 2.34 representation index - respondents are Powys-based; interpret geographic patterns with caution. **NOTE:** Representation index of 1.0 indicates proportional-to-population sampling; values above 1.0 indicate over-representation.
+    
     - **Small sub-groups**: Some local authority and activity type segments have very few respondents. Avoid over-interpreting these segments
+    
     - **Wave 2 only**: Cross-wave trend analysis requires Wave 1 data (not included in this dataset)
+    
     - **Ordinal data**: Likert-scale responses are ordinal, not interval. Median is more appropriate than mean
     """)
 
     st.subheader("Estimated Number of VCSE Organisations in Wales")
     st.markdown("""
     - For the `est_vcse_orgs` column, it appeas to not be so simple to fully validate those numbers as official local-authority counts counts from an authoritative Wales-wide source.
+    
     - There appears to be some good sector-level sources, but not a clean official table matching this column definition.
+    
     - The reason is that Welsh sector sources use different universes:
       - WCVA says Wales has **32,000+** third sector organisations
+      
       - While NCVO reports **7,009** charities in Wales in its 2023 Almanac
+      
       - Equal to about **2.3 organisations** per 1,000 people.
+    
     - The pre-populated helper CSV sums up to **14,980** organisations, which is about **4.7** per **1,000** people using the total population.
+    
     - That sits neatly between the “registered charities only” count and the broader “all third sector organisations” count.
+    
     - Therefore, `est_vcse_orgs` is only considered plausible as a modelled estimate, but not validated as an official observed count.
     """)

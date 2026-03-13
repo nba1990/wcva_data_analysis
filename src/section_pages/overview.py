@@ -3,9 +3,6 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from src.narratives import demand_finance_scissor_phrase
-from src.wave_context import get_wave_registry
-
 from src.charts import (
     donut_chart,
     horizontal_bar_ranked,
@@ -29,6 +26,8 @@ from src.eda import (
     volunteer_retention_analysis,
     workforce_operations,
 )
+from src.narratives import demand_finance_scissor_phrase
+from src.wave_context import get_wave_registry
 
 
 def render_overview(
