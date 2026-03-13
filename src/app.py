@@ -6,8 +6,11 @@ Run with:  streamlit run src/app.py
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
+
+import psutil
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -48,15 +51,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-GlobalStreamlitAppUISharedConfigState.text_size_mode = st.sidebar.radio(
-    "Chart label size",
-    ["Normal", "Larger"],
-    index=0,
-)
-GlobalStreamlitAppUISharedConfigState.text_scale = (
-    1.0 if GlobalStreamlitAppUISharedConfigState.text_size_mode == "Normal" else 1.3
-)
-
 # ---------------------------------------------------------------------------
 # Data loading (cached)
 # ---------------------------------------------------------------------------
@@ -77,6 +71,20 @@ df_full = (
 st.sidebar.title("Baromedr Cymru")
 st.sidebar.caption("Wave 2 Analysis Dashboard")
 st.sidebar.divider()
+
+process = psutil.Process(os.getpid())
+# print(process.memory_info().rss / 1024**2, "MB")
+
+st.sidebar.subheader("Accessibility Features")
+
+GlobalStreamlitAppUISharedConfigState.text_size_mode = st.sidebar.radio(
+    "Chart label size",
+    ["Normal", "Larger"],
+    index=0,
+)
+GlobalStreamlitAppUISharedConfigState.text_scale = (
+    1.0 if GlobalStreamlitAppUISharedConfigState.text_size_mode == "Normal" else 1.3
+)
 
 GlobalStreamlitAppUISharedConfigState.accessible_mode = st.sidebar.checkbox(
     "Colour-blind friendly mode", value=False
