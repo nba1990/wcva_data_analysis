@@ -6,6 +6,7 @@ from src.config import LA_TO_REGION, MULTI_SELECT_GROUPS
 from src.data_loader import (
     _clean,
     _derive_columns,
+    check_runtime_assets,
     count_multiselect,
     count_multiselect_by_segment,
     data_quality_profile,
@@ -128,3 +129,46 @@ def test_data_quality_profile_structure() -> None:
     assert "block_completeness" in profile
     assert profile["org_size_missing"] == 0
     assert profile["complete_pct"] >= 0
+
+
+def test_check_runtime_assets_reports_required_and_optional_files(tmp_path) -> None:
+    project_root = tmp_path
+    dataset_path = project_root / "datasets" / "WCVA_W2_Anonymised_Dataset.csv"
+    la_context_path = project_root / "datasets" / "la_context_wales.csv"
+    streamlit_config = project_root / ".streamlit" / "config.toml"
+    mindmap_html = (
+        project_root
+        / "references/SROI_Wales_Voluntary_Sector/docs/WCVA_Text_Interactive_MindMap.html"
+    )
+
+    dataset_path.parent.mkdir(parents=True)
+    streamlit_config.parent.mkdir(parents=True)
+    mindmap_html.parent.mkdir(parents=True)
+
+    dataset_path.write_text("a,b\n1,2\n", encoding="utf-8")
+    streamlit_config.write_text("[server]\nheadless = true\n", encoding="utf-8")
+    mindmap_html.write_text("<html></html>", encoding="utf-8")
+
+    result = check_runtime_assets(
+        project_root=project_root,
+        dataset_path=dataset_path,
+        la_context_path=la_context_path,
+    )
+
+    assert result["all_required_present"] is True
+    assert result["missing_required"] == []
+    assert "Local authority context CSV" in result["missing_optional"]
+    assert len(result["required"]) == 2
+    assert len(result["optional"]) == 3
+
+
+def test_check_runtime_assets_flags_missing_required_files(tmp_path) -> None:
+    result = check_runtime_assets(
+        project_root=tmp_path,
+        dataset_path=tmp_path / "datasets" / "missing.csv",
+        la_context_path=tmp_path / "datasets" / "la_context_wales.csv",
+    )
+
+    assert result["all_required_present"] is False
+    assert "Wave 2 dataset CSV" in result["missing_required"]
+    assert "Streamlit config" in result["missing_required"]

@@ -17,6 +17,7 @@ We support **Docker** for containerised runs and self-hosting:
 - **Dockerfile**: multi-stage not required; we use a single stage based on `python:3.12-slim`, install dependencies from `requirements.txt`, copy the app and assets, and run as a non-root user. Streamlit is configured to listen on `0.0.0.0:8501` inside the container.
 - **docker-compose.yml**: one service that builds the image, maps port 8501, supports optional env (e.g. `WCVA_DEBUG_MEMORY`) and optional volume mounts for `datasets/` and `references/` so data can be supplied at runtime without rebuilding.
 - **Documentation**: `docs/DOCKER_AND_DEPLOYMENT.md` covers build/run commands, data and asset requirements, self-hosting with a reverse proxy, and basic security notes. README and ARCHITECTURE reference this guide.
+- **Runtime health checks**: the app verifies required deployment files at startup and exposes an in-app **Deployment Health** page so operators can quickly see whether datasets or optional reference assets are missing.
 
 We do **not** change the app’s behaviour or configuration for Docker; the same code runs in local, Community Cloud, and container deployments. Data and reference assets are either baked into the image at build time or mounted at run time.
 
@@ -24,5 +25,6 @@ We do **not** change the app’s behaviour or configuration for Docker; the same
 
 - Teams can run the dashboard in Docker or Docker Compose with minimal extra setup.
 - Self-hosting on a server is documented (reverse proxy, volumes, env vars).
+- Hosted and self-hosted environments now fail earlier and more clearly when required runtime files are absent.
 - Container image can be used on Kubernetes, Cloud Run, or similar platforms; deployment details are left to the operator.
 - Streamlit Community Cloud remains the primary managed option; Docker is an alternative for on-prem or custom cloud deployments.

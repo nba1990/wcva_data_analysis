@@ -33,6 +33,7 @@ For a deeper architectural description, see `ARCHITECTURE.md`. For a short **dev
   - Trends & Waves
   - Executive Summary
   - At-a-Glance (infographic)
+  - Deployment Health
   - Data Notes
   - **SROI & References** (evidence base and mind-map)
 - **WCVA branding and accessibility**:
@@ -61,6 +62,7 @@ For a deeper architectural description, see `ARCHITECTURE.md`. For a short **dev
 │   ├── sroi_charts/
 │   │   └── sroi_figures.py       # SROI/Wales-specific Plotly figure factories
 │   ├── section_pages/            # Per-page renderers (render_overview, render_trends_and_waves, etc.)
+│   │   └── deployment_health.py  # Runtime/deployment checks for required assets
 │   ├── navigation.py             # NavItem definitions + sidebar navigation rendering
 │   ├── narratives.py             # Narrative text helpers for executive summaries
 │   ├── wave_context.py           # Cross-wave registry and trend helpers
@@ -278,6 +280,7 @@ python -c "from src.data_loader import load_dataset; df = load_dataset(); print(
 - **Sphinx build prints Streamlit warnings** – Expected when building docs; the app is imported outside `streamlit run`. Ignore them; the HTML output is correct.
 - **Executive-overview or executive-highlights test skips / fails** – The fixture `tests/fixtures/wcva_sample_dataset.csv` must include multi-select columns (`concerns_1`, `concerns_2`, `actions_10`, etc.) so that `executive_highlights()` has data. See `docs/LEARNING_AND_BACKLOG.md` §3.2 and the fixture file.
 - **Dataset not found** – Place the main CSV at `datasets/WCVA_W2_Anonymised_Dataset.csv` or point the code to your path.
+- **Unsure which deployment file is missing** – Open the in-app **Deployment Health** page; it reports required and optional runtime files.
 
 ---
 
@@ -303,6 +306,7 @@ Considerations:
 
 - Choose **Python 3.11 or 3.12** in the app's **Advanced settings**. Streamlit Community Cloud sets the Python version from the deploy UI, not from a repo file such as `runtime.txt`.
 - Use Streamlit **Secrets Manager** (`.streamlit/secrets.toml`) for any credentials (if introduced).
+- Use the in-app **Deployment Health** page after startup to verify that required files and optional reference assets are present in the runtime environment.
 - `st.cache_data` is used for dataset loading so all sessions share the same read‑only base DataFrame.
 - Avoid unnecessary large in-memory artefacts; prefer computed summaries.
 

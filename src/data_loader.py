@@ -5,6 +5,7 @@ anonymised dataset.
 This module provides:
 - load_dataset: Load main survey CSV, clean and add derived columns.
 - load_la_context: Load local-authority context (cached).
+- check_runtime_assets: Verify required and optional runtime files for deployment.
 - count_multiselect and count_multiselect_by_segment: Aggregate multi-select responses.
 - data_quality_profile: Summary for the Data Notes page.
 
@@ -21,7 +22,13 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from src.config import DATA_DIR, DATASET_PATH, LA_TO_REGION, MULTI_SELECT_GROUPS
+from src.config import (
+    DATA_DIR,
+    DATASET_PATH,
+    LA_TO_REGION,
+    MULTI_SELECT_GROUPS,
+    PROJECT_ROOT,
+)
 
 
 def load_dataset(path: str | None = None) -> pd.DataFrame:
@@ -39,6 +46,86 @@ def load_dataset(path: str | None = None) -> pd.DataFrame:
     df = _clean(df)
     df = _derive_columns(df)
     return df
+
+
+def check_runtime_assets(
+    project_root: str | Path | None = None,
+    dataset_path: str | Path | None = None,
+    la_context_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Check that required and optional runtime assets exist for deployment.
+
+    Args:
+        project_root: Optional project root override, mainly for tests.
+        dataset_path: Optional dataset CSV override; defaults to DATASET_PATH.
+        la_context_path: Optional local-authority context CSV override.
+
+    Returns:
+        Dict with asset rows and summary flags for deployment health checks.
+    """
+    root = Path(project_root) if project_root is not None else PROJECT_ROOT
+    dataset_csv = Path(dataset_path) if dataset_path is not None else DATASET_PATH
+    la_context_csv = (
+        Path(la_context_path)
+        if la_context_path is not None
+        else DATA_DIR / "la_context_wales.csv"
+    )
+    streamlit_config = root / ".streamlit/config.toml"
+    sroi_mindmap = (
+        root
+        / "references/SROI_Wales_Voluntary_Sector/docs/WCVA_Text_Interactive_MindMap.html"
+    )
+    sroi_briefing_pdf = (
+        root
+        / "references/SROI_Wales_Voluntary_Sector/docs/SROI_Wales_Voluntary_Sector.pdf"
+    )
+
+    required_assets = [
+        {
+            "label": "Wave 2 dataset CSV",
+            "path": str(dataset_csv),
+            "exists": dataset_csv.exists(),
+            "kind": "required",
+        },
+        {
+            "label": "Streamlit config",
+            "path": str(streamlit_config),
+            "exists": streamlit_config.exists(),
+            "kind": "required",
+        },
+    ]
+
+    optional_assets = [
+        {
+            "label": "Local authority context CSV",
+            "path": str(la_context_csv),
+            "exists": la_context_csv.exists(),
+            "kind": "optional",
+        },
+        {
+            "label": "SROI mind-map HTML",
+            "path": str(sroi_mindmap),
+            "exists": sroi_mindmap.exists(),
+            "kind": "optional",
+        },
+        {
+            "label": "SROI briefing PDF",
+            "path": str(sroi_briefing_pdf),
+            "exists": sroi_briefing_pdf.exists(),
+            "kind": "optional",
+        },
+    ]
+
+    missing_required = [row["label"] for row in required_assets if not row["exists"]]
+    missing_optional = [row["label"] for row in optional_assets if not row["exists"]]
+
+    return {
+        "required": required_assets,
+        "optional": optional_assets,
+        "missing_required": missing_required,
+        "missing_optional": missing_optional,
+        "all_required_present": not missing_required,
+    }
 
 
 @lru_cache(maxsize=2)

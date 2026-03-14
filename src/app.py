@@ -19,18 +19,18 @@ import streamlit as st
 
 from src.config import (
     CONCERNS_LABELS,
-    DEBUG_MEMORY,
     K_ANON_THRESHOLD,
     ORG_SIZE_ORDER,
     get_app_ui_config,
 )
-from src.data_loader import load_dataset
+from src.data_loader import check_runtime_assets, load_dataset
 from src.eda import profile_summary
 from src.navigation import get_default_page, render_sidebar_nav
 from src.section_pages.at_a_glance import render_at_a_glance
 from src.section_pages.concerns_and_risks import render_concerns_and_risks
 from src.section_pages.data_notes import render_data_notes
 from src.section_pages.demographics_and_types import render_demographics_and_types
+from src.section_pages.deployment_health import render_deployment_health
 from src.section_pages.earned_settlement import render_earned_settlement
 from src.section_pages.executive_summary import render_executive_summary
 from src.section_pages.overview import render_overview
@@ -39,6 +39,8 @@ from src.section_pages.trends_and_waves import render_trends_and_waves
 from src.section_pages.volunteer_recruitment import render_volunteer_recruitment
 from src.section_pages.volunteer_retention import render_volunteer_retention
 from src.section_pages.workforce_and_operations import render_workforce_and_operations
+
+DEBUG_MEMORY = os.environ.get("WCVA_DEBUG_MEMORY", "").lower() in ("1", "true", "yes")
 
 # ---------------------------------------------------------------------------
 # Page config
@@ -53,6 +55,15 @@ st.set_page_config(
 # ---------------------------------------------------------------------------
 # Data loading (cached)
 # ---------------------------------------------------------------------------
+
+asset_report = check_runtime_assets()
+
+if not asset_report["all_required_present"]:
+    st.error(
+        "Required runtime files are missing. Fix the deployment before using the app."
+    )
+    render_deployment_health(asset_report, df_full=None)
+    st.stop()
 
 
 @st.cache_data
@@ -299,7 +310,14 @@ elif page == "SROI & References":
 
 
 # =========================================================================
-# PAGE 12: Data Notes
+# PAGE 12: Deployment Health
+# =========================================================================
+elif page == "Deployment Health":
+    render_deployment_health(asset_report, df_full)
+
+
+# =========================================================================
+# PAGE 13: Data Notes
 # =========================================================================
 elif page == "Data Notes":
     render_data_notes(df)

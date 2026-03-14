@@ -73,3 +73,8 @@ def test_nav_items_have_labels_and_subtitles() -> None:
         # subtitle is optional, but if present it should not be empty whitespace
         if item.subtitle is not None:
             assert item.subtitle.strip(), f"NavItem {item.id!r} has empty subtitle"
+
+
+def test_deployment_health_page_is_present_in_navigation() -> None:
+    ids = get_nav_item_ids()
+    assert "Deployment Health" in ids

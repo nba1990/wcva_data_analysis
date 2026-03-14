@@ -86,6 +86,11 @@ The app expects:
 2. **`datasets/la_context_wales.csv`** — local authority context (required for profile/geography views).
 3. **`references/SROI_Wales_Voluntary_Sector/`** — SROI reference docs and the mind-map HTML (optional but needed for the SROI & References page).
 
+The app includes an in-app **Deployment Health** page and a startup guard:
+
+- If a required runtime file is missing, the app stops early and shows the health page instead of failing deeper in the analysis flow.
+- Optional reference assets are reported as missing in the health view but do not block general dashboard use.
+
 By default, the Dockerfile **copies the whole project** into the image, so any files present in `datasets/` and `references/` at build time are included. If you do **not** want to bake data into the image (e.g. for privacy or to swap datasets without rebuilding), use **volume mounts** with Compose:
 
 ```yaml
@@ -182,6 +187,7 @@ Streamlit’s own settings (e.g. `STREAMLIT_SERVER_*`) are set in the Dockerfile
 
 - **App not loading**: ensure port 8501 is not in use and the container is running (`docker compose ps` or `docker ps`).
 - **Missing data / empty dashboard**: confirm `datasets/WCVA_W2_Anonymised_Dataset.csv` (and, if used, `la_context_wales.csv`) exist in the image or in the mounted volume.
+- **Unsure which runtime file is missing**: open the in-app **Deployment Health** page after startup, or rely on the startup guard if the app stops immediately.
 - **Permission errors**: if you use volume mounts, ensure the host directories are readable by the container user (UID 1000 in the Dockerfile).
 
 For more on the app’s architecture and configuration, see `ARCHITECTURE.md` and `README.md`.

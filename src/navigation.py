@@ -101,6 +101,12 @@ NAV_ITEMS: List[NavItem] = [
         "Evidence base and SROI context",
         "📚",
     ),
+    NavItem(
+        "Deployment Health",
+        "Deployment Health",
+        "Runtime files and environment",
+        "🩺",
+    ),
     NavItem("Data Notes", "Data Notes", "Technical notes and methods", "📑"),
 ]
 

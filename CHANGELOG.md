@@ -8,9 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Deployment/runtime health checks for required and optional app assets, including a new in-app **Deployment Health** page and startup guard for missing required files.
+
 ### Changed
 
 - Release preparation for `0.2.0`, including aligned version metadata and clearer Streamlit Community Cloud deployment guidance.
+
+### Fixed
+
+- Streamlit startup no longer depends on importing `DEBUG_MEMORY` from `src.config`; `src.app` now reads the environment flag locally to avoid deployment import issues.
 
 ---
 

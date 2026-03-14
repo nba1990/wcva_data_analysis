@@ -7,6 +7,7 @@ and any required context (e.g. n, suppressed), and writes directly to Streamlit
 src/app.py; navigation IDs in src/navigation.NAV_ITEMS must match.
 
 Modules: at_a_glance, concerns_and_risks, data_notes, demographics_and_types,
-earned_settlement, executive_summary, overview, sroi_references, trends_and_waves,
-volunteer_recruitment, volunteer_retention, workforce_and_operations.
+deployment_health, earned_settlement, executive_summary, overview,
+sroi_references, trends_and_waves, volunteer_recruitment, volunteer_retention,
+workforce_and_operations.
 """

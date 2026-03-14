@@ -18,6 +18,7 @@ Entry point — ``src/app.py``
 ----------------------------
 
 * Sets Streamlit page config (title, layout).
+* Runs a runtime asset check before loading data; if required files are missing the app shows a health view and stops early.
 * Loads the dataset via ``data_loader.load_dataset()`` with ``st.cache_data``.
 * Sidebar: accessibility controls and filters (org size, scope, LA, activity, paid staff, concerns), backed by per-session UI config from ``get_app_ui_config()`` (stored in ``st.session_state["app_ui_config"]``).
 * Renders sidebar navigation (``navigation.render_sidebar_nav``) and dispatches to the appropriate ``render_*`` in ``src/section_pages``.
@@ -42,7 +43,7 @@ Each file defines a ``render_*`` function that:
 Data and analysis
 -----------------
 
-* **data_loader.py**: Loads CSV, cleans, adds derived columns (region, demand_direction, finance_deteriorated, multi-select counts). ``load_la_context()`` is cached.
+* **data_loader.py**: Loads CSV, cleans, adds derived columns (region, demand_direction, finance_deteriorated, multi-select counts). ``load_la_context()`` is cached, and ``check_runtime_assets()`` verifies deployment files.
 * **eda.py**: Reusable analysis (profile_summary, demand_and_outlook, workforce_operations, volunteer_recruitment_analysis, volunteer_retention_analysis, executive_highlights, etc.). Percentages use non-missing bases per question.
 * **wave_context.py**: Pydantic models for wave-level context; build_wave_context_from_df, get_wave_registry, comparison and trend helpers.
 
@@ -52,6 +53,7 @@ Charts and UI
 * **charts.py**: WCVA-branded Plotly helpers (horizontal_bar_ranked, stacked_bar_ordinal, donut_chart, grouped_bar, heatmap_matrix, wave_trend_line, kpi_card_html). ``show_chart()`` displays with optional text scaling and CSV download.
 * **config.py**: Palettes, response orderings, K_ANON_THRESHOLD, StreamlitAppUISharedConfigState, AltTextConfig, label groupers.
 * **sroi_charts/sroi_figures.py**: SROI evidence chart factories (funding flows, SROI comparison, volunteering value, etc.).
+* **deployment_health.py**: Operational page for required/optional runtime asset status and deployment diagnostics.
 
 Multi-user behaviour
 --------------------

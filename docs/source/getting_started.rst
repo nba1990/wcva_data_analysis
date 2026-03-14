@@ -42,6 +42,7 @@ Configuration
 * **Data**: Place the main survey CSV at ``datasets/WCVA_W2_Anonymised_Dataset.csv`` (or set the path in code/config). Optional: ``datasets/la_context_wales.csv`` for local-authority context.
 * **Secrets**: Use Streamlit Secrets (e.g. ``.streamlit/secrets.toml``) for any credentials; see the main README.
 * **Debug**: Set ``WCVA_DEBUG_MEMORY=1`` to show process memory in the sidebar.
+* **Deployment checks**: The app includes a ``Deployment Health`` page and a startup guard to help diagnose missing runtime files in hosted environments.
 
 First steps for developers
 ---------------------------

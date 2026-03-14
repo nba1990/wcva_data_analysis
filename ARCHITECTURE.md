@@ -17,6 +17,7 @@ Browser ⇄ Streamlit frontend ⇄ `src/app.py` (backend script)
 ### 1.1 Entry point – `src/app.py`
 
 - Configures the Streamlit page (title, layout, favicon).
+- Runs a runtime asset check before loading data; if required files are missing, the app shows a health view and stops early.
 - Loads the Wave 2 dataset via `data_loader.load_dataset()` using `st.cache_data` so all users share the same read‑only DataFrame.
 - Sets up the sidebar:
   - Accessibility controls (text size, colour‑blind friendly palette) backed by per-session UI config from `get_app_ui_config()` (stored in `st.session_state["app_ui_config"]`).
@@ -35,6 +36,7 @@ Browser ⇄ Streamlit frontend ⇄ `src/app.py` (backend script)
 - The tests in `tests/unit/test_navigation.py` ensure:
   - `NAV_ITEMS` ids are unique.
   - Every id is wired into the `if/elif` dispatch block in `app.py`.
+  - The `Deployment Health` page remains present in navigation.
 
 ### 1.3 Section pages – `src/section_pages/*`
 
@@ -53,12 +55,19 @@ The `sroi_references.py` page is slightly different in that it:
 - Calls the SROI chart factories in `src/sroi_charts/sroi_figures.py`.
 - Embeds a Markmap‑generated HTML mind‑map by reading the exported HTML file and passing it to `st.components.v1.html`.
 
+The `deployment_health.py` page is operational rather than analytical:
+
+- It renders the output of `data_loader.check_runtime_assets()`.
+- It shows which required files are missing and which optional files are unavailable.
+- It doubles as the fallback page shown by `app.py` during startup if required files are missing.
+
 ## 2. Data and analytical layer
 
 ### 2.1 `src/data_loader.py`
 
 - Responsible for loading the anonymised Wave 2 CSV from `datasets/`.
 - Applies light cleaning, derived columns, and joins against auxiliary context tables where needed.
+- Exposes `check_runtime_assets()` to verify required and optional files for deployment.
 - Returns a single canonical DataFrame that the rest of the app uses.
 
 ### 2.2 `src/eda.py`
@@ -146,6 +155,7 @@ Streamlit runs the same Python script per browser session, rerunning top‑to‑
 - **Performance**:
   - Filtering starts from `df_full` without an extra `.copy()`; each filter step produces a new DataFrame.
   - Optional debug flag `DEBUG_MEMORY` (env `WCVA_DEBUG_MEMORY`) enables process memory display in the sidebar for tuning.
+  - `app.py` reads the debug flag directly from the environment, which avoids a brittle import dependency during deployment startup.
 - **Safe vs unsafe patterns**:
   - Safe:
     - Use `st.session_state` or small, immutable dataclasses for user preferences.
@@ -200,6 +210,8 @@ The SROI & References page (`src/section_pages/sroi_references.py`) brings sever
 
 The app can be run in a container for self-hosting or deployment. A `Dockerfile` and `docker-compose.yml` are provided; full instructions (build, run, data mounts, reverse proxy, env vars) are in **`docs/DOCKER_AND_DEPLOYMENT.md`**. Streamlit Community Cloud remains an option without Docker (see README).
 
+The deployment guard in `src/app.py` adds one extra protection for hosted environments: if required runtime files are missing, the app stops before normal page rendering and shows the Deployment Health view instead of failing deeper in the analysis code.
+
 ---
 
 ## 9. Developer tour: tests and docs
@@ -245,4 +257,3 @@ When adding a **new evidence‑style or narrative page** (like the SROI page), r
 3. Use `st.components.v1.html` for embedded HTML (e.g. Markmap) if needed; keep assets under `references/` or a dedicated docs folder.
 
 Technology explorations (PyGWalker, YData Profiling, DuckDB, PyDeck) are summarised in `docs/LEARNING_AND_BACKLOG.md`.
-
