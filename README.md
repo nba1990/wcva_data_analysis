@@ -1,6 +1,6 @@
 # WCVA Baromedr Cymru – Wave 2 Dashboard
 
-Current release: **0.2.0**
+Current release: **0.2.1**
 
 This repository contains an interactive **Streamlit** dashboard and supporting scripts for analysing **Baromedr Cymru Wave 2** – a quarterly temperature check of the Welsh voluntary sector – with a particular focus on volunteering, workforce, finances, and SROI evidence for the Welsh voluntary sector.
 

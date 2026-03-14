@@ -626,6 +626,12 @@ def executive_highlights(df: pd.DataFrame) -> list[dict[str, Any]]:
     top_ret_barrier = ret["ret_barriers"].iloc[0]
     top_rec_method = rec["rec_methods"].iloc[0]
 
+    reserves_action_count = int(
+        wf["actions"]
+        .loc[wf["actions"]["label"] == "Unplanned use of reserves", "count"]
+        .iloc[0]
+    )
+
     highlights = [
         {
             "rank": 1,
@@ -678,7 +684,7 @@ def executive_highlights(df: pd.DataFrame) -> list[dict[str, Any]]:
             "detail": (
                 f"This is based on the specific 'finances deteriorated from rising costs' question "
                 f"(financedeteriorate = 'Yes'). "
-                f"{wf['actions'].query('label == \"Unplanned use of reserves\"')['count'].values[0]} "
+                f"{reserves_action_count} "
                 f"organisations also report unplanned use of reserves as a response."
             ),
             "type": "critical",
