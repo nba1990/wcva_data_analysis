@@ -1,3 +1,12 @@
+"""
+At-a-glance infographic: gauge cards and trend arrows.
+
+Helpers: _compute_trend (symbol + CSS from current/previous), _trend_vs_wave_text,
+_classify_severity (positive/mixed/concerning), _compute_gauge_colour, _build_metrics.
+render_at_a_glance_infographic builds the full HTML infographic from wave registry
+and EDA outputs (demand, recruitment, retention) and embeds it via components.html.
+"""
+
 from __future__ import annotations
 
 from textwrap import dedent

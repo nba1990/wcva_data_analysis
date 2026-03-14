@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import pandas as pd
-import plotly.express as px
 import streamlit as st
 
-from src.charts import horizontal_bar_ranked, kpi_card_html, show_chart
-from src.config import WCVA_BRAND, GlobalStreamlitAppUISharedConfigState
+from src.charts import horizontal_bar_ranked, kpi_card_html, show_chart, wave_trend_line
+from src.config import WCVA_BRAND, get_app_ui_config
 from src.eda import workforce_operations
 from src.wave_context import (
     build_trend_long,
@@ -16,10 +15,17 @@ from src.wave_context import (
 
 
 def render_concerns_and_risks(df: pd.DataFrame, n: int) -> None:
+    """Render the Concerns & Risks page: key concerns, actions, reserves, and narrative.
+
+    Args:
+        df: Filtered analysis DataFrame.
+        n: Filtered row count (for chart subtitles).
+    """
     """Render the Concerns and Risks page, using the current filtered dataset."""
     st.title("Organisational Concerns & Risks")
 
-    if GlobalStreamlitAppUISharedConfigState.suppressed:
+    ui_config = get_app_ui_config()
+    if ui_config.suppressed:
         st.warning("Results suppressed due to small sample size.")
         st.stop()
 
@@ -55,7 +61,7 @@ def render_concerns_and_risks(df: pd.DataFrame, n: int) -> None:
         "count",
         "Concerns organisations highlight as most pressing",
         n,
-        mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+        mode=ui_config.palette_mode,
     )
     show_chart(fig, "concerns_full", wf["concerns"][["label", "count", "pct"]])
 
@@ -109,33 +115,10 @@ def render_concerns_and_risks(df: pd.DataFrame, n: int) -> None:
         st.markdown("#### Concern trends by theme")
         for metric_label, mdf in concerns_trend.groupby("metric_label"):
             mdf = mdf.sort_values("wave_number")
-            fig_line = px.line(
+            fig_line = wave_trend_line(
                 mdf,
-                x="wave_number",
-                y="value",
-                markers=True,
-                text="value",
-                labels={"wave_number": "Wave", "value": "Percent"},
-                title=metric_label,
-            )
-            fig_line.update_traces(textposition="top center")
-            fig_line.update_xaxes(
-                tickvals=mdf["wave_number"],
-                ticktext=mdf["wave_label"],
-            )
-            unique_waves = (
-                mdf[["wave_label", "wave_n"]]
-                .drop_duplicates()
-                .sort_values("wave_label")
-            )
-            wave_summaries = ", ".join(
-                f"{row.wave_label} (n={row.wave_n})"
-                for row in unique_waves.itertuples(index=False)
-            )
-            n_waves = unique_waves.shape[0]
-            fig_line._alt_text = (
-                f"Trend line for {metric_label} as a top concern across {n_waves} waves. "
-                f"Waves and respondent counts: {wave_summaries}."
+                metric_label,
+                mode=ui_config.palette_mode,
             )
             show_chart(
                 fig_line,
@@ -151,7 +134,7 @@ def render_concerns_and_risks(df: pd.DataFrame, n: int) -> None:
         "count",
         "How organisations have responded to rising costs",
         n,
-        mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+        mode=ui_config.palette_mode,
     )
     show_chart(fig, "concerns_actions", wf["actions"][["label", "count", "pct"]])
 
@@ -168,7 +151,7 @@ def render_concerns_and_risks(df: pd.DataFrame, n: int) -> None:
         "count",
         "Consequences organisations report from staff or volunteer shortages",
         n,
-        mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+        mode=ui_config.palette_mode,
     )
     show_chart(
         fig,

@@ -1,0 +1,34 @@
+[project]
+name = "wcva-baromedr-dashboard"
+version = "0.1.0"
+description = "WCVA Baromedr Cymru Wave 2 Analysis Dashboard"
+readme = "README.md"
+requires-python = ">=3.11"
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # default excludes
+  \.eggs
+  | \.git
+  | \.venv
+  | __pycache__
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = false
+warn_unused_ignores = true
+ignore_missing_imports = true
+exclude = ["references/", "tests/e2e/"]
+# Gradual typing: allow existing patterns; tighten over time
+disable_error_code = ["no-any-return", "union-attr", "arg-type", "assignment", "return-value"]

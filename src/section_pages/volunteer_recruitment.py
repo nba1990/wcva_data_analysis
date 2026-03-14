@@ -16,7 +16,7 @@ from src.config import (
     VOL_OBJECTIVES_ORDER,
     WCVA_BRAND,
     AltTextConfig,
-    GlobalStreamlitAppUISharedConfigState,
+    get_app_ui_config,
     resolve_grouping,
 )
 from src.eda import volunteer_recruitment_analysis, volunteer_retention_analysis
@@ -25,10 +25,17 @@ from src.wave_context import get_wave_registry, trend_series
 
 
 def render_volunteer_recruitment(df: pd.DataFrame, n: int) -> None:
+    """Render the Volunteer Recruitment page: difficulty, barriers, methods, by segment.
+
+    Args:
+        df: Filtered analysis DataFrame.
+        n: Filtered row count (for chart subtitles).
+    """
     """Render the Volunteer Recruitment page, using the current filtered dataset."""
     st.title("Volunteer Recruitment")
 
-    if GlobalStreamlitAppUISharedConfigState.suppressed:
+    ui_config = get_app_ui_config()
+    if ui_config.suppressed:
         st.warning("Results suppressed due to small sample size.")
         st.stop()
 
@@ -130,7 +137,7 @@ def render_volunteer_recruitment(df: pd.DataFrame, n: int) -> None:
             rec["vol_rec_difficulty"],
             TITLE,
             diff_base,
-            mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+            mode=ui_config.palette_mode,
             alt_config=alt_config_diff,
             grouper=grouper,
             group_order=group_order,
@@ -162,7 +169,7 @@ def render_volunteer_recruitment(df: pd.DataFrame, n: int) -> None:
             rec["vol_objectives"],
             TITLE,
             obj_base,
-            mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+            mode=ui_config.palette_mode,
             alt_config=alt_config_obj,
             grouper=grouper,
             group_order=group_order,
@@ -176,7 +183,7 @@ def render_volunteer_recruitment(df: pd.DataFrame, n: int) -> None:
         "count",
         "Word of mouth dominates, but digital channels are close behind",
         n,
-        mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+        mode=ui_config.palette_mode,
     )
     show_chart(fig, "rec_methods", rec["rec_methods"][["label", "count", "pct"]])
 
@@ -187,7 +194,7 @@ def render_volunteer_recruitment(df: pd.DataFrame, n: int) -> None:
         "count",
         "The problem isn't lack of effort. It's low response and limited capacity",
         n,
-        mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+        mode=ui_config.palette_mode,
     )
     show_chart(fig, "rec_barriers", rec["rec_barriers"][["label", "count", "pct"]])
 
@@ -205,7 +212,7 @@ def render_volunteer_recruitment(df: pd.DataFrame, n: int) -> None:
             seg_cols,
             "How barriers differ by organisation size",
             n,
-            mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+            mode=ui_config.palette_mode,
         )
         show_chart(fig, "rec_barriers_seg", rec["rec_barriers_by_size"])
 

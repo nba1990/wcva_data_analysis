@@ -3,7 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from src.config import WCVA_BRAND, GlobalStreamlitAppUISharedConfigState
+from src.config import WCVA_BRAND, get_app_ui_config
 from src.eda import (
     demand_and_outlook,
     volunteer_recruitment_analysis,
@@ -42,11 +42,18 @@ def _delta_arrow(old: float, new: float, *, higher_is_good: bool) -> str:
 
 
 def render_at_a_glance(df: pd.DataFrame, n: int, accessible_mode: bool) -> None:
-    """Render the At-a-Glance page, using the current filtered dataset."""
+    """Render the At-a-Glance page: infographic, KPI cards, and narrative.
+
+    Args:
+        df: Filtered analysis DataFrame.
+        n: Filtered row count (for subtitles and suppression).
+        accessible_mode: Whether to use accessible palette in infographic.
+    """
     st.title("State of Volunteering in Wales — At a Glance")
     st.caption("Baromedr Cymru — Wave 2 (organisational survey)")
 
-    if GlobalStreamlitAppUISharedConfigState.suppressed:
+    ui_config = get_app_ui_config()
+    if ui_config.suppressed:
         st.warning(
             "Results suppressed due to small sample size. Adjust filters to see data."
         )

@@ -13,7 +13,7 @@ from src.config import (
     WCVA_BRAND,
     YES_NO_ORDER,
     AltTextConfig,
-    GlobalStreamlitAppUISharedConfigState,
+    get_app_ui_config,
     resolve_grouping,
 )
 from src.eda import workforce_operations
@@ -21,10 +21,17 @@ from src.wave_context import get_wave_registry, trend_series
 
 
 def render_workforce_and_operations(df: pd.DataFrame, n: int) -> None:
+    """Render the Workforce & Operations page: staff/vol recruitment and retention, concerns, actions.
+
+    Args:
+        df: Filtered analysis DataFrame.
+        n: Filtered row count (for chart subtitles).
+    """
     """Render the Workforce and Operations page, using the current filtered dataset."""
     st.title("Workforce & Operations")
 
-    if GlobalStreamlitAppUISharedConfigState.suppressed:
+    ui_config = get_app_ui_config()
+    if ui_config.suppressed:
         st.warning("Results suppressed due to small sample size.")
         st.stop()
 
@@ -110,6 +117,8 @@ def render_workforce_and_operations(df: pd.DataFrame, n: int) -> None:
             using_answered_base = 0
             using_yes = 0
 
+        # Use consistent types for Arrow serialization: "Denominator (with reserves)"
+        # is string (empty or numeric string) so st.dataframe does not mix int and str.
         wf_rows = [
             {
                 "Metric": "Finances deteriorated due to rising costs",
@@ -117,7 +126,7 @@ def render_workforce_and_operations(df: pd.DataFrame, n: int) -> None:
                 "Response(s) counted": "Yes",
                 "Numerator (count)": finance_yes,
                 "Denominator (answered)": finance_base,
-                "Denominator (with reserves)": "",
+                "Denominator (with reserves)": "",  # N/A for this metric
                 "Percentage": wf["finance_deteriorated_pct"],
             },
             {
@@ -126,7 +135,7 @@ def render_workforce_and_operations(df: pd.DataFrame, n: int) -> None:
                 "Response(s) counted": "Yes",
                 "Numerator (count)": reserves_yes,
                 "Denominator (answered)": reserves_base,
-                "Denominator (with reserves)": "",
+                "Denominator (with reserves)": "",  # N/A for this metric
                 "Percentage": wf["reserves_yes_pct"],
             },
             {
@@ -135,7 +144,7 @@ def render_workforce_and_operations(df: pd.DataFrame, n: int) -> None:
                 "Response(s) counted": "Yes (among reserves == 'Yes')",
                 "Numerator (count)": using_yes,
                 "Denominator (answered)": using_answered_base,
-                "Denominator (with reserves)": using_base_with_reserves,
+                "Denominator (with reserves)": str(using_base_with_reserves),
                 "Percentage": wf["using_reserves_pct"],
             },
         ]
@@ -157,7 +166,7 @@ def render_workforce_and_operations(df: pd.DataFrame, n: int) -> None:
         "count",
         "Income dominates concerns, with demand and volunteer recruitment close behind",
         n,
-        mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+        mode=ui_config.palette_mode,
     )
     show_chart(fig, "wf_concerns", wf["concerns"][["label", "count", "pct"]])
 
@@ -168,7 +177,7 @@ def render_workforce_and_operations(df: pd.DataFrame, n: int) -> None:
         "count",
         "Price increases and unplanned reserves usage are the most common responses",
         n,
-        mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+        mode=ui_config.palette_mode,
     )
     show_chart(fig, "wf_actions", wf["actions"][["label", "count", "pct"]])
 
@@ -180,7 +189,7 @@ def render_workforce_and_operations(df: pd.DataFrame, n: int) -> None:
         "count",
         "Unable to meet demand and paused operations are the most common consequences",
         n,
-        mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+        mode=ui_config.palette_mode,
     )
     show_chart(
         fig, "wf_shortage_affect", wf["shortage_affect"][["label", "count", "pct"]]
@@ -201,7 +210,7 @@ def render_workforce_and_operations(df: pd.DataFrame, n: int) -> None:
             wf["staff_rec_difficulty"],
             f"Staff recruitment difficulty (n={wf['n_with_staff']} with paid staff)",
             wf["n_with_staff"],
-            mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+            mode=ui_config.palette_mode,
             alt_config=alt_config_wf,
             grouper=grouper,
             group_order=group_order,
@@ -212,7 +221,7 @@ def render_workforce_and_operations(df: pd.DataFrame, n: int) -> None:
             wf["staff_ret_difficulty"],
             f"Staff retention difficulty (n={wf['n_with_staff']} with paid staff)",
             wf["n_with_staff"],
-            mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+            mode=ui_config.palette_mode,
             alt_config=alt_config_wf,
             grouper=grouper,
             group_order=group_order,

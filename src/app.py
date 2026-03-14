@@ -10,8 +10,6 @@ import os
 import sys
 from pathlib import Path
 
-import psutil
-
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -21,9 +19,10 @@ import streamlit as st
 
 from src.config import (
     CONCERNS_LABELS,
+    DEBUG_MEMORY,
     K_ANON_THRESHOLD,
     ORG_SIZE_ORDER,
-    GlobalStreamlitAppUISharedConfigState,
+    get_app_ui_config,
 )
 from src.data_loader import load_dataset
 from src.eda import profile_summary
@@ -57,7 +56,8 @@ st.set_page_config(
 
 
 @st.cache_data
-def get_data():
+def get_data() -> pd.DataFrame:
+    """Load and return the main analysis dataset (cleaned, with derived columns)."""
     return load_dataset()
 
 
@@ -72,100 +72,120 @@ st.sidebar.title("Baromedr Cymru")
 st.sidebar.caption("Wave 2 Analysis Dashboard")
 st.sidebar.divider()
 
-process = psutil.Process(os.getpid())
-# print(process.memory_info().rss / 1024**2, "MB")
-
 st.sidebar.subheader("Accessibility Features")
 
-GlobalStreamlitAppUISharedConfigState.text_size_mode = st.sidebar.radio(
-    "Chart label size",
-    ["Normal", "Larger"],
-    index=0,
-)
-GlobalStreamlitAppUISharedConfigState.text_scale = (
-    1.0 if GlobalStreamlitAppUISharedConfigState.text_size_mode == "Normal" else 1.3
-)
+ui_config = get_app_ui_config()
 
-GlobalStreamlitAppUISharedConfigState.accessible_mode = st.sidebar.checkbox(
-    "Colour-blind friendly mode", value=False
+_radio_options = ["Normal", "Larger"]
+ui_config.text_size_mode = st.sidebar.radio(
+    "Chart label size",
+    _radio_options,
+    index=(
+        _radio_options.index(ui_config.text_size_mode)
+        if ui_config.text_size_mode in _radio_options
+        else 0
+    ),
 )
-GlobalStreamlitAppUISharedConfigState.palette_mode = (
-    "accessible" if GlobalStreamlitAppUISharedConfigState.accessible_mode else "brand"
+ui_config.text_scale = 1.0 if ui_config.text_size_mode == "Normal" else 1.3
+
+ui_config.accessible_mode = st.sidebar.checkbox(
+    "Colour-blind friendly mode", value=ui_config.accessible_mode
 )
+ui_config.palette_mode = "accessible" if ui_config.accessible_mode else "brand"
 
 st.sidebar.divider()
 st.sidebar.subheader("Filters")
 
-GlobalStreamlitAppUISharedConfigState.size_options = ["All"] + ORG_SIZE_ORDER
-GlobalStreamlitAppUISharedConfigState.selected_size = st.sidebar.selectbox(
-    "Organisation size", GlobalStreamlitAppUISharedConfigState.size_options
+ui_config.size_options = ["All"] + ORG_SIZE_ORDER
+_size_idx = (
+    ui_config.size_options.index(ui_config.selected_size)
+    if ui_config.selected_size in ui_config.size_options
+    else 0
+)
+ui_config.selected_size = st.sidebar.selectbox(
+    "Organisation size", ui_config.size_options, index=_size_idx
 )
 
-GlobalStreamlitAppUISharedConfigState.scope_options = ["All"] + sorted(
+ui_config.scope_options = ["All"] + sorted(
     df_full["wales_scope"].dropna().unique().tolist()
 )
-GlobalStreamlitAppUISharedConfigState.selected_scope = st.sidebar.selectbox(
-    "Geographic scope", GlobalStreamlitAppUISharedConfigState.scope_options
+_scope_idx = (
+    ui_config.scope_options.index(ui_config.selected_scope)
+    if ui_config.selected_scope in ui_config.scope_options
+    else 0
+)
+ui_config.selected_scope = st.sidebar.selectbox(
+    "Geographic scope", ui_config.scope_options, index=_scope_idx
 )
 
-GlobalStreamlitAppUISharedConfigState.la_scope_options = ["All"] + sorted(
+ui_config.la_scope_options = ["All"] + sorted(
     df_full["location_la_primary"].dropna().unique().tolist()
 )
-GlobalStreamlitAppUISharedConfigState.selected_la_scope = st.sidebar.selectbox(
+_la_idx = (
+    ui_config.la_scope_options.index(ui_config.selected_la_scope)
+    if ui_config.selected_la_scope in ui_config.la_scope_options
+    else 0
+)
+ui_config.selected_la_scope = st.sidebar.selectbox(
     "Local primary authority scope",
-    GlobalStreamlitAppUISharedConfigState.la_scope_options,
+    ui_config.la_scope_options,
+    index=_la_idx,
 )
 
-GlobalStreamlitAppUISharedConfigState.activity_options = ["All"] + sorted(
+ui_config.activity_options = ["All"] + sorted(
     df_full["mainactivity"].dropna().unique().tolist()
 )
-GlobalStreamlitAppUISharedConfigState.selected_activity = st.sidebar.selectbox(
-    "Main activity", GlobalStreamlitAppUISharedConfigState.activity_options
+_activity_idx = (
+    ui_config.activity_options.index(ui_config.selected_activity)
+    if ui_config.selected_activity in ui_config.activity_options
+    else 0
+)
+ui_config.selected_activity = st.sidebar.selectbox(
+    "Main activity", ui_config.activity_options, index=_activity_idx
 )
 
-GlobalStreamlitAppUISharedConfigState.paid_staff_options = [
+ui_config.paid_staff_options = [
     "All",
     "Has paid staff",
     "No paid staff",
 ]
-GlobalStreamlitAppUISharedConfigState.selected_paid_staff = st.sidebar.selectbox(
-    "Paid staff", GlobalStreamlitAppUISharedConfigState.paid_staff_options
+_paid_idx = (
+    ui_config.paid_staff_options.index(ui_config.selected_paid_staff)
+    if ui_config.selected_paid_staff in ui_config.paid_staff_options
+    else 0
+)
+ui_config.selected_paid_staff = st.sidebar.selectbox(
+    "Paid staff", ui_config.paid_staff_options, index=_paid_idx
 )
 
-GlobalStreamlitAppUISharedConfigState.concern_label_options = list(
-    CONCERNS_LABELS.values()
-)
-GlobalStreamlitAppUISharedConfigState.selected_concerns = st.sidebar.multiselect(
+ui_config.concern_label_options = list(CONCERNS_LABELS.values())
+ui_config.selected_concerns = st.sidebar.multiselect(
     "Organisations that cited concern",
-    options=GlobalStreamlitAppUISharedConfigState.concern_label_options,
+    options=ui_config.concern_label_options,
+    default=ui_config.selected_concerns or [],
 )
 
-df = df_full.copy()
+df = df_full
 
 # Apply filters (if selected, default is "All")
-if GlobalStreamlitAppUISharedConfigState.selected_size != "All":
-    df = df[df["org_size"] == GlobalStreamlitAppUISharedConfigState.selected_size]
-if GlobalStreamlitAppUISharedConfigState.selected_scope != "All":
-    df = df[df["wales_scope"] == GlobalStreamlitAppUISharedConfigState.selected_scope]
-if GlobalStreamlitAppUISharedConfigState.selected_la_scope != "All":
-    df = df[
-        df["location_la_primary"]
-        == GlobalStreamlitAppUISharedConfigState.selected_la_scope
-    ]
-if GlobalStreamlitAppUISharedConfigState.selected_activity != "All":
-    df = df[
-        df["mainactivity"] == GlobalStreamlitAppUISharedConfigState.selected_activity
-    ]
-if GlobalStreamlitAppUISharedConfigState.selected_paid_staff == "Has paid staff":
+if ui_config.selected_size != "All":
+    df = df[df["org_size"] == ui_config.selected_size]
+if ui_config.selected_scope != "All":
+    df = df[df["wales_scope"] == ui_config.selected_scope]
+if ui_config.selected_la_scope != "All":
+    df = df[df["location_la_primary"] == ui_config.selected_la_scope]
+if ui_config.selected_activity != "All":
+    df = df[df["mainactivity"] == ui_config.selected_activity]
+if ui_config.selected_paid_staff == "Has paid staff":
     df = df[df["paidworkforce"] == "Yes"]
-elif GlobalStreamlitAppUISharedConfigState.selected_paid_staff == "No paid staff":
+elif ui_config.selected_paid_staff == "No paid staff":
     df = df[df["paidworkforce"] == "No"]
 
-if GlobalStreamlitAppUISharedConfigState.selected_concerns:
+if ui_config.selected_concerns:
     label_to_column = {v: k for k, v in CONCERNS_LABELS.items()}
     concern_columns = [
         label_to_column[label]
-        for label in GlobalStreamlitAppUISharedConfigState.selected_concerns
+        for label in ui_config.selected_concerns
         if label in label_to_column
     ]
     if concern_columns:
@@ -177,11 +197,11 @@ if GlobalStreamlitAppUISharedConfigState.selected_concerns:
 
 n = len(df)
 
-GlobalStreamlitAppUISharedConfigState.base_size_n = n
+ui_config.base_size_n = n
 
-GlobalStreamlitAppUISharedConfigState.suppressed = n < K_ANON_THRESHOLD
+ui_config.suppressed = n < K_ANON_THRESHOLD
 
-if GlobalStreamlitAppUISharedConfigState.suppressed:
+if ui_config.suppressed:
     st.sidebar.warning(
         f"⚠️ Only **{n}** organisations match these filters (below the privacy "
         f"threshold of {K_ANON_THRESHOLD}). Results are suppressed to protect respondent anonymity."
@@ -189,6 +209,11 @@ if GlobalStreamlitAppUISharedConfigState.suppressed:
 
 st.sidebar.divider()
 st.sidebar.caption(f"Showing **{n}** of {len(df_full)} organisations")
+if DEBUG_MEMORY:
+    import psutil
+
+    process = psutil.Process(os.getpid())
+    st.sidebar.caption(f"Memory: {process.memory_info().rss / 1024**2:.1f} MB")
 
 # ---------------------------------------------------------------------------
 # Navigation: WCVA pill-style sidebar
@@ -202,7 +227,7 @@ prof = profile_summary(df)
 # PAGE 1: At-a-Glance Infographic
 # =========================================================================
 if page == "At-a-Glance":
-    render_at_a_glance(df, n, GlobalStreamlitAppUISharedConfigState.accessible_mode)
+    render_at_a_glance(df, n, ui_config.accessible_mode)
 
 # =========================================================================
 # PAGE 2: Overview
@@ -210,9 +235,9 @@ if page == "At-a-Glance":
 elif page == "Overview":
     render_overview(
         df,
-        suppressed=GlobalStreamlitAppUISharedConfigState.suppressed,
+        suppressed=ui_config.suppressed,
         n=n,
-        palette_mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+        palette_mode=ui_config.palette_mode,
         prof=prof,
     )
 
@@ -263,7 +288,7 @@ elif page == "Earned Settlement":
 # PAGE 10: Executive Summary
 # =========================================================================
 elif page == "Executive Summary":
-    render_executive_summary(df, GlobalStreamlitAppUISharedConfigState.suppressed)
+    render_executive_summary(df, ui_config.suppressed)
 
 
 # =========================================================================

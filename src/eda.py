@@ -1,11 +1,26 @@
 """
 Exploratory data analysis functions for Baromedr Cymru Wave 2.
 
-Each function takes a (possibly filtered) DataFrame and returns
-structured results ready for charting or display.
+Each function takes a (possibly filtered) DataFrame (with columns from
+data_loader derived output) and returns structured results (dicts, DataFrames)
+ready for charting or display. Percentages use non-missing bases per question
+where applicable. Key functions:
+
+- profile_summary: Org size, legal form, geography, LA context, volunteer/staff pct.
+- demand_and_outlook: Demand/finance/operating distributions and headline pcts.
+- volunteer_recruitment_analysis: Recruitment difficulty, barriers, methods (by segment).
+- volunteer_retention_analysis: Retention difficulty, barriers (by segment).
+- workforce_operations: Staff/vol recruitment and retention, concerns, actions, reserves.
+- volunteer_demographics: Demographics presence and change matrix.
+- volunteering_types: Type usage and earned settlement.
+- cross_segment_analysis: Metrics by org_size, scope, main activity.
+- finance_recruitment_cross: Recruitment difficulty by financial deterioration (or None).
+- executive_highlights: Ranked list of dicts for executive summary.
 """
 
 from __future__ import annotations
+
+from typing import Any
 
 import pandas as pd
 
@@ -40,7 +55,15 @@ from src.data_loader import (
 
 
 def _value_counts_ordered(series: pd.Series, order: list[str]) -> pd.DataFrame:
-    """Value counts respecting a predefined order, including zeros for missing categories."""
+    """Value counts in a fixed order with pct over non-missing base.
+
+    Args:
+        series: Categorical series (e.g. demand, financial).
+        order: Ordered list of category values; missing categories get count 0.
+
+    Returns:
+        DataFrame with columns value, count, pct (pct sums to 100 over order).
+    """
     vc = series.value_counts()
     n = series.notna().sum()
     rows = []
@@ -53,14 +76,16 @@ def _value_counts_ordered(series: pd.Series, order: list[str]) -> pd.DataFrame:
 
 
 def _share_true(series: pd.Series) -> float:
-    """
-    Return percentage of 'True' values using a non-missing base.
+    """Return percentage of True values over non-missing base.
 
-    Design convention:
-    - For any single survey question, percentages are calculated over respondents
-      with a non-missing answer to that question (series.notna()).
-    - This keeps figures consistent between KPI tiles, charts, and narratives,
-      and avoids discrepancies when some organisations skip a question.
+    Design: percentages are over series.notna() so that KPI tiles, charts,
+    and narratives stay consistent when some organisations skip a question.
+
+    Args:
+        series: Boolean or truthy series.
+
+    Returns:
+        Float in [0, 100] or 0.0 if no non-missing values.
     """
     base = int(series.notna().sum())
     if base == 0:
@@ -73,7 +98,20 @@ def _share_true(series: pd.Series) -> float:
 # ---------------------------------------------------------------------------
 
 
-def profile_summary(df: pd.DataFrame) -> dict:
+def profile_summary(df: pd.DataFrame) -> dict[str, Any]:
+    """Return organisational profile summary for Overview and similar pages.
+
+    Includes: n, org_size, legalform, wales_scope, mainactivity, la_distribution,
+    region_distribution, la_context (joined), has_volunteers_pct, has_paid_staff_pct,
+    social_enterprise_pct (if column present).
+
+    Args:
+        df: DataFrame with org_size, legalform, location_la_primary, peoplevol,
+            paidworkforce, and optionally socialenterprise, region.
+
+    Returns:
+        Dict with keys above; percentages are 0.0 when base is zero or column missing.
+    """
     n = len(df)
 
     # Basic distributions used throughout the app
@@ -170,22 +208,52 @@ def profile_summary(df: pd.DataFrame) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def demand_and_outlook(df: pd.DataFrame) -> dict:
-    """
-    Aggregates for demand, finances, and operating outlook.
+def demand_and_outlook(df: pd.DataFrame) -> dict[str, Any]:
+    """Aggregates for demand, finances, and operating outlook.
 
-    For percentage fields we guard against empty inputs by returning 0.0
-    rather than propagating NaNs from 0/0 divisions. This keeps KPI tiles
-    and tests stable when filters remove all rows.
+    Returns value_counts DataFrames (demand, financial, operating, workforce_change,
+    expect_demand, expect_financial) and headline percentages: demand_pct_increased,
+    financial_pct_deteriorated, operating_pct_likely. Empty df yields 0.0 for pcts.
+
+    Args:
+        df: DataFrame with demand, financial, operating, expectdemand, expectfinancial,
+            workforce, and derived demand_direction, financial_direction.
+
+    Returns:
+        Dict with keys above; pct values in [0, 100].
     """
     n = len(df)
 
-    demand = _value_counts_ordered(df["demand"], DEMAND_ORDER) if "demand" in df.columns else _value_counts_ordered(pd.Series(dtype="object"), DEMAND_ORDER)  # type: ignore[arg-type]  # noqa: E501
-    financial = _value_counts_ordered(df["financial"], FINANCIAL_ORDER) if "financial" in df.columns else _value_counts_ordered(pd.Series(dtype="object"), FINANCIAL_ORDER)  # type: ignore[arg-type]  # noqa: E501
-    operating = _value_counts_ordered(df["operating"], OPERATING_ORDER) if "operating" in df.columns else _value_counts_ordered(pd.Series(dtype="object"), OPERATING_ORDER)  # type: ignore[arg-type]  # noqa: E501
-    workforce_change = _value_counts_ordered(df["workforce"], DEMAND_ORDER) if "workforce" in df.columns else _value_counts_ordered(pd.Series(dtype="object"), DEMAND_ORDER)  # type: ignore[arg-type]  # noqa: E501
-    expect_demand = _value_counts_ordered(df["expectdemand"], EXPECT_DEMAND_ORDER) if "expectdemand" in df.columns else _value_counts_ordered(pd.Series(dtype="object"), EXPECT_DEMAND_ORDER)  # type: ignore[arg-type]  # noqa: E501
-    expect_financial = _value_counts_ordered(df["expectfinancial"], EXPECT_FINANCIAL_ORDER) if "expectfinancial" in df.columns else _value_counts_ordered(pd.Series(dtype="object"), EXPECT_FINANCIAL_ORDER)  # type: ignore[arg-type]  # noqa: E501
+    demand = (
+        _value_counts_ordered(df["demand"], DEMAND_ORDER)
+        if "demand" in df.columns
+        else _value_counts_ordered(pd.Series(dtype="object"), DEMAND_ORDER)
+    )  # noqa: E501
+    financial = (
+        _value_counts_ordered(df["financial"], FINANCIAL_ORDER)
+        if "financial" in df.columns
+        else _value_counts_ordered(pd.Series(dtype="object"), FINANCIAL_ORDER)
+    )  # noqa: E501
+    operating = (
+        _value_counts_ordered(df["operating"], OPERATING_ORDER)
+        if "operating" in df.columns
+        else _value_counts_ordered(pd.Series(dtype="object"), OPERATING_ORDER)
+    )  # noqa: E501
+    workforce_change = (
+        _value_counts_ordered(df["workforce"], DEMAND_ORDER)
+        if "workforce" in df.columns
+        else _value_counts_ordered(pd.Series(dtype="object"), DEMAND_ORDER)
+    )  # noqa: E501
+    expect_demand = (
+        _value_counts_ordered(df["expectdemand"], EXPECT_DEMAND_ORDER)
+        if "expectdemand" in df.columns
+        else _value_counts_ordered(pd.Series(dtype="object"), EXPECT_DEMAND_ORDER)
+    )  # noqa: E501
+    expect_financial = (
+        _value_counts_ordered(df["expectfinancial"], EXPECT_FINANCIAL_ORDER)
+        if "expectfinancial" in df.columns
+        else _value_counts_ordered(pd.Series(dtype="object"), EXPECT_FINANCIAL_ORDER)
+    )  # noqa: E501
 
     if n == 0:
         demand_pct_increased = 0.0
@@ -223,7 +291,8 @@ def demand_and_outlook(df: pd.DataFrame) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def volunteer_recruitment_analysis(df: pd.DataFrame) -> dict:
+def volunteer_recruitment_analysis(df: pd.DataFrame) -> dict[str, Any]:
+    """Return volunteer recruitment metrics: shortage, difficulty, barriers, methods (and by-segment tables)."""
     n = len(df)
     shortage_series = df["has_vol_rec_difficulty"]
     # For Likert-based difficulty, use only respondents who answered the question
@@ -279,7 +348,8 @@ def volunteer_recruitment_analysis(df: pd.DataFrame) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def volunteer_retention_analysis(df: pd.DataFrame) -> dict:
+def volunteer_retention_analysis(df: pd.DataFrame) -> dict[str, Any]:
+    """Return volunteer retention metrics: difficulty, barriers (and by-segment tables)."""
     n = len(df)
     shortage_series = df["has_vol_ret_difficulty"]
     # For Likert-based difficulty, use only respondents who answered the question
@@ -315,7 +385,8 @@ def volunteer_retention_analysis(df: pd.DataFrame) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def workforce_operations(df: pd.DataFrame) -> dict:
+def workforce_operations(df: pd.DataFrame) -> dict[str, Any]:
+    """Return workforce and operations metrics: staff/vol recruitment and retention, concerns, actions, reserves."""
     n = len(df)
     with_staff = df[df["paidworkforce"] == "Yes"]
     n_staff = len(with_staff)
@@ -359,9 +430,9 @@ def workforce_operations(df: pd.DataFrame) -> dict:
         "concerns": count_multiselect(df, CONCERNS_LABELS),
         "actions": count_multiselect(df, ACTIONS_LABELS),
         "finance_deteriorated_pct": round(
-            100 * df["finance_deteriorated"].sum() / n, 1
+            100 * df["finance_deteriorated"].sum() / (n or 1), 1
         ),
-        "reserves_yes_pct": round(100 * (df["reserves"] == "Yes").sum() / n, 1),
+        "reserves_yes_pct": round(100 * (df["reserves"] == "Yes").sum() / (n or 1), 1),
         "using_reserves_pct": (
             round(
                 100
@@ -382,7 +453,8 @@ def workforce_operations(df: pd.DataFrame) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def volunteer_demographics(df: pd.DataFrame) -> dict:
+def volunteer_demographics(df: pd.DataFrame) -> dict[str, Any]:
+    """Return volunteer demographics presence and change matrix by demographic group."""
     dem_presence = count_multiselect(df, VOL_DEM_LABELS)
 
     # Build a change matrix: rows = demographic group, cols = change category
@@ -428,7 +500,8 @@ def volunteer_demographics(df: pd.DataFrame) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def volunteering_types(df: pd.DataFrame) -> dict:
+def volunteering_types(df: pd.DataFrame) -> dict[str, Any]:
+    """Return volunteering types usage and earned settlement / capacity distributions."""
     type_data = {}
     for col, label in VOL_TYPEUSE_LABELS.items():
         if col in df.columns:
@@ -480,7 +553,7 @@ def _segment_metrics(subset: pd.DataFrame, n: int) -> dict:
     }
 
 
-def cross_segment_analysis(df: pd.DataFrame) -> dict:
+def cross_segment_analysis(df: pd.DataFrame) -> dict[str, Any]:
     """Key metrics broken down by org_size, scope, and main activity."""
     segments = {}
     min_n = 3  # avoid tiny segments
@@ -504,7 +577,7 @@ def cross_segment_analysis(df: pd.DataFrame) -> dict:
     return segments
 
 
-def finance_recruitment_cross(df: pd.DataFrame) -> dict | None:
+def finance_recruitment_cross(df: pd.DataFrame) -> dict[str, Any] | None:
     """
     Among orgs whose financial position deteriorated (last 3 mth) vs not, what % find recruitment difficult?
     Returns None if counts are too small for a sensible comparison.
@@ -539,7 +612,7 @@ def finance_recruitment_cross(df: pd.DataFrame) -> dict | None:
 # ---------------------------------------------------------------------------
 
 
-def executive_highlights(df: pd.DataFrame) -> list[dict]:
+def executive_highlights(df: pd.DataFrame) -> list[dict[str, Any]]:
     """Return a ranked list of key insights for the executive summary."""
     n = len(df)
     rec = volunteer_recruitment_analysis(df)

@@ -1,3 +1,11 @@
+"""
+SROI and reference chart factories for the SROI & References page.
+
+Each make_*_figure returns a go.Figure with optional palette_mode and text_scale.
+Charts: funding flows, SROI comparison, volunteering value, measurement gap,
+WCVA/WG funding, NLCF Wales, alignment heatmap, framework flow, timeline.
+"""
+
 from __future__ import annotations
 
 import plotly.graph_objects as go
@@ -9,6 +17,7 @@ PLOT_BGCOLOUR = "rgb(229, 236, 246)"
 
 
 def _scale_layout(fig: go.Figure, text_scale: float) -> None:
+    """Apply text_scale multiplier to figure font and title sizes (in-place)."""
     base_size = 14
     title_size = 16
     fig.update_layout(
@@ -135,7 +144,7 @@ def make_sroi_comparison_figure(
         xref="paper",
         yref="paper",
         x=0.5,
-        y=-0.12,
+        y=-0.15,
         showarrow=False,
         font=dict(size=10, color="gray"),
         xanchor="center",
@@ -308,7 +317,7 @@ def make_wcva_wg_funding_figure(
         xref="paper",
         yref="paper",
         x=0.5,
-        y=-0.22,
+        y=-0.15,
         showarrow=False,
         font=dict(size=10, color="gray"),
         xanchor="center",

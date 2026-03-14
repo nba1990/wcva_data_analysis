@@ -122,3 +122,14 @@ def test_finance_recruitment_cross_positive_case() -> None:
     assert result["n_finance_not_deteriorated"] == 5
     assert 0 <= result["pct_rec_difficulty_if_finance_deteriorated"] <= 100
     assert 0 <= result["pct_rec_difficulty_if_finance_not_deteriorated"] <= 100
+
+
+def test_finance_recruitment_cross_returns_none_when_insufficient_data() -> None:
+    """When fewer than 3 in either finance group, cross-analysis returns None."""
+    df = pd.DataFrame(
+        {
+            "financial_direction": ["Deteriorated", "Stayed the same"],
+            "vol_rec": ["Somewhat difficult", "Neither easy nor difficult"],
+        }
+    )
+    assert finance_recruitment_cross(df) is None

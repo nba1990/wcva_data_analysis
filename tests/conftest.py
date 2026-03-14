@@ -7,18 +7,14 @@ import pandas as pd
 import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-TASK_ROOT = (
-    PROJECT_ROOT / "legacy_project_root"
-)
 
-
-# Ensure the Task root (parent of `src`) is on sys.path as soon as tests
-# are imported. This allows `import src.*` in test modules during collection.
+# Ensure the project root (parent of `tests`, so `src` is importable) is on
+# sys.path when tests are collected. Needed when pytest is run from other dirs.
 import sys  # noqa: E402
 
-task_str = str(TASK_ROOT)
-if task_str not in sys.path:
-    sys.path.insert(0, task_str)
+_root = str(PROJECT_ROOT)
+if _root not in sys.path:
+    sys.path.insert(0, _root)
 
 
 @pytest.fixture(scope="session", autouse=True)

@@ -1,9 +1,22 @@
 """
-Data loading, cleaning, and derived-column creation for the
-Baromedr Cymru Wave 2 anonymised dataset.
+Data loading, cleaning, and derived-column creation for the Baromedr Cymru Wave 2
+anonymised dataset.
+
+This module provides:
+- load_dataset: Load main survey CSV, clean and add derived columns.
+- load_la_context: Load local-authority context (cached).
+- count_multiselect and count_multiselect_by_segment: Aggregate multi-select responses.
+- data_quality_profile: Summary for the Data Notes page.
+
+All functions expect or return pandas DataFrames with column names aligned to
+config label dictionaries (CONCERNS_LABELS, ACTIONS_LABELS, etc.).
 """
 
 from __future__ import annotations
+
+from functools import lru_cache
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -12,29 +25,53 @@ from src.config import DATA_DIR, DATASET_PATH, LA_TO_REGION, MULTI_SELECT_GROUPS
 
 
 def load_dataset(path: str | None = None) -> pd.DataFrame:
-    """Load the CSV and apply all cleaning / derivation steps."""
+    """Load the main survey CSV and apply cleaning and derivation.
+
+    Args:
+        path: Optional path to CSV. If None, uses config DATASET_PATH.
+
+    Returns:
+        DataFrame with original questionnaire columns plus derived columns
+        (region, demand_direction, financial_direction, has_X_difficulty flags,
+        finance_deteriorated, and per-group X_count for multi-select groups).
+    """
     df = pd.read_csv(path or DATASET_PATH)
     df = _clean(df)
     df = _derive_columns(df)
     return df
 
 
+@lru_cache(maxsize=2)
 def load_la_context(path: str | None = None) -> pd.DataFrame:
-    """
-    Load local-authority context data (population and estimated VCSE org counts).
+    """Load local-authority context (population, estimated VCSE org counts).
 
-    The CSV is intentionally small and static so that it can be updated easily
-    from ONS / WCVA sources for future waves.
+    The CSV is small and static; cached per process to avoid repeated disk reads.
+    Column 'local_authority' is stripped of leading/trailing whitespace.
+
+    Args:
+        path: Optional path to CSV. If None, uses DATA_DIR / "la_context_wales.csv".
+
+    Returns:
+        DataFrame with at least 'local_authority' and context columns for joining.
     """
     csv_path = Path(path) if path is not None else DATA_DIR / "la_context_wales.csv"
     ctx = pd.read_csv(csv_path)
-    # Normalise column names just in case
     ctx["local_authority"] = ctx["local_authority"].str.strip()
     return ctx
 
 
 def _clean(df: pd.DataFrame) -> pd.DataFrame:
-    """Basic cleaning: strip whitespace, normalise blanks."""
+    """Normalise string columns and coerce numeric columns.
+
+    - Object columns: strip whitespace; empty string becomes NaN.
+    - peopleemploy, peoplevol, monthsreserves: coerced to numeric (invalid → NaN).
+
+    Args:
+        df: Raw DataFrame from read_csv.
+
+    Returns:
+        DataFrame in place with cleaned columns (may mutate input).
+    """
     str_cols = df.select_dtypes(include="object").columns
     for col in str_cols:
         df[col] = df[col].str.strip().replace("", np.nan)
@@ -50,7 +87,20 @@ def _clean(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _derive_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Add derived analytical columns."""
+    """Add derived analytical columns for EDA and filtering.
+
+    New columns: region (from LA), demand_direction, financial_direction,
+    has_vol_rec_difficulty, has_vol_ret_difficulty, has_staff_rec_difficulty,
+    has_staff_ret_difficulty, finance_deteriorated, and for each key in
+    MULTI_SELECT_GROUPS a {key}_count series (number of selected options per row).
+
+    Args:
+        df: DataFrame with at least location_la_primary, demand, financial,
+            shortage_*, financedeteriorate, and any multi-select columns.
+
+    Returns:
+        New DataFrame with original + derived columns (concat on axis=1).
+    """
     demand_map = {
         "Increased a lot": "Increased",
         "Increased a little": "Increased",
@@ -89,7 +139,17 @@ def _derive_columns(df: pd.DataFrame) -> pd.DataFrame:
 def count_multiselect(df: pd.DataFrame, label_dict: dict[str, str]) -> pd.DataFrame:
     """Count non-null responses for a group of wide-format multi-select columns.
 
-    Returns a DataFrame with columns ['label', 'count', 'pct'] sorted descending.
+    Only columns present in both df and label_dict are used. Percentages are
+    over len(df). Empty result returns a DataFrame with columns column, label,
+    count, pct (no rows).
+
+    Args:
+        df: Survey DataFrame; may contain a subset of label_dict keys.
+        label_dict: Mapping from column name to display label (e.g. CONCERNS_LABELS).
+
+    Returns:
+        DataFrame with columns ['column', 'label', 'count', 'pct'], sorted by
+        count descending.
     """
     cols = [c for c in label_dict if c in df.columns]
     n = len(df)
@@ -121,9 +181,20 @@ def count_multiselect_by_segment(
     label_dict: dict[str, str],
     segment_col: str,
 ) -> pd.DataFrame:
-    """Count multi-select responses segmented by a categorical column.
+    """Count multi-select responses as percentages within each segment.
 
-    Returns a DataFrame with ['label', segment_value_1, segment_value_2, ...].
+    For each label (from label_dict) and each segment value, computes the
+    percentage of rows in that segment with a non-null value for the
+    corresponding column. Segment with zero rows yields 0.0.
+
+    Args:
+        df: Survey DataFrame; must contain segment_col and columns in label_dict.
+        label_dict: Mapping from column name to display label.
+        segment_col: Categorical column to segment by (e.g. 'org_size').
+
+    Returns:
+        DataFrame with columns ['label'] plus one column per segment value,
+        each value a float percentage (0–100).
     """
     segments = df[segment_col].dropna().unique()
     cols = [c for c in label_dict if c in df.columns]
@@ -139,8 +210,22 @@ def count_multiselect_by_segment(
     return pd.DataFrame(rows)
 
 
-def data_quality_profile(df: pd.DataFrame) -> dict:
-    """Return a data quality summary for the Data Notes page."""
+def data_quality_profile(df: pd.DataFrame) -> dict[str, Any]:
+    """Build a data quality summary for the Data Notes page.
+
+    Includes row/column counts, missing counts and percentages per column,
+    org_size/location_la_primary missing counts, complete-row count and percentage,
+    and block_completeness (percentage of answered questions per question block).
+
+    Args:
+        df: Survey DataFrame; expects columns org_size, location_la_primary and
+            optionally question_blocks columns.
+
+    Returns:
+        Dict with keys: n_rows, n_cols, missing_by_col, missing_pct_by_col,
+        org_size_missing, la_missing, complete_rows, complete_pct,
+        block_completeness (dict block_name -> pct).
+    """
     n = len(df)
     profile = {
         "n_rows": n,

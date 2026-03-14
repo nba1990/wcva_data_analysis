@@ -1,0 +1,37 @@
+# Pre-commit hooks for WCVA Baromedr Dashboard
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+        language_version: python3
+        args: ["--config", "pyproject.toml"]
+        additional_dependencies: []
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--settings-path", "pyproject.toml"]
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest (non-e2e)
+        entry: pytest tests/ -m "not e2e" -q --tb=line
+        language: system
+        pass_filenames: false

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from src.config import GlobalStreamlitAppUISharedConfigState
+from src.config import get_app_ui_config
 from src.sroi_charts.sroi_figures import (
     make_alignment_heatmap_figure,
     make_framework_flow_plotly_figure,
@@ -18,15 +18,30 @@ from src.sroi_charts.sroi_figures import (
 )
 
 
+@st.cache_data
+def _get_mindmap_html() -> str:
+    """Load the SROI mind-map HTML once per process; avoids repeated disk reads."""
+    root = Path(__file__).resolve().parent.parent.parent
+    path = (
+        root
+        / "references/SROI_Wales_Voluntary_Sector/docs/WCVA_Text_Interactive_MindMap.html"
+    )
+    return path.read_text(encoding="utf-8")
+
+
 def render_sroi_references() -> None:
-    """Render the SROI & References page."""
+    """Render the SROI & References page: evidence charts and embedded mind-map.
+
+    Uses get_app_ui_config() for palette_mode and text_scale; no DataFrame required.
+    """
 
     st.title("SROI & References — Welsh Voluntary Sector")
 
     st.markdown(
         "This page summarises the **evidence base** on the economic and social value of "
-        "the voluntary sector in Wales, with interactive charts drawn from the SROI "
-        "briefing and related reference material."
+        "the voluntary sector in Wales, with interactive charts drawn from this [SROI "
+        "briefing and related reference material]"
+        "(https://nextclouds.webo.hosting/s/Cjmb8wn55JLPGCs?dir=/&editing=false&openfile=true)."
     )
 
     st.header(
@@ -57,7 +72,7 @@ def render_sroi_references() -> None:
     )
 
     # Show all references.
-    with st.expander("Show all references to these figures"):
+    with st.expander("Show all references to these headline figures"):
         st.markdown(
             "#### All References:\n"
             "- [Third sector scheme annual report 2023 to 2025 [HTML] | GOV.WALES]"
@@ -84,7 +99,7 @@ def render_sroi_references() -> None:
             "(https://covid19.public-inquiry.uk/wp-content/uploads/2023/07/21173118/INQ000177813-1.pdf)\n"
             "- [Annual Report on the Third Sector Scheme - gov.wales]"
             "(https://www.gov.wales/sites/default/files/publications/2021-06/third-sector-report-2020.pdf)\n"
-            "- [KEY DATA 2020]"
+            "- [KEY DATA - WCVA DATA HUB 2020]"
             "(https://wcva.cymru/wp-content/uploads/2020/04/2020-data-hub-update-E.pdf)\n"
             "- [Mapping-of-fundraising-by-the-voluntary-sector-in-Wales]"
             "(https://wcva.cymru/wp-content/uploads/2022/07/Mapping-of-fundraising-by-the-voluntary-sector-in-Wales-"
@@ -143,31 +158,31 @@ def render_sroi_references() -> None:
             "- [Committees Parliament UK]"
             "(https://committees.parliament.uk/writtenevidence/70504/html/)\n"
             "- [Third sector scheme annual report 2023 to 2025 | GOV.WALES]"
-            "(https://www.gov.wales/third-sector-scheme-annual-report-2023-2025-html)"
+            "(https://www.gov.wales/third-sector-scheme-annual-report-2023-2025-html)\n"
             "- [SROI - Review of the Technique]"
-            "(https://www.researchgate.net/publication/328754594_Social_Return_on_Investment_SROI_a_review_of_the_technique)"
+            "(https://www.researchgate.net/publication/328754594_Social_Return_on_Investment_SROI_a_review_of_the_technique)\n"
             "- [SROI - Approaches]"
-            "(https://www.betterevaluation.org/methods-approaches/approaches/social-return-investment)"
+            "(https://www.betterevaluation.org/methods-approaches/approaches/social-return-investment)\n"
             "- [SROI Calculator]"
-            "(https://www.sopact.com/use-case/social-return-on-invesment-sroi)"
+            "(https://www.sopact.com/use-case/social-return-on-invesment-sroi)\n"
             "- [Guide to SROI]"
-            "(https://www.executivecompass.co.uk/social-value-practice/resources/guide-to-measuring-social-return-on-investment-sroi/)"
+            "(https://www.executivecompass.co.uk/social-value-practice/resources/guide-to-measuring-social-return-on-investment-sroi/)\n"
         )
 
     # Show caveats about discrepancies between formal and informal volunteering and their methodological inconsistencies.
     with st.expander(
-        "Show caveats and discrepancies between formal and informal volunteering and their "
-        "methodological inconsistencies"
+        "Show **caveats** and **discrepancies** between *formal* and *informal* volunteering and their "
+        "**methodological inconsistencies**"
     ):
         st.markdown(
             "- **Some researchers have argued that survey-based estimates of volunteering, often used in national "
             "statistics, may be sensitive to how volunteering is defined and interpreted by respondents.**\n"
-            "- **In the UK context, official statistics distinguish between *formal* volunteering (unpaid help given"
+            "- **In the UK context, official statistics distinguish between *formal* volunteering (unpaid help given "
             "through groups, clubs or organisations) and *informal* volunteering (unpaid help given directly to "
-            "individuals who are not relatives) (DCMS, 2025; NCVO, 2023).**\n"
+            "individuals who are not relatives) *(DCMS, 2025; NCVO, 2023)*.**\n"
             "- **Because survey estimates depend on how respondents interpret these categories, researchers have "
             "highlighted challenges in consistently measuring voluntary activity, particularly where unpaid help falls "
-            "outside organisational contexts (Low et al., 2007; Fox, 2019).**\n"
+            "outside organisational contexts *(Low et al., 2007; Fox, 2019)*.**\n"
             "- **Activities such as unpaid care for family members are therefore typically excluded from standard "
             "definitions of volunteering.**\n"
             "- **As a result, depending on how respondents interpret survey questions and classify their activities, "
@@ -190,15 +205,16 @@ def render_sroi_references() -> None:
             "- [UK HLS - Volunteering & Its Consequences]"
             "(https://wiserd.ac.uk/wp-content/uploads/Volunteering-and-its-Consequences-using-UKHLS.pdf)\n"
             "- [Open University - Volunteering Definitions]"
-            "(https://www.open.edu/openlearncreate/mod/oucontent/view.php?id=81610&section=1.2.1)"
+            "(https://www.open.edu/openlearncreate/mod/oucontent/view.php?id=81610&section=1.2.1)\n"
             "- [Defining Who is a Volunteer: Conceptual and Empirical Considerations]"
-            "(https://journals.sagepub.com/doi/10.1177/0899764096253006)"
+            "(https://journals.sagepub.com/doi/10.1177/0899764096253006)\n"
             "- [Public Perception of: 'Who is a Volunteer']"
-            "(https://repository.upenn.edu/entities/publication/6599e585-f602-4288-ae92-d4cbda43aa1d)"
+            "(https://repository.upenn.edu/entities/publication/6599e585-f602-4288-ae92-d4cbda43aa1d)\n"
         )
 
-    palette_mode = GlobalStreamlitAppUISharedConfigState.palette_mode
-    text_scale = GlobalStreamlitAppUISharedConfigState.text_scale or 1.0
+    ui_config = get_app_ui_config()
+    palette_mode = ui_config.palette_mode
+    text_scale = ui_config.text_scale or 1.0
 
     st.subheader("SROI ratios from key Wales-based studies")
     fig_sroi = make_sroi_comparison_figure(
@@ -314,8 +330,5 @@ def render_sroi_references() -> None:
 
     st.header("6. Additional References")
 
-    html_path = Path(
-        "references/SROI_Wales_Voluntary_Sector/docs/WCVA_Text_Interactive_MindMap.html"
-    )
-    html = html_path.read_text(encoding="utf-8")
+    html = _get_mindmap_html()
     st.components.v1.html(html, height=1920, scrolling=True)

@@ -1,5 +1,4 @@
 references/SROI_Wales_Voluntary_Sector/output/alignment_heatmap.png filter=lfs diff=lfs merge=lfs -text
-references/SROI_Wales_Voluntary_Sector/docs/Summary_SROI_Wales_Voluntary_Sector.pdf filter=lfs diff=lfs merge=lfs -text
 references/SROI_Wales_Voluntary_Sector/output/framework_flow.png filter=lfs diff=lfs merge=lfs -text
 references/SROI_Wales_Voluntary_Sector/output/framework_flow_mermaid.png filter=lfs diff=lfs merge=lfs -text
 references/SROI_Wales_Voluntary_Sector/output/funding_flows.png filter=lfs diff=lfs merge=lfs -text

@@ -1,3 +1,14 @@
+"""
+Wave-level context and comparison for Baromedr.
+
+Defines Pydantic models (WaveContext, WaveRegistry, Meta, FinanceSection, etc.)
+for structured wave data; build_wave_context_from_df to build from EDA outputs;
+load_wave_context / load_wave_registry for JSON; get_wave_registry(df) for
+current data; comparison helpers (compare_financial_deterioration, compare_demand_increase,
+compare_staff_recruitment); trend_series, build_trend_long, build_trend_pivot,
+summarise_trend_changes; and pct_point_change.
+"""
+
 from __future__ import annotations
 
 from typing import Any, Dict, Mapping, Optional
@@ -668,6 +679,7 @@ def get_wave_registry(df: Optional[pd.DataFrame]) -> WaveRegistry:
 
 
 def pct_point_change(old: int, new: int) -> int:
+    """Return the percentage-point change from old to new (new - old)."""
     return new - old
 
 

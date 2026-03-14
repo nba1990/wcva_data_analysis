@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pandas as pd
 import streamlit as st
 
@@ -36,9 +38,17 @@ def render_overview(
     suppressed: bool,
     n: int,
     palette_mode: str,
-    prof: dict,
+    prof: dict[str, Any],
 ) -> None:
-    """Render the Overview page, using the current filtered dataset."""
+    """Render the Overview page: profile, demand/finance/operating charts, narratives.
+
+    Args:
+        df: Filtered analysis DataFrame.
+        suppressed: If True, show suppression warning (n < K_ANON_THRESHOLD).
+        n: Filtered row count.
+        palette_mode: "brand" or "accessible" for chart colours.
+        prof: Result of profile_summary(df) for profile section.
+    """
     st.title("Baromedr Cymru Wave 2 — Overview")
 
     if suppressed:

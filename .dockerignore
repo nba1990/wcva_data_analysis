@@ -1,0 +1,45 @@
+# Virtual environments and local Python
+.venv
+venv
+env
+.env
+*.pyc
+__pycache__
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Git and IDE
+.git
+.gitignore
+.cursor
+.vscode
+.idea
+*.swp
+*.swo
+
+# Tests and coverage (not needed in production image)
+tests/
+*.cover
+htmlcov/
+.coverage
+coverage.xml
+
+# Build and output artifacts
+output/
+dist/
+build/
+*.egg-info
+*.egg
+
+# Documentation source (optional: remove if you want docs in image)
+# docs/
+
+# Large or sensitive files (uncomment if you do not ship data in image)
+# datasets/*.csv
+# references/
+
+# OS
+.DS_Store
+Thumbs.db

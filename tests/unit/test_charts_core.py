@@ -9,6 +9,7 @@ from src.charts import (
     horizontal_bar_ranked,
     kpi_card_html,
     stacked_bar_ordinal,
+    wave_trend_line,
 )
 from src.config import AltTextConfig
 
@@ -166,3 +167,22 @@ def test_kpi_card_html_renders_label_value_and_delta() -> None:
     assert "42%" in html
     assert "of organisations" in html
     assert "#123456" in html
+
+
+def test_wave_trend_line_basic() -> None:
+    """Wave trend line builds a line chart with wave labels and alt text."""
+    df = pd.DataFrame(
+        {
+            "wave_number": [1, 2, 3],
+            "value": [40.0, 55.0, 50.0],
+            "wave_label": ["Wave 1", "Wave 2", "Wave 3"],
+            "wave_n": [100, 120, 110],
+        }
+    )
+    fig = wave_trend_line(df, "Demand increased (%)", mode="brand")
+    assert fig.data
+    assert len(fig.data[0].x) == 3
+    assert len(fig.data[0].y) == 3
+    assert hasattr(fig, "_alt_text")
+    assert "Demand increased" in fig._alt_text
+    assert "Wave" in fig._alt_text

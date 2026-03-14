@@ -1,11 +1,34 @@
 __pycache__/
 *.pyc
+*.pyo
 
 .coverage
+coverage.xml
 .pytest_cache/
-/.idea
+htmlcov/
+*.cover
+.mypy_cache/
+.ruff_cache/
+
 .venv/
+venv/
+env/
+.env
+.env.local
+*.local
+
+.idea/
+.vscode/
+.cursor/
+
 output/*.html
 output/*.pdf
 output/Screenshots/
 /output/policy_panel_5min_script.md
+
+# Sphinx
+docs/build/
+
+# OS
+.DS_Store
+Thumbs.db

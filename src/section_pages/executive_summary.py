@@ -18,7 +18,12 @@ from src.wave_context import compare_demand_increase, compare_financial_deterior
 
 
 def render_executive_summary(df: pd.DataFrame, suppressed: bool) -> None:
-    """Render the Executive Summary page, using the current filtered dataset."""
+    """Render the Executive Summary page: highlights, KPIs, and narrative.
+
+    Args:
+        df: Filtered analysis DataFrame (with derived columns).
+        suppressed: If True, show suppression warning and stop (n < K_ANON_THRESHOLD).
+    """
 
     st.title("Executive Summary — Key Findings")
     st.caption("Baromedr Cymru Wave 2 | Volunteering in the Welsh Voluntary Sector")

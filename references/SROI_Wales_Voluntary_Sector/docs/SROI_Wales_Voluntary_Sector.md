@@ -547,7 +547,8 @@ An analytically important tension emerges between various sourceds and the main 
 >
 >**Activities such as unpaid care for family members are therefore typically excluded from standard definitions of volunteering. As a result, depending on how respondents interpret survey questions and classify their activities, some forms of unpaid contribution may be under-recorded, while others may be counted inconsistently.**
 >
->**This highlights broader methodological challenges in measuring voluntary effort and estimating the overall scale of volunteering activity**.[^39][^40][^41][^42][^43][^44]
+>**This highlights broader methodological challenges in measuring voluntary effort and estimating the overall scale of volunteering activity**.<br>
+><br>[^39][^40][^41][^42][^43][^44][^45][^46][^47][^48][^49][^50]
 
 The New Approach explicitly acknowledges this, noting that "many more people are known to be volunteering informally in the hearts of the communities in which we live". This aligns directly with the SROI briefing's "measurement gap" analysis (Part 2), which identifies approximately 39,000 active organisations in Wales that are not registered charities and therefore largely invisible in official data.[^13][^10]
 
@@ -650,11 +651,11 @@ All figures cited from official sources are reproduced directly; where interpret
 
 9. [WCVA - 218093](https://register-of-charities.charitycommission.gov.uk/en/charity-search/-/charity-details/218093) - Charity details for WCVA - Charity 218093
 
-10. [Witness Name: Ruth Marks](https://covid19.public-inquiry.uk/wp-content/uploads/2023/07/21173118/INQ000177813-1.pdf)
+10. [Witness Name: Ruth Marks - COVID 19 Inquiry](https://covid19.public-inquiry.uk/wp-content/uploads/2023/07/21173118/INQ000177813-1.pdf)
 
 11. [Annual Report on the Third Sector Scheme - gov.wales](https://www.gov.wales/sites/default/files/publications/2021-06/third-sector-report-2020.pdf) - Active Across Wales. 32,000. Voluntary. Organisations. £1.258bn.
 
-12. [KEY DATA 2020](https://wcva.cymru/wp-content/uploads/2020/04/2020-data-hub-update-E.pdf)
+12. [KEY DATA - WCVA DATA HUB 2020](https://wcva.cymru/wp-content/uploads/2020/04/2020-data-hub-update-E.pdf)
 
 13. [Mapping-of-fundraising-by-the-voluntary-sector-in-Wales](https://wcva.cymru/wp-content/uploads/2022/07/Mapping-of-fundraising-by-the-voluntary-sector-in-Wales-1.pdf)
 
@@ -692,7 +693,7 @@ All figures cited from official sources are reproduced directly; where interpret
 
 30. [Executive summary - UK Civil Society Almanac 2024 - NCVO](https://www.ncvo.org.uk/news-and-insights/news-index/uk-civil-society-almanac-2024/executive-summary/)
 
-31. [Unpaid care in England and Wales valued at £445 million per daywww.carersuk.org › press-releases › unpaid-care-in-england-and-wales-val...](https://www.carersuk.org/press-releases/unpaid-care-in-england-and-wales-valued-at-445-million-per-day/)
+31. [Unpaid care in England and Wales valued at £445 million per](https://www.carersuk.org/press-releases/unpaid-care-in-england-and-wales-valued-at-445-million-per-day/)
 
 32. [Value of unpaid care in England and Wales now exceeds that of NHS budget](https://centreforcare.ac.uk/updates/2023/05/valuing-carers/)
 
@@ -718,4 +719,16 @@ All figures cited from official sources are reproduced directly; where interpret
 
 43. [UK HLS - Volunteering & Its Consequences](https://wiserd.ac.uk/wp-content/uploads/Volunteering-and-its-Consequences-using-UKHLS.pdf)
 
-44. [Open University - Volunteering Definitions](https://www.open.edu/openlearncreate/mod/oucontent/view.php?id=81610&section=1.2.1) 
+44. [Open University - Volunteering Definitions](https://www.open.edu/openlearncreate/mod/oucontent/view.php?id=81610&section=1.2.1)
+
+45. [Defining Who is a Volunteer: Conceptual and Empirical Considerations](https://journals.sagepub.com/doi/10.1177/0899764096253006)
+
+46. [Public Perception of: 'Who is a Volunteer'](https://repository.upenn.edu/entities/publication/6599e585-f602-4288-ae92-d4cbda43aa1d)
+
+47. [SROI - Review of the Technique](https://www.researchgate.net/publication/328754594_Social_Return_on_Investment_SROI_a_review_of_the_technique)
+
+48. [SROI - Approaches](https://www.betterevaluation.org/methods-approaches/approaches/social-return-investment)
+
+49. [SROI Calculator](https://www.sopact.com/use-case/social-return-on-invesment-sroi)
+
+50. [Guide to SROI](https://www.executivecompass.co.uk/social-value-practice/resources/guide-to-measuring-social-return-on-investment-sroi/)

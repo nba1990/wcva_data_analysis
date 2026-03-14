@@ -1,195 +1,105 @@
-# WCVA Baromedr Cymru - Insight Data Analysis
+# WCVA Baromedr Cymru – Wave 2 Dashboard
 
-Nearly 1/3 of adults in Wales volunteer, yet volunteer recruitment remains in the top three concerns for 30% of the organisations surveyed last year.
+This repository contains an interactive **Streamlit** dashboard and supporting scripts for analysing **Baromedr Cymru Wave 2** – a quarterly temperature check of the Welsh voluntary sector – with a particular focus on volunteering, workforce, finances, and SROI evidence for the Welsh voluntary sector.
 
-Data has been collected and anonymised from Baromedr Cymru – the quarterly temperature check for the Welsh voluntary sector in collaboration with Nottingham Trent University (NTU).
+The dashboard is designed to:
 
-**Main Insight #1:**
+- Provide an accessible, WCVA‑branded interface for exploring Wave 2 findings.
+- Support policy and analytical discussions about demand, capacity, and volunteering.
+- Integrate SROI/Wales reference material and charts alongside the main survey data.
 
-> Baromedr Cymru dashboard can be access here: https://baromedr.cymru. From initial DevTools and HTML capture analysis, it looks like Baromedr Cymru is likely a Python Django server rendered template with static JavaScript enhancements rather than based on an SPA (Single Page Application) Framework. So far, no evidence has been found for the use of React, Vue, Next.js, visible API calls or large compiled JavaScript chunks.
+For a deeper architectural description, see `ARCHITECTURE.md`. For a short **developer tour** (how to read tests and docs) and **future dashboards/backlog**, see the end of `ARCHITECTURE.md` and `docs/LEARNING_AND_BACKLOG.md`. Policy-focused questions for WCVA teams are in `plans/policy_questions.md`.
 
-Likely technology stack (rough):
-
-```
-Django view → template render → static JS enhances UI
-```
-
-Rationale 1:
-
-```html
-<!-- Local styles via Django static -->
-<link rel="stylesheet" href=".../base.css">
-<link rel="stylesheet" href=".../layout.css">
-...
-```
-
-Rationale 2:
-
-```html
-<!-- Scripts -->
-<script src=".../sidebar.js"></script>
-<script src=".../shared.js"></script>
-<script src=".../filters.js"></script>
-<script src=".../summary.js"></script>
-```
-
-* “Local styles via Django static” comment
-* Clean URL structure: `/summary/`, `/operations/`
-* Each page loads a fresh HTML document (per your network screenshot)
-* Page-specific JS (`summary.js`, `operations.js`)
-
-## 🏗 Backend
-
-* Python
-* Django
-* Server-rendered templates
-* Likely Django ORM (Object Relational Mapping) querying database
-* Static files served via Django static or reverse proxy
-
-So far, no apparent sign of:
-
-* Node backend
-* FastAPI
-* Separate API microservice
-
-## 🗄 Data Layer (Most Likely)
-
-* Filters are either:
-
-  * Submitted via GET parameters
-  * Or applied client-side after data is pre-embedded
-
-Given the privacy rule (<5 suppression modal in the inspected HTML), it is far more likely that:
-
-> Filtering is done server-side.
-
-Which implies:
-
-```
-Qualtrics → ETL → Database (PostgreSQL likely)
-Django view → filtered ORM query → aggregation → template context → render
-```
-
-* Compute percentages in backend
-* Pass them into template
-* Frontend just displays values and animations
-
-For example in the HTML:
-
-```html
-<div class="metric-value" data-target="69">69%</div>
-```
-
-That number is already computed before render. There’s no JavaScript calculating it from raw rows.
-
-## The Filtering System (Most Likely)
-
-From the filter panel markup:
-
-```html
-<div class="filter-option" data-field="org_size" data-value="Small">
-```
-
-This appears to be a classic pattern:
-
-* JavaScript collects selected filters
-* Submits request (likely reload)
-* Django reads GET parameters
-* Applies filters to queryset
-* Recomputes aggregations
-* Renders new page
-
-## The Privacy Threshold (<5 Rule) - Most Likely
-
-Based on the modal in the HTML:
-
-> “For privacy and data quality reasons, don’t display results when fewer than five organisations match the applied filters.”
-
-```python
-if queryset.count() < 5:
-    context["suppress"] = True
-```
-
-Template then triggers warning modal possibly using k-anonymity at the application layer.
-
-
-Possible Requirements:
-* ETL from Qualtrics
-* Writing aggregation logic
-* QA on computed metrics
-* Testing suppression logic
-* Contributing to new features like Trends page
-* Improving automation
-
-### Apparent Strengths
-
-* Clean UI
-* Accessible filter logic
-* Suppression rules implemented
-* Clear modular CSS
-* Separation of JavaScript per page
-* Lightweight (very fast load times)
-
+**New here? Picking this up again?**  
+(1) This README: what the project is, how to install and run.  
+(2) **`ARCHITECTURE.md`**: how the code is structured (app → data → charts → section pages).  
+(3) **`CONTRIBUTING.md`**: dev setup, tests, formatting, and doc/typing standards (§7).  
+(4) **`docs/LEARNING_AND_BACKLOG.md`**: backlog, testing strategy, coverage, safe/unsafe patterns.  
+(5) **Sphinx docs** (see § Documentation below): single place for getting started, architecture, API reference. Build with `pip install -r docs/requirements-docs.txt` then `cd docs && make html`.
 
 ---
 
-# Overview
+## Features
 
-Using exploratory data analysis and visual tools prepare a 5-minute presentation for WCVA’s executive team on the survey findings (using WCVA’s colour and branding schemes), focusing on the emerging challenges and opportunities for volunteer recruitment and retention, how organisations are approaching them, and where they may need support to inform policy across Wales.
-
-Key goals:
-- Perform exploratory data analysis (initial shallow + deep, if necessary)
-- Build a rough plan of execution
-- List possible high priority questions the policy teams might want to interrogate from such a dataset
-- List emerging challenges and opportunities for volunteer recruitment and retention across the various organisations in the Voluntary sector in Wales
-- Refine intial plan with results from the exploratory data analysis
-- Build data-driven insights for the policy teams at WCVA and Welsh Government to help shape policy decisions to proactively help the Voluntary sector and alleviate some of the stress and pressure building up
-- Ensure that the insights are pefectly grounded in data
-- Ensure that the insights and visualisations (if any) are accessible and that they use the WCVA's colour palette and branding guidelines
-- Distill some of the most influential insights (ranked in descending priority order) into an easily digestible 5-minute presentation with links to more detailed reports for later reference
-
----
-
-# Features
-
-- **Interactive Streamlit dashboard** with 8 pages: Overview, Volunteer Recruitment, Volunteer Retention, Workforce & Operations, Demographics & Types, Earned Settlement, Executive Summary, Data Notes
-- **Dual-format executive presentation**: self-contained reveal.js HTML slide deck + structured PDF with bookmarks, TOC, and alt-text
-- **WCVA branding** with switchable colour-blind-safe palette (sidebar toggle)
-- **k-anonymity suppression** (results hidden when filtered sample < 5)
-- **Accessibility**: redundant encoding on all charts, alt-text metadata, WCAG contrast validation
-- **Per-chart export**: download PNG image or underlying CSV data table
-- **12 high-priority policy questions** for policy team interrogation
+- **Interactive multi-page Streamlit dashboard**:
+  - Overview
+  - Volunteer Recruitment
+  - Volunteer Retention
+  - Workforce & Operations
+  - Demographics & Types
+  - Earned Settlement
+  - Trends & Waves
+  - Executive Summary
+  - At-a-Glance (infographic)
+  - Data Notes
+  - **SROI & References** (evidence base and mind-map)
+- **WCVA branding and accessibility**:
+  - Brand and colour‑blind‑friendly palettes.
+  - Text scaling for charts and layout.
+  - Alt‑text metadata for charts and clear labelling.
+- **k-anonymity suppression**:
+  - Results are suppressed when filtered sample size falls below a threshold (default: 5 organisations).
+- **Offline SROI artefacts**:
+  - Batch script to generate PNG/SVG charts and supporting metadata for SROI/Wales documentation under `references/SROI_Wales_Voluntary_Sector/`.
 
 ---
 
-# Project Structure
+## Project Structure
 
-```
+```text
 <project-root>/
 │
 ├── src/
 │   ├── __init__.py
-│   ├── config.py              # WCVA palette, column mappings, response orderings, constants
-│   ├── data_loader.py         # CSV loading, cleaning, derived columns, data quality profiling
-│   ├── eda.py                 # Analytical functions (9 dimensions + executive highlights)
-│   ├── charts.py              # WCVA-branded Plotly chart generators with accessibility
-│   ├── app.py                 # Streamlit multi-page dashboard (8 pages)
-│   └── generate_presentation.py  # Dual output: reveal.js HTML + fpdf2 PDF
+│   ├── app.py                    # Streamlit multi-page app: filters, nav, page dispatch
+│   ├── config.py                 # WCVA palettes, response orderings, k-anonymity, chart defaults
+│   ├── data_loader.py            # Data loading, cleaning, derived columns
+│   ├── eda.py                    # Analytical helpers (demand, workforce, recruitment, profiles, etc.)
+│   ├── charts.py                 # WCVA-branded generic Plotly chart helpers + show_chart wrapper
+│   ├── sroi_charts/
+│   │   └── sroi_figures.py       # SROI/Wales-specific Plotly figure factories
+│   ├── section_pages/            # Per-page renderers (render_overview, render_trends_and_waves, etc.)
+│   ├── navigation.py             # NavItem definitions + sidebar navigation rendering
+│   ├── narratives.py             # Narrative text helpers for executive summaries
+│   ├── wave_context.py           # Cross-wave registry and trend helpers
+│   └── generate_presentation.py  # Slide deck / PDF generation (optional)
 │
 ├── datasets/
-│   ├── WCVA_W2_Anonymised_Dataset.csv       # Wave 2 data (111 rows, 144 cols)
-│   └── Baromedr_Cymru_QA_Response_Options.docx  # Questionnaire reference
+│   ├── WCVA_W2_Anonymised_Dataset.csv
+│   └── Baromedr_Cymru_QA_Response_Options.docx
 │
-├── output/
-│   ├── presentation.html      # Self-contained HTML slide deck (opens in any browser)
-│   └── presentation.pdf       # Structured PDF with TOC and bookmarks
+├── references/
+│   └── SROI_Wales_Voluntary_Sector/
+│       ├── docs/                 # SROI briefing, mind-map HTML/Markdown, PDF exports
+│       ├── output/               # Generated SROI charts (PNG/SVG) and meta JSON
+│       └── scripts/
+│           └── sroi_wales_voluntary_sector.py  # Batch chart generator using sroi_figures
 │
-├── plans/
-│   └── policy_questions.md    # 12 high-priority policy questions
+├── tests/
+│   ├── unit/                     # Unit tests for config, charts, EDA, navigation, SROI figures, etc.
+│   ├── integration/              # Integration tests across infographic, wave context, trends
+│   ├── e2e/                      # End-to-end smoke tests for the Streamlit app
+│   └── fixtures/                 # Small sample datasets for regression tests
 │
+├── docs/
+│   ├── source/                   # Sphinx source (index, getting_started, architecture, api/)
+│   ├── Makefile                  # make html to build Sphinx docs
+│   ├── requirements-docs.txt     # Sphinx and theme (install after requirements.txt)
+│   ├── adr/                      # Architecture Decision Records (ADR-001 … ADR-006)
+│   ├── DOCKER_AND_DEPLOYMENT.md  # Docker build/run and self-hosting guide
+│   └── LEARNING_AND_BACKLOG.md   # Backlog, testing strategy, coverage
+│
+├── output/                       # Presentation outputs (HTML/PDF) if generated
 ├── .streamlit/
-│   └── config.toml            # WCVA-branded Streamlit theme
-│
+│   └── config.toml               # WCVA-branded Streamlit theme
+├── ARCHITECTURE.md               # High-level architecture and flow
+├── CHANGELOG.md                  # Version history and notable changes
+├── CONTRIBUTING.md               # How to contribute (setup, tests, PRs)
+├── Dockerfile                    # Container image for the dashboard
+├── docker-compose.yml            # Compose stack for local or server deployment
+├── .pre-commit-config.yaml       # Optional pre-commit hooks (Black, isort, pytest)
+├── pyproject.toml                # Black, isort, mypy config; project metadata
+├── pytest.ini                    # Pytest discovery and markers (e.g. e2e)
 ├── requirements.txt
 ├── README.md
 └── LICENSE
@@ -197,23 +107,47 @@ Key goals:
 
 ---
 
-# Installation
+## Installation
 
 ```bash
 git clone <repository-url>
-cd <project-name>
+cd wcva_data_analysis  # or your chosen directory name
 
 # Create and activate a virtual environment (recommended)
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 ```
 
+**Tested with** Python 3.11 and 3.12. The project uses lower-bound version constraints in `requirements.txt`; for reproducible installs you can pin versions (e.g. `pip freeze > requirements-lock.txt`) or use the same minor Python version as CI.
+
+### Pre-commit (optional)
+
+To run Black, isort, and tests automatically before each commit:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Then `git commit` will run the hooks. See **`CONTRIBUTING.md`** for more.
+
+### Docker (optional)
+
+To run the dashboard in a container without installing Python locally:
+
+```bash
+docker compose up -d
+# Or: docker build -t wcva-baromedr-dashboard . && docker run -p 8501:8501 wcva-baromedr-dashboard
+```
+
+Then open **http://localhost:8501**. For full Docker and self-hosting instructions (data mounts, reverse proxy, env vars), see **`docs/DOCKER_AND_DEPLOYMENT.md`**.
+
 ---
 
-# Usage
+## Usage
 
 ### Interactive Dashboard
 
@@ -222,122 +156,228 @@ streamlit run src/app.py
 ```
 
 Opens in your browser at `http://localhost:8501`. Use the sidebar to:
-- Navigate between 8 pages
-- Filter by organisation size, scope, and activity
-- Toggle colour-blind friendly mode
-- Download chart images and data tables
 
-### Generate Executive Presentation
+- Navigate between pages.
+- Filter by organisation size, geographic scope, local authority, main activity, and concerns.
+- Toggle colour‑blind‑friendly mode.
+- Adjust chart text size.
+- Download chart data where available.
+
+### Generate Executive Presentation (optional)
 
 ```bash
 python -m src.generate_presentation
 ```
 
 Produces two files in `output/`:
-- `presentation.html` — self-contained reveal.js slide deck (email it, USB it, open in any browser)
-- `presentation.pdf` — structured PDF with table of contents, bookmarks, and alt-text on images
+
+- `presentation.html` — self-contained reveal.js slide deck (emailable, opens in any browser).
+- `presentation.pdf` — structured PDF with table of contents and bookmarks.
+
+### Generate SROI Charts (optional)
+
+```bash
+python references/SROI_Wales_Voluntary_Sector/scripts/sroi_wales_voluntary_sector.py
+```
+
+Regenerates SROI PNG/SVG charts and JSON sidecar metadata in `references/SROI_Wales_Voluntary_Sector/output/`.
 
 ---
 
-# Configuration
+## Documentation (Sphinx)
 
-All configuration is centralised in `src/config.py`:
-- **WCVA brand palette** and colour-blind-safe alternative
-- **Column-to-question mappings** from the Baromedr questionnaire
-- **Response orderings** for consistent chart axes
-- **Chart defaults** (font, sizing, margins)
-- **k-anonymity threshold** (default: 5)
-- **Wave 1 context** for cross-wave comparisons
+Built documentation helps new users and developers get oriented. It includes a **getting started** guide, **architecture** overview, **contributing** summary, and full **API reference** generated from the codebase.
+
+**Build the docs** (requires project dependencies and Sphinx):
+
+```bash
+pip install -r requirements.txt
+pip install -r docs/requirements-docs.txt
+cd docs && make html
+```
+
+Then open `docs/build/html/index.html` in a browser. On Windows use `docs\make.bat html` instead of `make html`.
+
+**Note:** When building, Sphinx imports the app and Streamlit may print warnings (e.g. "No runtime found", "missing ScriptRunContext"). These are expected when the app is loaded outside `streamlit run` and can be ignored; the HTML docs are still generated correctly.
+
+### Documentation index
+
+| Document | Purpose |
+|----------|---------|
+| **README.md** (this file) | Overview, install, run, config, testing, deployment, orientation. |
+| **ARCHITECTURE.md** | High-level flow, modules, session state, performance, how to extend, developer tour, future dashboards. |
+| **CONTRIBUTING.md** | Dev setup, tests, lint, Sphinx build, branching, PRs, doc/typing standards (§7). |
+| **CHANGELOG.md** | Version history and notable changes. |
+| **docs/LEARNING_AND_BACKLOG.md** | Backlog, testing strategy, coverage, fixture notes, safe/unsafe patterns, policy pointers. |
+| **docs/DOCKER_AND_DEPLOYMENT.md** | Docker build/run, docker-compose, self-hosting, env vars, security. |
+| **docs/adr/** (ADR-001 … ADR-006) | Decisions: Streamlit UI, navigation, SROI charts, state/caching, Docker, CI and testing. |
+| **Sphinx** (`docs/source/`, build: `docs/build/html/`) | Getting started, architecture, contributing, full API reference. |
+| **pytest.ini** | Test discovery, `e2e` marker. |
+| **pyproject.toml** | Black, isort, mypy config. |
+
+---
+
+## Configuration
+
+All core configuration is centralised in `src/config.py`:
+
+- **WCVA brand palette** and colour‑blind‑safe alternative sequences.
+- **Column-to-question mappings** from the Baromedr questionnaire.
+- **Response orderings** for consistent chart axes.
+- **Chart defaults** (font, sizing, backgrounds).
+- **k-anonymity threshold** (`K_ANON_THRESHOLD`, default: 5) used for suppression logic.
+- **Wave context** mapping for cross-wave comparisons.
+- **Debug flags** (environment variables): set `WCVA_DEBUG_MEMORY=1` (or `true`/`yes`) to show process memory usage in the sidebar when running the Streamlit app.
 
 The Streamlit theme is set in `.streamlit/config.toml`.
 
+**Secrets**: Do not commit API keys, passwords, or tokens. Use environment variables or Streamlit’s [Secrets Manager](https://docs.streamlit.io/develop/concepts/security/secrets-management) (e.g. `.streamlit/secrets.toml`) for any credentials; see deployment docs for production.
+
 ---
 
-# Development
+## Testing
+
+Run the full test suite with:
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the dashboard locally
-streamlit run src/app.py
-
-# Generate presentation outputs
-python -m src.generate_presentation
+pytest
 ```
 
----
-
-# Testing
+To exclude end-to-end tests (e.g. in CI or when you don't have a Streamlit runtime):
 
 ```bash
-# Quick smoke test: verify all modules import and data loads
+pytest -m "not e2e"
+```
+
+**CI (GitHub Actions):** On every push to `main`/`master`, the `.github/workflows/ci.yml` workflow runs tests (Python 3.11 and 3.12) and lint (Black and isort). The previous Conda and Pylint workflows were removed; the project uses `requirements.txt` and pip. See `pytest.ini` for test discovery and the `e2e` marker.
+
+Highlights:
+
+- `tests/test_wcva_metrics_wave2.py`:
+  - Sanity-checks the main Wave 2 headline metrics against the QA log.
+- `tests/unit/test_charts_core.py`:
+  - Validates generic chart helpers, alt-text, and layout basics.
+- `tests/unit/test_sroi_figures.py`:
+  - Asserts that SROI chart factories return figures with titles and that `palette_mode` / `text_scale` behave as expected.
+- `tests/unit/test_navigation.py`:
+  - Ensures navigation IDs are unique and wired into `src/app.py`.
+- `tests/unit/test_metrics_executive_overview.py`:
+  - Uses a small fixture dataset (`tests/fixtures/wcva_sample_dataset.csv`) to assert that key Overview/Executive metrics and `executive_highlights()` behave as expected (regression guard). The fixture includes multi-select columns so executive summary highlights run without skipping.
+
+A quick data-load smoke test:
+
+```bash
 python -c "from src.data_loader import load_dataset; df = load_dataset(); print(f'OK: {df.shape}')"
 ```
 
----
+### Troubleshooting
 
-# Roadmap
-
-Possible planned improvements:
-
-* [ ] Feature 1: Introduce API Layer
-* [ ] Feature 2: Introduce Aggregation Tables
-* [ ] Feature 3: Trend Computation Layer
-* [ ] Feature 4: More Metadata Transparency
-
-### Feature 1: Introduce API Layer
-
-* Separate API endpoints
-* Enable reuse for:
-
-  * Embeddable widgets
-  * WCVA internal dashboards
-  * External research reuse
+- **"Results suppressed" in the dashboard** – The filtered sample has fewer than 5 organisations (k-anonymity). Widen or clear filters so more rows are included.
+- **Sphinx build prints Streamlit warnings** – Expected when building docs; the app is imported outside `streamlit run`. Ignore them; the HTML output is correct.
+- **Executive-overview or executive-highlights test skips / fails** – The fixture `tests/fixtures/wcva_sample_dataset.csv` must include multi-select columns (`concerns_1`, `concerns_2`, `actions_10`, etc.) so that `executive_highlights()` has data. See `docs/LEARNING_AND_BACKLOG.md` §3.2 and the fixture file.
+- **Dataset not found** – Place the main CSV at `datasets/WCVA_W2_Anonymised_Dataset.csv` or point the code to your path.
 
 ---
 
-### Feature 2: Introduce Aggregation Tables
+## Deployment Notes
 
-If not already done, precompute:
+### Docker and self-hosting
 
-* Wave-level aggregates
-* Filter-combination aggregates
+- **Docker**: use the included `Dockerfile` and `docker-compose.yml` to build and run the dashboard in a container. See **`docs/DOCKER_AND_DEPLOYMENT.md`** for:
+  - Build and run commands (Compose and plain Docker).
+  - Data and asset requirements (`datasets/`, `references/`) and optional volume mounts.
+  - Self-hosting on a server with a reverse proxy (e.g. Nginx).
+  - Environment variables (e.g. `WCVA_DEBUG_MEMORY`) and basic security notes.
 
-This could improve performance and scalability.
+### Streamlit Community Cloud
 
----
+1. Push the repository to GitHub.
+2. Create a new Streamlit app:
+   - **Repository**: your GitHub repo.
+   - **Main file**: `src/app.py`.
+3. Ensure `requirements.txt` lists all required dependencies.
 
-### Feature 3: Trend Computation Layer
+Considerations:
 
-* Precomputed time-series tables
-* Consistent denominator handling across waves
-* Clear versioning of metrics
+- Use Streamlit **Secrets Manager** (`.streamlit/secrets.toml`) for any credentials (if introduced).
+- `st.cache_data` is used for dataset loading so all sessions share the same read‑only base DataFrame.
+- Avoid unnecessary large in-memory artefacts; prefer computed summaries.
 
----
+### Other environments
 
-### Feature 4: More Metadata Transparency
+For local servers or containers:
 
-Possibly add:
-
-* Methodology link per metric
-* Tooltip definitions
-* Confidence interval explanation
-
----
-
-# Contributing
-
-Guidelines for contributions.
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit changes
-4. Submit a pull request
+- Install from `requirements.txt` and run `streamlit run src/app.py` behind a reverse proxy, or use the Docker image as described in `docs/DOCKER_AND_DEPLOYMENT.md`.
 
 ---
 
-# License
+## SROI & References Page and Markmap Embedding
+
+The SROI & References page (`src/section_pages/sroi_references.py`):
+
+- Uses `src/sroi_charts/sroi_figures.py` factories to create interactive Plotly charts for:
+  - Funding flows.
+  - SROI ratio comparisons.
+  - Economic value of volunteering and unpaid care.
+  - Measurement gap.
+  - WCVA–WG funding and NLCF Wales.
+  - Alignment heatmap, framework flow, and implementation timeline.
+- Passes per-session `palette_mode` and `text_scale` (from `get_app_ui_config()`) through to all SROI chart factories.
+- Embeds a Markmap/Freeplane mind-map via:
+  - Reading `references/SROI_Wales_Voluntary_Sector/docs/WCVA_Text_Interactive_MindMap.html`.
+  - Rendering it with `st.components.v1.html(html, height=1920, scrolling=True)`.
+
+To add another evidence‑style page, copy this pattern:
+
+1. Add a new `render_*` function under `src/section_pages/`.
+2. Add a matching `NavItem` to `src/navigation.py`.
+3. Wire the page id into the dispatch block in `src/app.py`.
+
+---
+
+## Multi-user Behaviour
+
+On Streamlit Community Cloud and similar deployments:
+
+- Each browser tab gets its own **session**.
+- Per-user UI state (filters, page, accessibility settings) lives in `st.session_state`, including the UI config dataclass accessed via `get_app_ui_config()`.
+- Shared resources:
+  - The main dataset is loaded via `st.cache_data`, so all sessions reuse the same DataFrame.
+
+This means:
+
+- One user’s filters or text size do **not** affect another user’s view.
+- Expensive data loading is shared where appropriate, while interactive state remains session-specific.
+
+See `ARCHITECTURE.md` and the ADRs in `docs/adr/` (e.g. ADR-004 for state/caching, ADR-005 for Docker, ADR-006 for CI and testing) for more detail.
+
+---
+
+## Backlog and learning
+
+- **`docs/LEARNING_AND_BACKLOG.md`** – Backlog items (PyGWalker, DuckDB, PyDeck, future dashboards), testing strategy notes, and safe/unsafe patterns.
+- **`docs/DOCKER_AND_DEPLOYMENT.md`** – Docker build/run, docker-compose, self-hosting, and deployment options.
+- **`ARCHITECTURE.md`** – Sections 9–10: developer tour (how to read tests and docs) and future dashboards/backlog.
+- **`plans/policy_questions.md`** – High-priority policy questions for WCVA teams; useful for Wave 3 design and briefings.
+
+---
+
+## Contributing
+
+Guidelines for contributions:
+
+1. Fork the repository and create a feature branch.
+2. Install dependencies and (optionally) pre-commit (see above).
+3. Add or update tests where appropriate; run `pytest` (or `pytest -m "not e2e"`).
+4. Run `black src/ tests/` and `isort src/ tests/` so CI passes.
+5. Follow the project’s **documentation and typing standards**: module and function docstrings (with Args/Returns where useful), type hints on parameters and return values. See **`CONTRIBUTING.md`** §7.
+6. Submit a pull request describing the change and motivation.
+
+Full details: **`CONTRIBUTING.md`**.
+
+---
+
+## License
 
 GNU Affero General Public License v3.0 (AGPL v3.0)
 
@@ -345,6 +385,6 @@ Permissions of this strongest copyleft license are conditioned on making availab
 
 ---
 
-# Maintainers
+## Maintainers
 
-* **Bharadwaj Raman** - Contact Email: maintainers@local.invalid
+- Project maintainers can be reached via the repository issue tracker or pull requests.

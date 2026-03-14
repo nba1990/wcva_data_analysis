@@ -13,7 +13,7 @@ from src.config import (
     DIFFICULTY_ORDER,
     WCVA_BRAND,
     AltTextConfig,
-    GlobalStreamlitAppUISharedConfigState,
+    get_app_ui_config,
     resolve_grouping,
 )
 from src.eda import volunteer_retention_analysis
@@ -21,10 +21,17 @@ from src.wave_context import get_wave_registry, trend_series
 
 
 def render_volunteer_retention(df: pd.DataFrame, n: int) -> None:
+    """Render the Volunteer Retention page: difficulty, barriers, by segment.
+
+    Args:
+        df: Filtered analysis DataFrame.
+        n: Filtered row count (for chart subtitles).
+    """
     """Render the Volunteer Retention page, using the current filtered dataset."""
     st.title("Volunteer Retention")
 
-    if GlobalStreamlitAppUISharedConfigState.suppressed:
+    ui_config = get_app_ui_config()
+    if ui_config.suppressed:
         st.warning("Results suppressed due to small sample size.")
         st.stop()
 
@@ -113,7 +120,7 @@ def render_volunteer_retention(df: pd.DataFrame, n: int) -> None:
         "count",
         "Volunteers leave for life reasons; not dissatisfaction",
         n,
-        mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+        mode=ui_config.palette_mode,
     )
     show_chart(fig, "ret_barriers", ret["ret_barriers"][["label", "count", "pct"]])
 
@@ -126,7 +133,7 @@ def render_volunteer_retention(df: pd.DataFrame, n: int) -> None:
             "count",
             "Expenses coverage leads, but financial signposting is rare",
             n,
-            mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+            mode=ui_config.palette_mode,
         )
         show_chart(fig, "ret_offer", ret["vol_offer"][["label", "count", "pct"]])
 
@@ -145,7 +152,7 @@ def render_volunteer_retention(df: pd.DataFrame, n: int) -> None:
             ret["vol_ret_difficulty"],
             TITLE,
             diff_base,
-            mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+            mode=ui_config.palette_mode,
             alt_config=alt_config_ret,
             grouper=grouper,
             group_order=group_order,

@@ -74,6 +74,13 @@ def test_wave_registry_and_trend_series_round_trip() -> None:
     )
 
 
+def test_pct_point_change() -> None:
+    """Percentage-point change is new minus old."""
+    assert pct_point_change(40, 50) == 10
+    assert pct_point_change(50, 40) == -10
+    assert pct_point_change(66, 66) == 0
+
+
 def test_compare_helpers_use_pct_point_change() -> None:
     first = WAVE1_CONTEXT
     # Synthetic \"latest\" wave with different demand percentage

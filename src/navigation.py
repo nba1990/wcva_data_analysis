@@ -1,3 +1,11 @@
+"""
+Sidebar navigation for the Baromedr dashboard.
+
+Defines NavItem (id, label, subtitle, icon), NAV_ITEMS list, get_default_page(),
+get_nav_item_ids(), and render_sidebar_nav(). Nav item IDs must match the
+page dispatch keys in src/app.py.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -10,7 +18,14 @@ from src.config import WCVA_BRAND
 
 @dataclass(frozen=True)
 class NavItem:
-    """Configuration for a single sidebar navigation entry."""
+    """Configuration for a single sidebar navigation entry.
+
+    Attributes:
+        id: Unique page ID; must match the value used in app.py page dispatch.
+        label: Display text for the sidebar button.
+        subtitle: Optional short description shown under the button.
+        icon: Optional emoji or icon prefix (e.g. "📊").
+    """
 
     id: str
     label: str
@@ -91,12 +106,23 @@ NAV_ITEMS: List[NavItem] = [
 
 
 def get_default_page() -> str:
-    """Return the default starting page ID."""
+    """Return the default starting page ID (first item in NAV_ITEMS).
+
+    Returns:
+        The id string of the first NavItem (e.g. "Executive Summary").
+    """
     return NAV_ITEMS[0].id
 
 
 def get_nav_item_ids(items: Iterable[NavItem] | None = None) -> list[str]:
-    """Return the list of page IDs in navigation order."""
+    """Return the list of page IDs in navigation order.
+
+    Args:
+        items: Optional iterable of NavItems; if None, uses NAV_ITEMS.
+
+    Returns:
+        List of id strings in order (e.g. ["Executive Summary", "At-a-Glance", ...]).
+    """
     source = items or NAV_ITEMS
     return [item.id for item in source]
 
@@ -104,8 +130,15 @@ def get_nav_item_ids(items: Iterable[NavItem] | None = None) -> list[str]:
 def render_sidebar_nav(current_page: str | None = None) -> str:
     """Render the WCVA sidebar navigation and return the selected page ID.
 
-    This version uses simple Streamlit buttons plus short subtitles so
-    behaviour is robust and the layout remains clean.
+    Renders styled buttons (teal primary for active, secondary for others) and
+    updates st.session_state["current_page"] on click; triggers st.rerun().
+    Invalid or missing current_page is reset to get_default_page().
+
+    Args:
+        current_page: Initial page ID when session state has no current_page.
+
+    Returns:
+        The current page ID after rendering (from session state).
     """
 
     if "current_page" not in st.session_state:

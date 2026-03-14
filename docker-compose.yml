@@ -1,0 +1,29 @@
+# WCVA Baromedr Cymru Wave 2 Dashboard — Docker Compose
+# Usage:
+#   docker compose up -d
+#   docker compose up --build -d
+# Then open http://localhost:8501
+
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: wcva-baromedr-dashboard:latest
+    container_name: wcva-baromedr-dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      # Set to 1 (or true/yes) to show process memory in the sidebar
+      - WCVA_DEBUG_MEMORY=${WCVA_DEBUG_MEMORY:-0}
+    # Optional: mount local datasets/references if you don't bake them into the image
+    # volumes:
+    #   - ./datasets:/app/datasets:ro
+    #   - ./references:/app/references:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s

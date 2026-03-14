@@ -1,0 +1,5 @@
+# Documentation build (Sphinx).
+# Install after project deps: pip install -r requirements.txt && pip install -r docs/requirements-docs.txt
+# Then: cd docs && make html  (output in docs/build/html/)
+sphinx>=7.0
+sphinx-rtd-theme>=2.0

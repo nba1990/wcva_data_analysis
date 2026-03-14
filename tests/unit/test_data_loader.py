@@ -8,6 +8,7 @@ from src.data_loader import (
     _derive_columns,
     count_multiselect,
     count_multiselect_by_segment,
+    data_quality_profile,
 )
 
 
@@ -97,3 +98,33 @@ def test_count_multiselect_by_segment() -> None:
 
     # For c2, only segment Y has selections: 2 of 2 rows -> 100%
     assert row_c2["Y"] == 100.0
+
+
+def test_count_multiselect_by_segment_empty_segment() -> None:
+    """When a segment has no rows, percentage is 0 (no divide-by-zero)."""
+    df = pd.DataFrame(
+        {"seg": ["A"], "c1": [1]},
+    )
+    labels = {"c1": "Col 1"}
+    result = count_multiselect_by_segment(df, labels, "seg")
+    assert result.shape[0] == 1
+    assert result.loc[result["label"] == "Col 1", "A"].item() == 100.0
+
+
+def test_data_quality_profile_structure() -> None:
+    """Data quality profile returns expected keys and handles empty df."""
+    df = pd.DataFrame(
+        {
+            "org_size": ["Small", "Medium"],
+            "location_la_primary": ["Cardiff", "Swansea"],
+            "demand": ["Increased a lot", None],
+        }
+    )
+    profile = data_quality_profile(df)
+    assert profile["n_rows"] == 2
+    assert profile["n_cols"] == 3
+    assert "missing_by_col" in profile
+    assert "missing_pct_by_col" in profile
+    assert "block_completeness" in profile
+    assert profile["org_size_missing"] == 0
+    assert profile["complete_pct"] >= 0

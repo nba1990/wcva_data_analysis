@@ -11,11 +11,30 @@ from src.config import (
     format_group_summary,
     get_likert_colours,
     get_palette,
+    make_pattern_grouper,
     make_stacked_bar_alt,
+    normalise_label,
     resolve_grouping,
     summarise_stacked_categories,
     validate_palette_contrast,
 )
+
+
+def test_normalise_label() -> None:
+    assert normalise_label("  Increased a lot  ") == "increased a lot"
+    assert normalise_label("Stayed the same") == "stayed the same"
+    # Curly apostrophe normalised to straight
+    assert "’" not in normalise_label("Organisation's")
+
+
+def test_make_pattern_grouper() -> None:
+    grouper = make_pattern_grouper(
+        [("Up", ("increase", "increased")), ("Down", ("decrease",))],
+        default="Other",
+    )
+    assert grouper("Increased a lot") == "Up"
+    assert grouper("Decreased a little") == "Down"
+    assert grouper("Stayed the same") == "Other"
 
 
 def test_get_palette_and_likert_colours_modes() -> None:

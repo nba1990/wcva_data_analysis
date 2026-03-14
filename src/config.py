@@ -1,17 +1,37 @@
 """
 Central configuration for the Baromedr Cymru Wave 2 analysis.
 
-Defines WCVA brand palette, colour-blind-safe alternate palette,
-column-to-question mappings, response orderings, and chart defaults.
+Provides:
+- Paths: PROJECT_ROOT, DATA_DIR, OUTPUT_DIR, DATASET_PATH.
+- Constants: K_ANON_THRESHOLD, DEBUG_MEMORY, WCVA_BRAND, palette sequences.
+- StreamlitAppUISharedConfigState: Per-session UI state (filters, accessibility).
+- AltTextConfig: Chart alt-text generation options.
+- Label groupers and orderings: GROUPERS, GROUP_ORDER, ORDER_TO_GROUPING_KEY,
+  resolve_grouping, summarise_stacked_categories, format_group_summary,
+  make_stacked_bar_alt.
+- Column-to-label mappings: CONCERNS_LABELS, ACTIONS_LABELS, REC_METHODS_LABELS,
+  etc., used by data_loader and eda.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import os
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Iterable, TypeVar
 
 import pandas as pd
+import streamlit as st
+
+# ---------------------------------------------------------------------------
+# Debug / development flags (configurable via environment)
+# ---------------------------------------------------------------------------
+# Set WCVA_DEBUG_MEMORY=1 (or true/yes) to show process memory in the sidebar.
+DEBUG_MEMORY = os.environ.get("WCVA_DEBUG_MEMORY", "").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
 LabelGrouper = Callable[[str], str]
 
@@ -33,27 +53,63 @@ K_ANON_THRESHOLD = 5
 
 @dataclass()
 class StreamlitAppUISharedConfigState:
-    """Configuration dataclass storing the Streamlit application UI application configuration states."""
+    """Per-session UI state (filters, accessibility, suppression).
+
+    Store one instance in st.session_state via get_app_ui_config().
+    Do not use a module-level singleton; each session gets its own instance.
+
+    Attributes:
+        base_size_n: Number of organisations in current filter (for chart subtitles).
+        text_size_mode: "Normal" or "Larger" from sidebar.
+        text_scale: Multiplier for chart font sizes (e.g. 1.0 or 1.2).
+        accessible_mode: Whether accessible colour palette is selected.
+        palette_mode: "brand" or "accessible".
+        size_options: Options for org size filter (populated from data).
+        selected_size: Current org size filter value.
+        scope_options: Options for geographic scope filter.
+        selected_scope: Current scope filter value.
+        la_scope_options: Options for local authority filter.
+        selected_la_scope: Current LA filter value.
+        activity_options: Options for main activity filter.
+        selected_activity: Current activity filter value.
+        paid_staff_options: Options for paid staff filter.
+        selected_paid_staff: Current paid staff filter value.
+        concern_label_options: Labels for key concerns multiselect.
+        selected_concerns: Selected concern labels (multiselect).
+        suppressed: True when n < K_ANON_THRESHOLD (suppress small cells).
+    """
 
     base_size_n: int = 0
     text_size_mode: str = ""
     text_scale: float = 0.0
     accessible_mode: bool = False
     palette_mode: str = "brand"
-    size_options: list[str] = list
-    selected_size: TypeVar | str | None = ""
-    la_scope_options: list[str] = list
-    selected_la_scope: TypeVar | str | None = ""
-    activity_options: list[str] = list
-    selected_activity: TypeVar | str | None = ""
-    paid_staff_options: list[str] = list
-    selected_paid_staff: TypeVar | str | None = ""
-    concern_label_options: list[str] = list
-    selected_concerns: TypeVar | str | None = ""
-    suppressed = base_size_n < K_ANON_THRESHOLD
+    size_options: list[str] = field(default_factory=list)
+    selected_size: str | None = ""
+    scope_options: list[str] = field(default_factory=list)
+    selected_scope: str | None = ""
+    la_scope_options: list[str] = field(default_factory=list)
+    selected_la_scope: str | None = ""
+    activity_options: list[str] = field(default_factory=list)
+    selected_activity: str | None = ""
+    paid_staff_options: list[str] = field(default_factory=list)
+    selected_paid_staff: str | None = ""
+    concern_label_options: list[str] = field(default_factory=list)
+    selected_concerns: list[str] = field(default_factory=list)
+    suppressed: bool = False
 
 
-GlobalStreamlitAppUISharedConfigState = StreamlitAppUISharedConfigState()
+def get_app_ui_config() -> StreamlitAppUISharedConfigState:
+    """Return the per-session UI config, creating it in session_state if needed.
+
+    Returns:
+        The single StreamlitAppUISharedConfigState instance for this session.
+    """
+    key = "app_ui_config"
+    if key not in st.session_state:
+        st.session_state[key] = StreamlitAppUISharedConfigState()
+    return st.session_state[key]
+
 
 # ---------------------------------------------------------------------------
 # Colour palettes
@@ -119,20 +175,35 @@ LIKERT_ACCESSIBLE = [
 
 
 def get_palette(mode: str = "brand") -> list[str]:
-    """Return the colour sequence for the given mode."""
+    """Return the main colour sequence for charts (brand or accessible).
+
+    Args:
+        mode: "brand" (WCVA colours) or "accessible" (colour-blind safe).
+
+    Returns:
+        List of hex colour strings for series/segments.
+    """
     if mode == "accessible":
         return ACCESSIBLE_SEQUENCE
     return BRAND_SEQUENCE
 
 
 def get_likert_colours(mode: str = "brand") -> list[str]:
+    """Return the Likert-scale colour sequence (positive to negative + Don't know).
+
+    Args:
+        mode: "brand" or "accessible".
+
+    Returns:
+        List of hex colour strings, one per Likert level.
+    """
     if mode == "accessible":
         return LIKERT_ACCESSIBLE
     return LIKERT_POSITIVE_TO_NEGATIVE
 
 
 def _relative_luminance(hex_colour: str) -> float:
-    """WCAG 2.1 relative luminance from a hex colour."""
+    """Compute WCAG 2.1 relative luminance from a hex colour (#RRGGBB)."""
     r, g, b = (int(hex_colour[i : i + 2], 16) / 255 for i in (1, 3, 5))
     components = []
     for c in (r, g, b):
@@ -141,7 +212,15 @@ def _relative_luminance(hex_colour: str) -> float:
 
 
 def contrast_ratio(fg: str, bg: str) -> float:
-    """WCAG 2.1 contrast ratio between two hex colours."""
+    """Compute WCAG 2.1 contrast ratio between two hex colours.
+
+    Args:
+        fg: Foreground hex colour (e.g. "#1B2A4A").
+        bg: Background hex colour (e.g. "#FFFFFF").
+
+    Returns:
+        Ratio in range [1, 21]; ≥4.5 for AA text, ≥3 for large text.
+    """
     l1 = _relative_luminance(fg)
     l2 = _relative_luminance(bg)
     lighter = max(l1, l2)
@@ -152,7 +231,16 @@ def contrast_ratio(fg: str, bg: str) -> float:
 def validate_palette_contrast(
     palette: list[str], bg: str = "#FFFFFF", min_ratio: float = 3.0
 ) -> dict[str, float]:
-    """Check each palette colour against a background.  Returns {colour: ratio}."""
+    """Check each palette colour against a background.
+
+    Args:
+        palette: List of hex colours to check.
+        bg: Background hex colour.
+        min_ratio: Minimum contrast ratio (e.g. 3.0 for large text).
+
+    Returns:
+        Dict mapping each palette colour to its contrast ratio with bg.
+    """
     return {c: round(contrast_ratio(c, bg), 2) for c in palette}
 
 
@@ -273,7 +361,7 @@ class AltTextConfig:
 
 
 def normalise_label(value: str) -> str:
-    """Normalise a label string for consistent alt-text."""
+    """Normalise a label for consistent grouping and alt-text (strip, lower, curly apostrophes)."""
     return str(value).strip().lower().replace("’", "'").replace("‘", "'")
 
 
@@ -282,10 +370,17 @@ def make_pattern_grouper(
     *,
     default: str = "Other",
 ) -> LabelGrouper:
-    """
-    Build a label grouper from keyword rules.
+    """Build a label grouper from (target_group, (pattern1, pattern2, ...)) rules.
 
-    Rules are checked in order. The first matching rule wins.
+    Each rule maps labels containing any of the patterns (after normalise_label)
+    to the target group. First matching rule wins; unmatched labels return default.
+
+    Args:
+        rules: List of (target_group_name, (substring, ...)) for matching.
+        default: Return value when no rule matches.
+
+    Returns:
+        A callable that maps a label string to a group name.
     """
 
     def group(label: str) -> str:
@@ -410,7 +505,14 @@ ORDER_TO_GROUPING_KEY: dict[tuple[str, ...], str] = {
 def resolve_grouping(
     order: Iterable[str],
 ) -> tuple[LabelGrouper | None, list[str] | None]:
-    """Resolve a response ordering to a grouping key and group order."""
+    """Resolve a response ordering (e.g. DEMAND_ORDER) to a grouper and display order.
+
+    Args:
+        order: Ordered list of response values (must match a key in ORDER_TO_GROUPING_KEY).
+
+    Returns:
+        (grouper, group_order) or (None, None) if order is not recognised.
+    """
     key = ORDER_TO_GROUPING_KEY.get(tuple(order))
     if key is None:
         return None, None
@@ -427,8 +529,22 @@ def summarise_stacked_categories(
     group_order: list[str] | None = None,
     drop_zero: bool = True,
 ) -> pd.DataFrame:
-    """
-    Collapse chart categories into broader accessibility groups.
+    """Collapse chart categories into broader groups for alt-text or display.
+
+    If grouper is provided, value_col is mapped to a group; then counts and pcts
+    are summed by group. Optionally drops groups with zero pct and sorts by group_order.
+
+    Args:
+        df: DataFrame with value_col, count_col, pct_col.
+        value_col: Column of category labels.
+        count_col: Column of counts.
+        pct_col: Column of percentages.
+        grouper: Optional callable mapping label -> group name.
+        group_order: Optional display order for groups.
+        drop_zero: If True, exclude rows with pct_col == 0.
+
+    Returns:
+        DataFrame with columns group, count_col, pct_col (aggregated).
     """
     working = df[[value_col, count_col, pct_col]].copy()
 
@@ -464,7 +580,20 @@ def format_group_summary(
     include_percents: bool = True,
     max_groups: int | None = None,
 ) -> str:
-    """Format a summary of grouped responses for alt-text."""
+    """Format grouped response summary as a single string for alt-text.
+
+    Args:
+        grouped: DataFrame with value_col, count_col, pct_col.
+        value_col: Column holding group labels.
+        count_col: Column holding counts.
+        pct_col: Column holding percentages.
+        include_counts: Include (count) in output.
+        include_percents: Include pct in output.
+        max_groups: If set, only format this many groups.
+
+    Returns:
+        Comma-separated string e.g. "Increased 60.0% (24), Stayed the same 40.0% (16)".
+    """
     rows = grouped.itertuples(index=False)
 
     parts: list[str] = []
@@ -496,7 +625,21 @@ def make_stacked_bar_alt(
     grouper: LabelGrouper | None = None,
     group_order: list[str] | None = None,
 ) -> str:
-    """Generate alt-text for a stacked bar chart."""
+    """Generate accessibility alt-text for a stacked bar chart.
+
+    Uses summarise_stacked_categories and format_group_summary with config options.
+    Prefix includes chart_type and title; suffix includes n from config.sample_size.
+
+    Args:
+        df: Chart data with config.value_col, count_col, pct_col.
+        title: Chart title.
+        config: AltTextConfig for columns and sample_size.
+        grouper: Optional label grouper.
+        group_order: Optional display order.
+
+    Returns:
+        Full alt-text string for the chart.
+    """
     grouped = summarise_stacked_categories(
         df,
         value_col=config.value_col,

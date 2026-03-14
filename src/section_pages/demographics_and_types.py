@@ -14,17 +14,24 @@ from src.config import (
     VOL_TYPEUSE_ORDER,
     WCVA_BRAND,
     AltTextConfig,
-    GlobalStreamlitAppUISharedConfigState,
+    get_app_ui_config,
     resolve_grouping,
 )
 from src.eda import volunteer_demographics, volunteering_types
 
 
 def render_demographics_and_types(df: pd.DataFrame, n: int) -> None:
+    """Render the Demographics & Types page: volunteer demographics and type usage.
+
+    Args:
+        df: Filtered analysis DataFrame.
+        n: Filtered row count (for chart subtitles).
+    """
     """Render the Demographics and Types page, using the current filtered dataset."""
     st.title("Volunteer Demographics & Volunteering Types")
 
-    if GlobalStreamlitAppUISharedConfigState.suppressed:
+    ui_config = get_app_ui_config()
+    if ui_config.suppressed:
         st.warning("Results suppressed due to small sample size.")
         st.stop()
 
@@ -41,7 +48,7 @@ def render_demographics_and_types(df: pd.DataFrame, n: int) -> None:
         "count",
         "26–64 age groups are the core volunteer base",
         n,
-        mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+        mode=ui_config.palette_mode,
         exclude_na=False,
     )
     show_chart(fig, "dem_presence", vd["dem_presence"][["label", "count", "pct"]])
@@ -56,7 +63,7 @@ def render_demographics_and_types(df: pd.DataFrame, n: int) -> None:
             change_cols,
             "Most groups stayed stable, with pockets of growth and decline",
             n,
-            mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+            mode=ui_config.palette_mode,
             height=500,
         )
 
@@ -74,7 +81,7 @@ def render_demographics_and_types(df: pd.DataFrame, n: int) -> None:
             ],
             title="Most groups stayed stable, with pockets of growth and decline",
             n=n,
-            mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+            mode=ui_config.palette_mode,
             view="collapsed",  # "full" -> all columns visible, "collapsed" -> only three columns visible
         )
 
@@ -87,7 +94,7 @@ def render_demographics_and_types(df: pd.DataFrame, n: int) -> None:
         vd["vol_time"],
         "How has total volunteer time changed?",
         n,
-        mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+        mode=ui_config.palette_mode,
         alt_config=alt_config,
         grouper=grouper,
         group_order=group_order,
@@ -102,7 +109,7 @@ def render_demographics_and_types(df: pd.DataFrame, n: int) -> None:
             type_df,
             f"Types of Volunteering Used: {label}",
             n,
-            mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+            mode=ui_config.palette_mode,
             height=140,
             alt_config=alt_config,
             grouper=grouper,

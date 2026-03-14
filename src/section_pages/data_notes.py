@@ -1,3 +1,5 @@
+"""Data Notes page: dataset overview, completeness by block, methodology, caveats."""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -7,7 +9,11 @@ from src.data_loader import data_quality_profile
 
 
 def render_data_notes(df: pd.DataFrame) -> None:
-    """Render the Data Notes page, using the current filtered dataset."""
+    """Render the Data Notes page: metrics, block completeness, methodology, definitions.
+
+    Args:
+        df: Filtered analysis DataFrame (used for data_quality_profile).
+    """
     st.title("Data Notes & Methodology")
 
     dq = data_quality_profile(df)

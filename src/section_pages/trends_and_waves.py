@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import pandas as pd
-import plotly.express as px
 import streamlit as st
 
-from src.charts import show_chart
-from src.config import WCVA_BRAND
+from src.charts import show_chart, wave_trend_line
+from src.config import WCVA_BRAND, get_app_ui_config
 from src.eda import volunteer_recruitment_analysis, workforce_operations
 from src.wave_context import (
     build_trend_long,
@@ -15,14 +14,20 @@ from src.wave_context import (
 )
 
 
-def render_trends_and_waves(df_full: pd.DataFrame) -> None:
+def render_trends_and_waves(df: pd.DataFrame) -> None:
+    """Render the Trends & Waves page: cross-wave comparison and trend charts.
+
+    Args:
+        df: Filtered analysis DataFrame (used to build wave registry and trend data).
+    """
     """Render the Trends and Waves page, using the current filtered dataset."""
     st.title("Trends Across Waves")
     st.caption(
         "Compare headline indicators across survey waves using the validated WaveContext model."
     )
 
-    registry = get_wave_registry(df_full)
+    ui_config = get_app_ui_config()
+    registry = get_wave_registry(df)
 
     trend_df = build_trend_long(registry)
 
@@ -103,35 +108,10 @@ def render_trends_and_waves(df_full: pd.DataFrame) -> None:
             with col:
                 mdf = mdf.sort_values("wave_number")
 
-                fig = px.line(
+                fig = wave_trend_line(
                     mdf,
-                    x="wave_number",
-                    y="value",
-                    markers=True,
-                    text="value",
-                    labels={"wave_number": "Wave", "value": "Percent"},
-                    title=metric_label,
-                )
-                fig.update_traces(textposition="top center")
-                fig.update_xaxes(
-                    tickvals=mdf["wave_number"],
-                    ticktext=mdf["wave_label"],
-                )
-
-                # Build rich alt-text with wave counts and number of waves
-                unique_waves = (
-                    mdf[["wave_label", "wave_n"]]
-                    .drop_duplicates()
-                    .sort_values("wave_label")
-                )
-                wave_summaries = ", ".join(
-                    f"{row.wave_label} (n={row.wave_n})"
-                    for row in unique_waves.itertuples(index=False)
-                )
-                n_waves = unique_waves.shape[0]
-                fig._alt_text = (
-                    f"Trend line for {metric_label} across {n_waves} waves. "
-                    f"Waves and respondent counts: {wave_summaries}."
+                    metric_label,
+                    mode=ui_config.palette_mode,
                 )
 
                 show_chart(
@@ -163,8 +143,8 @@ def render_trends_and_waves(df_full: pd.DataFrame) -> None:
     st.subheader("Debug: EDA vs WaveContext (Wave 2)")
 
     with st.expander("Show comparison table for key metrics"):
-        rec = volunteer_recruitment_analysis(df_full)
-        wf = workforce_operations(df_full)
+        rec = volunteer_recruitment_analysis(df)
+        wf = workforce_operations(df)
 
         wave2_ctx = registry.get("Wave 2")
 

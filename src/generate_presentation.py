@@ -15,7 +15,7 @@ import sys
 from datetime import date
 from html import escape
 from pathlib import Path
-from typing import Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -140,7 +140,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
 
     trends_table_html = ""
     wave_summary_html = ""
-    trends_table_meta: dict[str, object] | None = None
+    trends_table_meta: dict[str, Any] | None = None
     wave_summary_text = ""
     if not core_trends.empty:
         trends_df = core_trends.sort_values(["metric_label", "wave_number"])

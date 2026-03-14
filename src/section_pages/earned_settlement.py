@@ -7,7 +7,7 @@ from src.charts import horizontal_bar_ranked, show_chart, stacked_bar_ordinal
 from src.config import (
     EARNED_SETTLEMENT_ORDER,
     AltTextConfig,
-    GlobalStreamlitAppUISharedConfigState,
+    get_app_ui_config,
     resolve_grouping,
 )
 from src.eda import volunteering_types
@@ -15,6 +15,12 @@ from src.wave_context import get_wave_registry
 
 
 def render_earned_settlement(df: pd.DataFrame, n: int) -> None:
+    """Render the Earned Settlement page: agreement and capacity charts.
+
+    Args:
+        df: Filtered analysis DataFrame.
+        n: Filtered row count (for chart subtitles).
+    """
     """Render the Earned Settlement page, using the current filtered dataset."""
     st.title("Earned Settlement Policy")
     st.markdown(
@@ -22,7 +28,8 @@ def render_earned_settlement(df: pd.DataFrame, n: int) -> None:
         "count towards the time migrants need to qualify for permanent UK residency."
     )
 
-    if GlobalStreamlitAppUISharedConfigState.suppressed:
+    ui_config = get_app_ui_config()
+    if ui_config.suppressed:
         st.warning("Results suppressed due to small sample size.")
         st.stop()
 
@@ -43,7 +50,7 @@ def render_earned_settlement(df: pd.DataFrame, n: int) -> None:
             vt["earned_settlement"],
             TITLE,
             n,
-            mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+            mode=ui_config.palette_mode,
             height=220,
             alt_config=alt_config,
             grouper=grouper,
@@ -63,7 +70,7 @@ def render_earned_settlement(df: pd.DataFrame, n: int) -> None:
             "Count",
             "Most would need additional resources or guidance to support this",
             n,
-            mode=GlobalStreamlitAppUISharedConfigState.palette_mode,
+            mode=ui_config.palette_mode,
             pct_col=None,
             height=350,
         )

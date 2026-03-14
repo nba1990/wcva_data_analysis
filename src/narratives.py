@@ -1,11 +1,31 @@
+"""
+Narrative text helpers for the Baromedr dashboard.
+
+Builds human-readable sentences from EDA result dicts (demand_and_outlook,
+volunteer_recruitment_analysis, volunteer_retention_analysis) for use in
+executive summary, at-a-glance, and similar pages.
+"""
+
 from __future__ import annotations
 
 from typing import Mapping
 
 
-def _safe_pct(mapping: Mapping, key: str) -> float:
+def _safe_pct(mapping: Mapping[str, object], key: str) -> float:
+    """Extract a numeric percentage from a mapping, with safe fallbacks.
+
+    Handles missing key (0), non-mapping (AttributeError -> 0), and
+    non-numeric values (TypeError/ValueError -> 0.0).
+
+    Args:
+        mapping: Dict-like with optional key (e.g. demand_and_outlook result).
+        key: Key to look up (e.g. "demand_pct_increased").
+
+    Returns:
+        float in [0, 100] or 0.0 on any error.
+    """
     try:
-        value = mapping.get(key, 0)  # type: ignore[call-arg]
+        value = mapping.get(key, 0)
     except AttributeError:
         value = 0
     try:
@@ -14,8 +34,18 @@ def _safe_pct(mapping: Mapping, key: str) -> float:
         return 0.0
 
 
-def demand_finance_scissor_phrase(dem: Mapping) -> str:
-    """Short narrative about demand vs. finance based on pct metrics."""
+def demand_finance_scissor_phrase(dem: Mapping[str, object]) -> str:
+    """Short narrative about demand vs. finance based on pct metrics.
+
+    Uses dem["demand_pct_increased"] and dem["financial_pct_deteriorated"]
+    (via _safe_pct). Mentions "scissor effect" when both are non-zero.
+
+    Args:
+        dem: Result of demand_and_outlook() or dict with same keys.
+
+    Returns:
+        One or two sentences for display.
+    """
     demand_pct = _safe_pct(dem, "demand_pct_increased")
     finance_pct = _safe_pct(dem, "financial_pct_deteriorated")
 
@@ -39,8 +69,22 @@ def demand_finance_scissor_phrase(dem: Mapping) -> str:
     return core + "."
 
 
-def recruitment_vs_retention_phrase(rec: Mapping, ret: Mapping) -> str:
-    """Explain how hard recruitment is relative to retention, based on pct_difficulty."""
+def recruitment_vs_retention_phrase(
+    rec: Mapping[str, object], ret: Mapping[str, object]
+) -> str:
+    """Explain how hard recruitment is relative to retention.
+
+    Uses pct_difficulty from both rec and ret; compares ratio to produce
+    "more commonly reported as difficult than", "about as hard as", or
+    "somewhat easier than". Handles missing or sparse data with fallback text.
+
+    Args:
+        rec: Result of volunteer_recruitment_analysis() (or dict with pct_difficulty).
+        ret: Result of volunteer_retention_analysis() (or dict with pct_difficulty).
+
+    Returns:
+        One sentence for display.
+    """
     rec_pct = _safe_pct(rec, "pct_difficulty")
     ret_pct = _safe_pct(ret, "pct_difficulty")
 

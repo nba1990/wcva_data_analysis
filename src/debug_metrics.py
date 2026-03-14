@@ -12,6 +12,7 @@ Run with:
 
 import sys
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -31,7 +32,7 @@ def main() -> None:
 
     wave2_ctx = build_wave_context_from_df(df, wave_label="Wave 2", wave_number=2)
 
-    rows: list[dict[str, object]] = [
+    rows: list[dict[str, Any]] = [
         {
             "metric": "Too few volunteers %",
             "source": "EDA (pct_too_few)",
