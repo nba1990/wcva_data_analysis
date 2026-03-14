@@ -10,11 +10,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+### Changed
+
+### Fixed
+
+---
+
+## [0.2.2] - 2026-03-14
+
+### Added
+
 - Deployment/runtime health checks for required and optional app assets, including a new in-app **Deployment Health** page and startup guard for missing required files.
 
 ### Changed
 
-- Release preparation for `0.2.0`, including aligned version metadata and clearer Streamlit Community Cloud deployment guidance.
+- Added matching README, architecture, ADR, deployment-guide, and Sphinx documentation for the deployment-health feature so operational behaviour and docs stay aligned.
 
 ### Fixed
 
