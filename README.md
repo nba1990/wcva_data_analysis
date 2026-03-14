@@ -1,5 +1,7 @@
 # WCVA Baromedr Cymru – Wave 2 Dashboard
 
+Current release: **0.2.0**
+
 This repository contains an interactive **Streamlit** dashboard and supporting scripts for analysing **Baromedr Cymru Wave 2** – a quarterly temperature check of the Welsh voluntary sector – with a particular focus on volunteering, workforce, finances, and SROI evidence for the Welsh voluntary sector.
 
 The dashboard is designed to:
@@ -299,6 +301,7 @@ python -c "from src.data_loader import load_dataset; df = load_dataset(); print(
 
 Considerations:
 
+- Choose **Python 3.11 or 3.12** in the app's **Advanced settings**. Streamlit Community Cloud sets the Python version from the deploy UI, not from a repo file such as `runtime.txt`.
 - Use Streamlit **Secrets Manager** (`.streamlit/secrets.toml`) for any credentials (if introduced).
 - `st.cache_data` is used for dataset loading so all sessions share the same read‑only base DataFrame.
 - Avoid unnecessary large in-memory artefacts; prefer computed summaries.

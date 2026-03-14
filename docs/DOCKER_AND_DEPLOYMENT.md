@@ -152,7 +152,7 @@ The `docker-compose.yml` in this repo sets `restart: unless-stopped`, so the con
 
 ## Deploying to a cloud or PaaS
 
-- **Streamlit Community Cloud**: use the GitHub repo and set **Main file** to `src/app.py` (see README “Deployment notes”). No Docker required there.
+- **Streamlit Community Cloud**: use the GitHub repo, set **Main file** to `src/app.py`, and choose Python **3.11** or **3.12** in the app's **Advanced settings**. Community Cloud does not read a repo `runtime.txt` here. No Docker required there.
 - **Generic cloud (AWS, GCP, Azure, etc.)**: build the image and run it on a container service (ECS, Cloud Run, ACI, etc.). Use the same environment variables and volume mounts as above; expose port 8501 and put a load balancer or API gateway in front if needed.
 - **Kubernetes**: use the same image; define a Deployment and Service that expose 8501 and, if needed, mount datasets via a ConfigMap or PVC.
 

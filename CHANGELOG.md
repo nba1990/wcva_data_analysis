@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Release preparation for `0.2.0`, including aligned version metadata and clearer Streamlit Community Cloud deployment guidance.
+
+---
+
+## [0.2.0] - 2026-03-14
+
 ### Added
 
 - **Sphinx documentation**: Built docs (getting started, architecture, contributing, API reference) in `docs/source/`; build with `pip install -r docs/requirements-docs.txt` then `cd docs && make html`. Output in `docs/build/html/`. See README and CONTRIBUTING §4.
@@ -35,7 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [0.1.0] – earlier
+## [0.1.0] - earlier
 
 - Initial WCVA Baromedr Cymru Wave 2 dashboard (Streamlit, multi-page, filters, SROI references, k-anonymity suppression).
 - ADRs 001–004 (Streamlit, navigation, SROI charts, state and caching).

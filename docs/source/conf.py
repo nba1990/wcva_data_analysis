@@ -15,8 +15,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.
 project = "Baromedr Cymru Wave 2 Dashboard"
 copyright = "Bharadwaj Raman"
 author = "Bharadwaj Raman - https://github.com/nba1990/"
-release = "0.1.0"
-version = "0.1"
+release = "0.2.0"
+version = "0.2"
 
 extensions = [
     "sphinx.ext.autodoc",

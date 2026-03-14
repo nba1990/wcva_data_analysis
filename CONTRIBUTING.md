@@ -107,4 +107,19 @@ The codebase aims for **comprehensive coverage** of docstrings and type informat
 
 When adding new code, extend this standard: add a module docstring if you create a new module, and add Args/Returns to new public functions. See existing modules (`src/data_loader.py`, `src/config.py`, `src/eda.py`, `src/charts.py`) for examples.
 
-If you have questions, open an issue or contact the maintainers listed in the README.
+---
+
+## 8. Releases and versioning
+
+- Use lightweight semantic versioning:
+  - `MAJOR` for breaking changes to runtime or deployment expectations.
+  - `MINOR` for new dashboard capabilities, documentation, deployment, or testing improvements that remain backwards-compatible.
+  - `PATCH` for focused bug fixes or documentation corrections.
+- Before a release, update:
+  - `pyproject.toml`
+  - `docs/source/conf.py`
+  - `CHANGELOG.md`
+- Create an annotated git tag using the format `vX.Y.Z`.
+- Keep `CHANGELOG.md` in Keep a Changelog style with a fresh `Unreleased` section after each release.
+
+If you have questions, open an issue or start a discussion through the repository.
