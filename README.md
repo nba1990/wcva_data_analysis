@@ -12,6 +12,7 @@ See the LICENSE file for full licensing terms.
 [![Pull Requests](https://img.shields.io/github/issues-pr/nba1990/wcva_data_analysis.svg)](https://github.com/nba1990/wcva_data_analysis/pulls)
 [![Release](https://img.shields.io/github/v/release/nba1990/wcva_data_analysis.svg)](https://github.com/nba1990/wcva_data_analysis/releases)
 [![Live demo](https://img.shields.io/badge/Streamlit-live%20demo-brightgreen.svg)](https://baromedr.streamlit.app/)
+[![Docs](https://readthedocs.org/projects/baromedr/badge/?version=latest)](https://baromedr.readthedocs.io/en/latest/)
 
 Current release: **0.2.3**
 
@@ -31,7 +32,7 @@ For a deeper architectural description, see `ARCHITECTURE.md`. For a short **dev
 (3) **`CONTRIBUTING.md`**: dev setup, tests, formatting, and doc/typing standards (§7).
 (4) **`docs/LEARNING_AND_BACKLOG.md`**: backlog, testing strategy, coverage, safe/unsafe patterns.
 (5) **`docs/learning/`**: curated "Python/data-science to app/deploy/git" guides grounded in this codebase.
-(6) **Sphinx docs** (see § Documentation below): single place for getting started, architecture, API reference. Build with `pip install -r docs/requirements-docs.txt` then `cd docs && make html`.
+(6) **Sphinx docs** (see § Documentation below): single place for getting started, architecture, API reference. Live docs: `https://baromedr.readthedocs.io/en/latest/`
 
 ---
 
@@ -210,6 +211,8 @@ Regenerates SROI PNG/SVG charts and JSON sidecar metadata in `references/SROI_Wa
 
 Built documentation helps new users and developers get oriented. It includes a **getting started** guide, **architecture** overview, **contributing** summary, and full **API reference** generated from the codebase.
 
+**Live docs**: https://baromedr.readthedocs.io/en/latest/
+
 **Build the docs** (requires project dependencies and Sphinx):
 
 ```bash
@@ -222,7 +225,7 @@ Then open `docs/build/html/index.html` in a browser. On Windows use `docs\make.b
 
 **Note:** When building, Sphinx imports the app and Streamlit may print warnings (e.g. "No runtime found", "missing ScriptRunContext"). These are expected when the app is loaded outside `streamlit run` and can be ignored; the HTML docs are still generated correctly.
 
-This repository also includes a minimal [Read the Docs](https://readthedocs.org/) configuration in `.readthedocs.yaml`, so the public Sphinx docs can be hosted without managing your own domain or infrastructure.
+This repository also includes a minimal [Read the Docs](https://readthedocs.org/) configuration in `.readthedocs.yaml`, and the public docs are hosted at https://baromedr.readthedocs.io/en/latest/
 
 ### Documentation index
 
@@ -237,7 +240,7 @@ This repository also includes a minimal [Read the Docs](https://readthedocs.org/
 | **docs/DOCKER_AND_DEPLOYMENT.md** | Docker build/run, docker-compose, self-hosting, env vars, security. |
 | **docs/HISTORY_REWRITE_AND_STREAMLIT_SECRETS.md** | Runbook for purging `datasets/` from Git history and configuring private runtime data on Streamlit Community Cloud. |
 | **docs/adr/** (ADR-001 … ADR-008) | Decisions: Streamlit UI, navigation, SROI charts, state/caching, Docker, CI/testing, runtime data/demo mode, and the multi-wave schema/mapping layer. |
-| **Sphinx** (`docs/source/`, build: `docs/build/html/`) | Getting started, architecture, contributing, full API reference. |
+| **Sphinx / Read the Docs** (`docs/source/`, build: `docs/build/html/`) | Getting started, architecture, contributing, full API reference. Live site: `https://baromedr.readthedocs.io/en/latest/`. |
 | **pytest.ini** | Test discovery, `e2e` marker. |
 | **pyproject.toml** | Black, isort, mypy config. |
 

@@ -8,7 +8,7 @@ See the LICENSE file for full licensing terms.
 
 This document explains how the dashboard is structured, how the main modules interact, and what to keep in mind when extending it. It assumes general Python knowledge but no prior Streamlit experience.
 
-**Code documentation**: Modules, classes, and public functions are documented with docstrings (summary, Args, Returns where useful). Type hints are used on function parameters and return values. See `CONTRIBUTING.md` §7 for the project’s documentation and typing standards. Build Sphinx docs with ``pip install -r docs/requirements-docs.txt`` then ``cd docs && make html`` (output in ``docs/build/html/``).
+**Code documentation**: Modules, classes, and public functions are documented with docstrings (summary, Args, Returns where useful). Type hints are used on function parameters and return values. See `CONTRIBUTING.md` §7 for the project’s documentation and typing standards. Build Sphinx docs with ``pip install -r docs/requirements-docs.txt`` then ``cd docs && make html`` (output in ``docs/build/html/``). The public hosted docs are at ``https://baromedr.readthedocs.io/en/latest/``.
 
 ## 1. High‑level architecture
 

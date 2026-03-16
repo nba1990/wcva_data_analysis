@@ -81,6 +81,8 @@ cd docs && make html
 
 Output is in `docs/build/html/`; open `index.html` in a browser. The API reference is generated from the same docstrings and type hints you add in code (see §7). When you run the build, Streamlit may print warnings (e.g. "No runtime found", "missing ScriptRunContext") because Sphinx imports the app outside a Streamlit run; these are expected and can be ignored.
 
+The public hosted documentation is available on Read the Docs at `https://baromedr.readthedocs.io/en/latest/`.
+
 ---
 
 ## 5. Where to look
