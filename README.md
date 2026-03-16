@@ -222,6 +222,8 @@ Then open `docs/build/html/index.html` in a browser. On Windows use `docs\make.b
 
 **Note:** When building, Sphinx imports the app and Streamlit may print warnings (e.g. "No runtime found", "missing ScriptRunContext"). These are expected when the app is loaded outside `streamlit run` and can be ignored; the HTML docs are still generated correctly.
 
+This repository also includes a minimal [Read the Docs](https://readthedocs.org/) configuration in `.readthedocs.yaml`, so the public Sphinx docs can be hosted without managing your own domain or infrastructure.
+
 ### Documentation index
 
 | Document | Purpose |
