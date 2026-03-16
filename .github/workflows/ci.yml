@@ -82,7 +82,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Black (format check)
-        run: black --check src/ tests/
+        run: BLACK_NUM_WORKERS=1 black --check src/ tests/
 
       - name: isort (import order check)
         run: isort --check-only src/ tests/
@@ -101,7 +101,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt mypy
+          pip install -r requirements.txt mypy types-PyYAML
 
       - name: mypy
         run: mypy src/ tests/ --config-file pyproject.toml
