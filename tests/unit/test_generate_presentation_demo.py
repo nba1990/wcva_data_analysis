@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 from __future__ import annotations
 
 from src.generate_presentation import (
@@ -46,3 +53,6 @@ def test_generate_html_in_demo_mode_includes_warning_banner() -> None:
 def test_generate_pdf_in_demo_mode_returns_bytes() -> None:
     pdf = generate_pdf(_slides(), demo_mode=True)
     assert pdf.startswith(b"%PDF")
+
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis
