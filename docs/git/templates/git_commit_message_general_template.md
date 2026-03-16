@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 <type>(<scope>): <short summary>
 
 # Types: feat, fix, refactor, perf, docs, style, test, build, ci, chore, revert
@@ -51,3 +58,4 @@ Relates to: <issue-id>
 
 ## Additional Notes
 Any extra context reviewers should know.
+Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

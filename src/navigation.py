@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 """
 Sidebar navigation for the Baromedr dashboard.
 
@@ -215,3 +222,6 @@ def render_sidebar_nav(current_page: str | None = None) -> str:
             st.rerun()
 
     return st.session_state["current_page"]
+
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

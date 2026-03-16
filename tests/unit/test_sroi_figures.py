@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 from __future__ import annotations
 
 from typing import Any
@@ -96,3 +103,6 @@ def test_palette_mode_and_text_scale_behaviour() -> None:
     for factory in factories:
         _assert_palette_changes(factory)
         _assert_text_scale_changes(factory)
+
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

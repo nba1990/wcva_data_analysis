@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 from __future__ import annotations
 
 import pandas as pd
@@ -133,3 +140,6 @@ def test_finance_recruitment_cross_returns_none_when_insufficient_data() -> None
         }
     )
     assert finance_recruitment_cross(df) is None
+
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

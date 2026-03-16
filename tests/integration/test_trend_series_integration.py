@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 from __future__ import annotations
 
 from src.wave_context import WAVE1_CONTEXT, WaveRegistry, build_trend_long, trend_series
@@ -38,3 +45,6 @@ def test_trend_series_and_build_trend_long_with_two_waves() -> None:
 
     assert set(long_df["metric_id"]) == {"demand_increase"}
     assert long_df["wave_number"].tolist() == [1, 2]
+
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

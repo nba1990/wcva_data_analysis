@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 # WCVA Baromedr Dashboard — CI (test, lint, typecheck, security, e2e smoke)
 # Runs on every push; uses pip and requirements.txt (no conda).
 
@@ -97,7 +104,7 @@ jobs:
           pip install -r requirements.txt mypy
 
       - name: mypy
-        run: mypy src/ --config-file pyproject.toml
+        run: mypy src/ tests/ --config-file pyproject.toml
 
   security:
     runs-on: ubuntu-latest
@@ -119,3 +126,5 @@ jobs:
         run: |
           pip install pip-audit
           pip-audit
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

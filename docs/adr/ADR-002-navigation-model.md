@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 # ADR-002 – Navigation model and sidebar UX
 
 ## Context
@@ -37,3 +44,4 @@ The main app (`src/app.py`) uses this module to determine the current page and d
   - Every id appears in the `app.py` dispatch block.
   - Labels and (where present) subtitles are non‑empty.
 - Future refactors can evolve toward a more explicit registry (e.g. a `PAGES` dict mapping ids to render functions), but the current pattern already gives a single source of truth for navigation with guardrails against configuration drift.***
+Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

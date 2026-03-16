@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 references/SROI_Wales_Voluntary_Sector/output/alignment_heatmap.png filter=lfs diff=lfs merge=lfs -text
 references/SROI_Wales_Voluntary_Sector/output/framework_flow.png filter=lfs diff=lfs merge=lfs -text
 references/SROI_Wales_Voluntary_Sector/output/framework_flow_mermaid.png filter=lfs diff=lfs merge=lfs -text
@@ -20,3 +27,4 @@ references/SROI_Wales_Voluntary_Sector/docs/WCVA_FreePlane_MindMap.html_files/il
 references/SROI_Wales_Voluntary_Sector/docs/WCVA_FreePlane_MindMap.html_files/image.png filter=lfs diff=lfs merge=lfs -text
 references/SROI_Wales_Voluntary_Sector/docs/WCVA_FreePlane_MindMap.html_files/leaf.png filter=lfs diff=lfs merge=lfs -text
 references/SROI_Wales_Voluntary_Sector/docs/WCVA_FreePlane_MindMap.html_files/show.png filter=lfs diff=lfs merge=lfs -text
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

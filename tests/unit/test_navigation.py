@@ -1,13 +1,16 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 from __future__ import annotations
 
 import ast
 from pathlib import Path
 
-from src.navigation import (
-    NAV_ITEMS,
-    get_default_page,
-    get_nav_item_ids,
-)
+from src.navigation import NAV_ITEMS, get_default_page, get_nav_item_ids
 
 
 def test_nav_item_ids_are_unique() -> None:
@@ -78,3 +81,6 @@ def test_nav_items_have_labels_and_subtitles() -> None:
 def test_deployment_health_page_is_present_in_navigation() -> None:
     ids = get_nav_item_ids()
     assert "Deployment Health" in ids
+
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

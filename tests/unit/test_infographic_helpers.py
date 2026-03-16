@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 from __future__ import annotations
 
 from src.infographic import (
@@ -61,3 +68,6 @@ def test_build_metrics_basic_structure() -> None:
     assert demand_card["gauge_fill"] == 60.0
     assert "severity" in demand_card
     assert demand_card["trend_symbol"] in {"▲", "▼", "●"}
+
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

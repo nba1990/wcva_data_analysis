@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 .. API Reference
 
 API Reference
@@ -19,3 +26,4 @@ This section documents the main Python modules and packages. The dashboard entry
    sroi_figures
    infographic
    app
+Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

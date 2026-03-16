@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 # ADR-006 – CI and testing approach
 
 ## Context
@@ -33,3 +40,4 @@ We **do not** run Conda, Pylint, or legacy workflows; those were removed in favo
 - Coverage is produced as an artifact for optional inspection or future quality gates.
 - New contributors and future maintainers have a single workflow to read and one place to add new steps (e.g. another lint tool) without navigating multiple legacy configs.
 - Documentation (README, CONTRIBUTING, `docs/LEARNING_AND_BACKLOG.md`) references this workflow and the pytest marker so that the “why” is recorded alongside the code.
+Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

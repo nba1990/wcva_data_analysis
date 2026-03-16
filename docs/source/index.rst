@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 .. Baromedr Cymru Wave 2 Dashboard documentation master file
 
 Welcome to Baromedr Cymru Wave 2
@@ -22,6 +29,7 @@ Quick links
 * **Run the dashboard**: ``streamlit run src/app.py`` (see :doc:`getting_started`).
 * **Project layout**: ``src/app.py`` is the entry point; ``src/section_pages/`` holds each page; ``src/eda.py`` and ``src/data_loader.py`` are the analytical core (see :doc:`architecture`).
 * **Tests**: ``pytest -m "not e2e"`` for unit/integration tests; see :doc:`contributing`.
+* **Learning guides**: see ``docs/learning/`` in the repository for curated notes on runtime data, deployment, releases, and git hygiene using this codebase as the example.
 * **API reference**: :doc:`api/index` lists all documented modules and functions.
 
 Indices and tables
@@ -30,3 +38,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 # Social Return on Investment (SROI)
 ## The Voluntary Sector in Wales: A Comprehensive Evidence Briefing
 
@@ -542,7 +549,7 @@ The following timeline illustrates the phased delivery of the New Approach, from
 An analytically important tension emerges between various sourceds and the main SROI briefing. Some of the official statistics from either the ONS or Welsh Government cites **27-30% formal volunteering** in Wales, while the National Survey for Wales 2024–25 records **32% of people aged 16+ volunteering**. This gap, which may reflect different survey periods, question wording, or definitions of "formal" underscores a central theme: formal, organisational volunteering captured by conventional surveys tells only part of the story.[^38]
 
 > **Moreover, some researchers have argued that survey-based estimates of volunteering, often used in national statistics, may be sensitive to how volunteering is defined and interpreted by respondents. In the UK context, official statistics distinguish between formal volunteering (unpaid help given through groups, clubs or organisations) and informal volunteering (unpaid help given directly to individuals who are not relatives) (DCMS, 2025; NCVO, 2023).**
-> 
+>
 > **Because survey estimates depend on how respondents interpret these categories, researchers have highlighted challenges in consistently measuring voluntary activity, particularly where unpaid help falls outside organisational contexts (Low et al., 2007; Fox, 2019)**.
 >
 >**Activities such as unpaid care for family members are therefore typically excluded from standard definitions of volunteering. As a result, depending on how respondents interpret survey questions and classify their activities, some forms of unpaid contribution may be under-recorded, while others may be counted inconsistently.**
@@ -701,7 +708,7 @@ All figures cited from official sources are reproduced directly; where interpret
 
 34. [The Shared Prosperity and Levelling Up funds](https://research.senedd.wales/research-articles/the-shared-prosperity-and-levelling-up-funds-what-s-the-latest/)
 
-35. [Income sources - Financials | UK Civil Society Almanac 2024 - NCVO](https://www.ncvo.org.uk/news-and-insights/news-index/uk-civil-society-almanac-2024/financials/where-do-voluntary-organisations-get-their-income-from/) 
+35. [Income sources - Financials | UK Civil Society Almanac 2024 - NCVO](https://www.ncvo.org.uk/news-and-insights/news-index/uk-civil-society-almanac-2024/financials/where-do-voluntary-organisations-get-their-income-from/)
 
 36. [Almanac shows charity sector income rose to £69bn](https://www.civilsociety.co.uk/news/almanac-shows-charity-sector-income-rose-to-69bn-despite-government-funding-decline.html)
 
@@ -732,3 +739,4 @@ All figures cited from official sources are reproduced directly; where interpret
 49. [SROI Calculator](https://www.sopact.com/use-case/social-return-on-invesment-sroi)
 
 50. [Guide to SROI](https://www.executivecompass.co.uk/social-value-practice/resources/guide-to-measuring-social-return-on-investment-sroi/)
+Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

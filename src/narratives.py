@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 """
 Narrative text helpers for the Baromedr dashboard.
 
@@ -120,3 +127,6 @@ def recruitment_vs_retention_phrase(
         f"{comparison} retaining them "
         f"({rec_pct:.1f}% vs. {ret_pct:.1f}% reporting difficulty)."
     )
+
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

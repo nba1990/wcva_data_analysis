@@ -4,6 +4,13 @@
 #   docker compose up --build -d
 # Then open http://localhost:8501
 
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 services:
   dashboard:
     build:
@@ -16,9 +23,9 @@ services:
     environment:
       # Set to 1 (or true/yes) to show process memory in the sidebar
       - WCVA_DEBUG_MEMORY=${WCVA_DEBUG_MEMORY:-0}
-    # Optional: mount local datasets/references if you don't bake them into the image
+    # Optional: mount private runtime data and references instead of baking them in
     # volumes:
-    #   - ./datasets:/app/datasets:ro
+    #   - ./runtime-data:/app/runtime-data:ro
     #   - ./references:/app/references:ro
     restart: unless-stopped
     healthcheck:
@@ -27,3 +34,5 @@ services:
       timeout: 10s
       retries: 3
       start_period: 15s
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

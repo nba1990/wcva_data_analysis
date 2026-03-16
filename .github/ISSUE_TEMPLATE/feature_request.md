@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 ---
 name: Feature request
 about: Suggest a new feature or enhancement
@@ -25,3 +32,4 @@ Any other approaches you thought about.
 ## Additional context
 
 Links to ADRs, designs, or related issues if relevant.
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

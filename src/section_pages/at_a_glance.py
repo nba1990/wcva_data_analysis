@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 from __future__ import annotations
 
 import pandas as pd
@@ -353,3 +360,6 @@ def render_at_a_glance(df: pd.DataFrame, n: int, accessible_mode: bool) -> None:
     if nav_cols[3].button("Policy & outlook", use_container_width=True):
         st.session_state["current_page"] = "Earned Settlement"
         st.rerun()
+
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

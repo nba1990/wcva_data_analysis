@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 # Contributing to WCVA Baromedr Cymru Wave 2 Dashboard
 
 Thank you for your interest in contributing. This document explains how to set up your environment, run checks locally, and submit changes.
@@ -123,3 +130,4 @@ When adding new code, extend this standard: add a module docstring if you create
 - Keep `CHANGELOG.md` in Keep a Changelog style with a fresh `Unreleased` section after each release.
 
 If you have questions, open an issue or start a discussion through the repository.
+Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

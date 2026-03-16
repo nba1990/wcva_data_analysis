@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 # WCVA Baromedr Cymru Wave 2 Dashboard — Docker image
 # Build: docker build -t wcva-baromedr-dashboard .
 # Run:   docker run -p 8501:8501 wcva-baromedr-dashboard
@@ -36,3 +43,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health')" || exit 1
 
 CMD ["streamlit", "run", "src/app.py", "--server.port=8501"]
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

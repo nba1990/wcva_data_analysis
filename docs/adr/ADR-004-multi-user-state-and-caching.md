@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 # ADR-004 – Multi-user state and caching strategy
 
 ## Context
@@ -42,3 +49,4 @@ We adopted the following multi-user and caching strategy:
   - When adding new features, per-user settings should live in `st.session_state` (e.g. the per-session UI config instance from `get_app_ui_config()`).
   - New shared data loading or resource initialisation should use `st.cache_data` / `st.cache_resource` where appropriate.
 - Documentation (in `ARCHITECTURE.md` and this ADR) gives future contributors a reference for **safe vs unsafe** patterns in a multi-user Streamlit app, reducing the risk of inadvertent global state bugs.
+Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 from __future__ import annotations
 
 import pandas as pd
@@ -245,3 +252,6 @@ def render_workforce_and_operations(df: pd.DataFrame, n: int) -> None:
         "executive summary and cross-wave trends, while the concerns, actions, and shortage-impact charts "
         "mirror the detailed breakdowns on the **Concerns & Risks** page."
     )
+
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis
