@@ -14,11 +14,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [0.2.3] - 2026-03-16
+
 ### Added
 
 - `.streamlit/secrets.example.toml` and `docs/HISTORY_REWRITE_AND_STREAMLIT_SECRETS.md` to document private dataset handling, Streamlit Community Cloud secrets setup, and the full `git filter-repo` history-rewrite sequence.
 - `docs/learning/` curated guides and ADR-007 to capture runtime-data, deployment, release, and git-hygiene lessons using this repo as the concrete example.
 - `docs/learning/04_from_notebook_to_production.md`, a concrete walkthrough for taking a CSV + exploratory notebook and landing a new metric/page in this dashboard with tests, k-anonymity safeguards, and CI all in place.
+- `.readthedocs.yaml` plus a matching README note so the Sphinx documentation can be hosted directly on Read the Docs with a minimal public-repo setup.
 
 ### Changed
 
@@ -26,12 +31,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - The public local-authority context CSV now lives under `references/context/la_context_wales.csv` instead of `datasets/`.
 - The app now boots in explicit demo mode instead of failing hard when the private Wave dataset is missing, and `generate_presentation.py` now follows the same runtime-data policy.
 - `WCVA_OUTPUT_DIR` can override where generated presentation files are written, which helps in read-only or hosted environments.
+- Tooling and formatting are aligned more tightly across CI and pre-commit so local checks and hosted checks behave more consistently before release.
 
 ### Fixed
 
 - QA metrics test now skips cleanly when the private Wave 2 dataset is not configured locally, instead of accidentally running against demo/sample data.
 - Demo mode now uses a slightly larger but proportion-preserving fixture dataset so the default unfiltered view exercises the full dashboard without immediately triggering k-anonymity suppression, while preserving the original regression metrics.
 - Accessibility controls in the sidebar (text size and colour-blind-friendly palette) now use stable session keys so the first click reliably registers, and the controls are grouped with clearer labels and helper text.
+- Runtime dataset and context URLs are now redacted in user-facing diagnostics, deployment-health tables, demo-mode captions, and presentation/log output so secret-backed hosted deployments do not expose tokenised private links.
+- Runtime CSV load failures for URL-backed datasets now raise redacted error messages instead of risking the raw private URL appearing in exception output.
 
 ---
 

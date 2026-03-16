@@ -76,7 +76,7 @@ for module_name in [
 project = "Baromedr Cymru Wave 2 Dashboard"
 copyright = "Bharadwaj Raman"
 author = "Bharadwaj Raman - https://github.com/nba1990/"
-release = "0.2.2"
+release = "0.2.3"
 version = "0.2"
 
 extensions = [
