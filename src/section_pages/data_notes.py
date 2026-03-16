@@ -45,8 +45,7 @@ def render_data_notes(df: pd.DataFrame) -> None:
     st.divider()
 
     st.subheader("Methodology Notes")
-    st.markdown(
-        """
+    st.markdown("""
     - **Survey**: Baromedr Cymru Wave 2, conducted in collaboration with NTU VCSE Observatory
 
     - **Likert Scale**: A psychometric, often 5 or 7-point, survey rating system used to measure attitudes, opinions, and behaviors by gauging the level of agreement, frequency, or satisfaction. **Refer:** [Likert Scale](https://en.wikipedia.org/wiki/Likert_scale) for more information.
@@ -60,12 +59,10 @@ def render_data_notes(df: pd.DataFrame) -> None:
     - **Multi-select questions**: Presented in wide format (one column per option; non-null = selected)
 
     - **Privacy**: All data anonymised prior to analysis. Results suppressed when filtered sample < 5 organisations (k-anonymity)
-    """
-    )
+    """)
 
     st.subheader("Definitions of volunteering")
-    st.markdown(
-        """
+    st.markdown("""
     - **Volunteering vs unpaid caring**: This analysis follows the Baromedr definition of volunteering
       and does not treat unpaid caring roles (for family members, for example) as volunteering.
 
@@ -76,12 +73,10 @@ def render_data_notes(df: pd.DataFrame) -> None:
     - **Age ranges**: Headline figures from other sources about the share of people who volunteer often use specific
       age bands (for example 16–74 or 15–85). Under‑15s and very elderly volunteers may therefore be under-represented
       in population estimates, even if organisations rely on them in practice.
-    """
-    )
+    """)
 
     st.subheader("Caveats")
-    st.markdown(
-        """
+    st.markdown("""
     - **Self-selection bias**: Respondents chose to participate; findings may not represent all Welsh voluntary sector organisations
 
     - **Cardiff over-representation (raw counts)**: 23% of respondents are Cardiff-based; interpret geographic patterns with caution
@@ -93,12 +88,10 @@ def render_data_notes(df: pd.DataFrame) -> None:
     - **Wave 2 only**: Cross-wave trend analysis requires Wave 1 data (not included in this dataset)
 
     - **Ordinal data**: Likert-scale responses are ordinal, not interval. Median is more appropriate than mean
-    """
-    )
+    """)
 
     st.subheader("Estimated Number of VCSE Organisations in Wales")
-    st.markdown(
-        """
+    st.markdown("""
     - For the `est_vcse_orgs` column, it appeas to not be so simple to fully validate those numbers as official local-authority counts counts from an authoritative Wales-wide source.
 
     - There appears to be some good sector-level sources, but not a clean official table matching this column definition.
@@ -115,8 +108,7 @@ def render_data_notes(df: pd.DataFrame) -> None:
     - That sits neatly between the “registered charities only” count and the broader “all third sector organisations” count.
 
     - Therefore, `est_vcse_orgs` is only considered plausible as a modelled estimate, but not validated as an official observed count.
-    """
-    )
+    """)
 
 
 # Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

@@ -312,8 +312,7 @@ def render_executive_summary(df: pd.DataFrame, suppressed: bool) -> None:
     else:
         funding_vol_sentence = "Expenses coverage is widespread but financial signposting remains relatively rare."
 
-    st.markdown(
-        f"""
+    st.markdown(f"""
 1. **Invest in volunteering infrastructure** — Organisations are trying but getting low response. Centralised campaigns via TSSW/CVCs could boost reach.
 
 2. **Address the funding-volunteer gap** — {funding_vol_sentence} Signposting to cost-of-living support for volunteers is a retention lever.
@@ -323,19 +322,16 @@ def render_executive_summary(df: pd.DataFrame, suppressed: bool) -> None:
 4. **Prepare for earned settlement** — Sentiment is positive but capacity is low. Early guidance and resource allocation will determine whether this becomes an opportunity or a burden.
 
 5. **Monitor demand-capacity divergence** — Demand is rising, finances are flat or declining, and reserves are being depleted. Without intervention, service reductions will accelerate.
-"""
-    )
+""")
 
     st.subheader("Future analysis opportunities")
-    st.markdown(
-        """
+    st.markdown("""
 - **Segment by organisation type**: A deeper cut by main activity (e.g. environment vs health vs advice services)
   could show where pressures are most acute and where resilience is strongest.
 
 - **Link finance and recruitment challenges**: Exploring how financial strain, staffing levels, and investment in
   volunteer coordination interact would help target support more precisely.
-"""
-    )
+""")
 
 
 # Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

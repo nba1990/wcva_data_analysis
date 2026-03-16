@@ -39,4 +39,9 @@ ignore_missing_imports = true
 exclude = ["references/", "tests/e2e/"]
 # Gradual typing: allow existing patterns; tighten over time
 disable_error_code = ["no-any-return", "union-attr", "arg-type", "assignment", "return-value"]
+
+[[tool.mypy.overrides]]
+module = ["yaml"]
+ignore_missing_imports = true
+disable_error_code = ["import-untyped"]
 # Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

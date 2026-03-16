@@ -161,8 +161,10 @@ def profile_summary(df: pd.DataFrame) -> dict[str, Any]:
     )
     # Over/under-representation index (100 = proportional to population)
     la_merged["representation_index"] = (
-        la_merged["sample_share_pct"] / la_merged["pop_share_pct"]
-    ).replace([pd.NA, pd.NaT], 0.0)
+        (la_merged["sample_share_pct"] / la_merged["pop_share_pct"])
+        .replace([float("inf"), -float("inf")], 0.0)
+        .fillna(0.0)
+    )
 
     # Share of organisations reporting any volunteers.
     # We treat strictly positive volunteer counts as having volunteers.

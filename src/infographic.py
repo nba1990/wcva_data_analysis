@@ -314,8 +314,7 @@ def render_at_a_glance_infographic(
         coral = WCVA_BRAND["coral"]
         amber = WCVA_BRAND["amber"]
 
-    css = dedent(
-        f"""
+    css = dedent(f"""
         <style>
           .wcva-info-root {{
             width: 100%;
@@ -439,8 +438,7 @@ def render_at_a_glance_infographic(
             background: var(--wcva-gauge-colour, {teal});
           }}
         </style>
-        """
-    )
+        """)
 
     severity_phrases = {
         "positive": "Relatively positive",
@@ -455,8 +453,7 @@ def render_at_a_glance_infographic(
         vs_wave_line = (
             f'<div class="wcva-card-vs-wave">{vs_wave}</div>' if vs_wave else ""
         )
-        card_html_parts.append(
-            f"""
+        card_html_parts.append(f"""
             <div class="wcva-card {theme_class}">
               <div class="wcva-card-header">
                 <div class="wcva-card-icon" aria-hidden="true">{m.get("icon", "")}</div>
@@ -478,8 +475,7 @@ def render_at_a_glance_infographic(
                 {severity_phrases.get(m.get('severity', ''), '')}
               </div>
             </div>
-            """
-        )
+            """)
 
     html = f"""
     <div class="wcva-info-root">
