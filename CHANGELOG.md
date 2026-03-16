@@ -1,9 +1,8 @@
-# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/ 
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License v3.
-#
-# See the LICENSE file for details.
+<!--
+Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+SPDX-License-Identifier: AGPL-3.0-or-later
+See the LICENSE file for full licensing terms.
+-->
 
 # Changelog
 
@@ -93,4 +92,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Initial WCVA Baromedr Cymru Wave 2 dashboard (Streamlit, multi-page, filters, SROI references, k-anonymity suppression).
 - ADRs 001–004 (Streamlit, navigation, SROI charts, state and caching).
-Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis 

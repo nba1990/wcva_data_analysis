@@ -1,9 +1,8 @@
-# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/ 
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License v3.
-#
-# See the LICENSE file for details.
+<!--
+Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+SPDX-License-Identifier: AGPL-3.0-or-later
+See the LICENSE file for full licensing terms.
+-->
 
 # Docker and deployment guide
 
@@ -207,4 +206,3 @@ Streamlit’s own settings (e.g. `STREAMLIT_SERVER_*`) are set in the Dockerfile
 - **Permission errors**: if you use volume mounts, ensure the host directories are readable by the container user (UID 1000 in the Dockerfile).
 
 For more on the app’s architecture and configuration, see `ARCHITECTURE.md` and `README.md`.
-Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis 

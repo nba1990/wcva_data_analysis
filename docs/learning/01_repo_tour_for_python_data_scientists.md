@@ -1,3 +1,9 @@
+<!--
+Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+SPDX-License-Identifier: AGPL-3.0-or-later
+See the LICENSE file for full licensing terms.
+-->
+
 # Repo Tour for Python / Data-Science Developers
 
 This project is a good example of the step from "Python analysis code" to

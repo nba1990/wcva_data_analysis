@@ -1,9 +1,8 @@
-# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License v3.
-#
-# See the LICENSE file for details.
+<!--
+Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+SPDX-License-Identifier: AGPL-3.0-or-later
+See the LICENSE file for full licensing terms.
+-->
 
 # ADR-001 – Use Streamlit for the WCVA dashboard UI
 
@@ -37,5 +36,3 @@ We chose **Streamlit** as the primary UI framework because:
   - Using `st.session_state` and small configuration objects for per-user preferences.
   - Using `st.cache_data` / `st.cache_resource` for shared, read-only data and heavy resources.
 - Frontend customisation is constrained to what Streamlit supports via layout primitives, components, and limited CSS injection; fully bespoke UX would require more engineering or a different stack.
-
-Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

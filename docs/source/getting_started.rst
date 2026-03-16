@@ -1,9 +1,7 @@
-# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/ 
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License v3.
-#
-# See the LICENSE file for details.
+..
+   Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+   SPDX-License-Identifier: AGPL-3.0-or-later
+   See the LICENSE file for full licensing terms.
 
 Getting started
 ===============
@@ -70,4 +68,3 @@ To run the dashboard in a container:
    docker compose up --build
 
 See ``docs/DOCKER_AND_DEPLOYMENT.md`` in the repo for full Docker and self-hosting notes.
-Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis 

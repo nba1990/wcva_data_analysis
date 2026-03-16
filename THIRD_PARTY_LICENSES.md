@@ -1,12 +1,15 @@
+<!--
 Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+SPDX-License-Identifier: AGPL-3.0-or-later
+See the LICENSE file for full licensing terms.
+-->
 
-This project is licensed under the GNU Affero General Public License v3.0 (AGPLv3).
+# Third-Party Licenses
+
 It depends on a number of third-party libraries and tools, which are licensed under
 their own terms as summarised below. This document is a best-effort overview and
 does **not** replace the original license texts; always refer to the upstream
 projects for authoritative terms.
-
-Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis
 
 ## 1. Python runtime dependencies
 

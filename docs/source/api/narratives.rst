@@ -1,11 +1,7 @@
-# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License v3.
-#
-# See the LICENSE file for details.
-
-.. _api-narratives:
+..
+   Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+   SPDX-License-Identifier: AGPL-3.0-or-later
+   See the LICENSE file for full licensing terms.
 
 Narratives (narratives)
 =======================
@@ -14,4 +10,3 @@ Narratives (narratives)
    :members:
    :undoc-members:
    :show-inheritance:
-Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

@@ -1,3 +1,9 @@
+<!--
+Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+SPDX-License-Identifier: AGPL-3.0-or-later
+See the LICENSE file for full licensing terms.
+-->
+
 ## From Notebook to Production in This Repo
 
 This guide walks through a concrete path from **“I have a CSV and an exploratory notebook”** to **“I’ve shipped a new metric/page into this dashboard with tests, docs, and CI all green.”** It is written for a Python/data‑science developer who is comfortable in notebooks and wants a repeatable way to land changes in this codebase.

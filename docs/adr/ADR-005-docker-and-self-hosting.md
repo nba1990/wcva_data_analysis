@@ -1,9 +1,8 @@
-# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License v3.
-#
-# See the LICENSE file for details.
+<!--
+Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+SPDX-License-Identifier: AGPL-3.0-or-later
+See the LICENSE file for full licensing terms.
+-->
 
 # ADR-005 – Docker and self-hosting support
 
@@ -35,4 +34,3 @@ We do **not** change the app’s behaviour or configuration for Docker; the same
 - Hosted and self-hosted environments now fail more clearly when runtime data is missing, while still allowing demo-mode boot for smoke checks, docs builds, and first deploys.
 - Container image can be used on Kubernetes, Cloud Run, or similar platforms; deployment details are left to the operator.
 - Streamlit Community Cloud remains the primary managed option; Docker is an alternative for on-prem or custom cloud deployments.
-Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

@@ -1,3 +1,9 @@
+<!--
+Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+SPDX-License-Identifier: AGPL-3.0-or-later
+See the LICENSE file for full licensing terms.
+-->
+
 # History rewrite and Streamlit secrets runbook
 
 This project previously tracked private files under `datasets/`. Removing them from the current branch is **not enough**; the Git history, tags, and remote refs must be rewritten and force-pushed.

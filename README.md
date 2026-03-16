@@ -1,9 +1,8 @@
-# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/ 
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License v3.
-#
-# See the LICENSE file for details.
+<!--
+Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+SPDX-License-Identifier: AGPL-3.0-or-later
+See the LICENSE file for full licensing terms.
+-->
 
 # WCVA Baromedr Cymru – Wave 2 Dashboard
 
@@ -26,12 +25,12 @@ The dashboard is designed to:
 
 For a deeper architectural description, see `ARCHITECTURE.md`. For a short **developer tour** (how to read tests and docs) and **future dashboards/backlog**, see the end of `ARCHITECTURE.md` and `docs/LEARNING_AND_BACKLOG.md`. Policy-focused questions for WCVA teams are in `plans/policy_questions.md`.
 
-**New here? Picking this up again?**  
-(1) This README: what the project is, how to install and run.  
-(2) **`ARCHITECTURE.md`**: how the code is structured (app → data → charts → section pages).  
-(3) **`CONTRIBUTING.md`**: dev setup, tests, formatting, and doc/typing standards (§7).  
-(4) **`docs/LEARNING_AND_BACKLOG.md`**: backlog, testing strategy, coverage, safe/unsafe patterns.  
-(5) **`docs/learning/`**: curated "Python/data-science to app/deploy/git" guides grounded in this codebase.  
+**New here? Picking this up again?**
+(1) This README: what the project is, how to install and run.
+(2) **`ARCHITECTURE.md`**: how the code is structured (app → data → charts → section pages).
+(3) **`CONTRIBUTING.md`**: dev setup, tests, formatting, and doc/typing standards (§7).
+(4) **`docs/LEARNING_AND_BACKLOG.md`**: backlog, testing strategy, coverage, safe/unsafe patterns.
+(5) **`docs/learning/`**: curated "Python/data-science to app/deploy/git" guides grounded in this codebase.
 (6) **Sphinx docs** (see § Documentation below): single place for getting started, architecture, API reference. Build with `pip install -r docs/requirements-docs.txt` then `cd docs && make html`.
 
 ---
@@ -422,15 +421,14 @@ Full details: **`CONTRIBUTING.md`**.
 
 ## License and third-party notices
 
-- **Project license**: GNU Affero General General Public License v3.0 (AGPL v3.0).  
+- **Project license**: GNU Affero General General Public License v3.0 (AGPL v3.0).
   Permissions of this strongest copyleft license are conditioned on making available complete source code of licensed works and modifications, which include larger works using a licensed work, under the same license. Copyright and license notices must be preserved. Contributors provide an express grant of patent rights. When a modified version is used to provide a service over a network, the complete source code of the modified version must be made available.
 - **Third-party dependencies**: see `THIRD_PARTY_LICENSES.md` for a curated list of major libraries, tools, and their licenses.
-- **License headers**: most source, config, and documentation files include a standard AGPLv3 header and footer.
-- **Idempotent re-application**: run `python tools/apply_license_headers.py` from the repo root to (re)apply headers/footers to new files in an idempotent way.
+- **License notices**: source and config files use comment-based AGPLv3 notices, while Markdown files use a hidden metadata block to keep rendered docs clean.
+- **Idempotent re-application**: run `python tools/apply_license_headers.py` from the repo root to (re)apply the standard notices to tracked files.
 
 ---
 
 ## Maintainers
 
 - Project maintainers can be reached via the repository issue tracker or pull requests.
-Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 """
-Utility script to (re)apply standard AGPLv3 license headers and footers
-across the repository in an idempotent way.
+Utility script to (re)apply standard AGPLv3 license notices across the
+repository in an idempotent way.
 
 Usage (from repo root):
 
@@ -11,11 +11,13 @@ Usage (from repo root):
 The script:
 - Enumerates tracked files with `git ls-files`.
 - Skips obvious binary/data formats (images, PDFs, archives, large CSVs, etc.).
-- Inserts the standard copyright header and AGPLv3 footer:
+- Inserts the standard copyright notice:
   - As `#` comments for code/config files (.py, .sh, .yml, .toml, etc.).
-  - As plain text blocks for Markdown, RST, and other text docs.
+  - As a hidden HTML comment block for Markdown files.
+  - As a hidden comment block for reStructuredText files.
+  - As plain text for other text-only docs.
 - Preserves Python shebang lines by inserting the header immediately after.
-- Avoids duplicating the header/footer if they are already present.
+- Normalises older visible Markdown headers/footers into the current format.
 """
 
 from __future__ import annotations
@@ -25,13 +27,38 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-HEADER_LINES = [
+HASH_HEADER_LINES = [
     "# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/ ",
     "#",
     "# This program is free software: you can redistribute it and/or modify",
     "# it under the terms of the GNU Affero General Public License v3.",
     "#",
     "# See the LICENSE file for details.",
+    "",
+]
+
+MARKDOWN_HEADER_LINES = [
+    "<!--",
+    "Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/",
+    "SPDX-License-Identifier: AGPL-3.0-or-later",
+    "See the LICENSE file for full licensing terms.",
+    "-->",
+    "",
+]
+
+RST_HEADER_LINES = [
+    "..",
+    "   Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/",
+    "   SPDX-License-Identifier: AGPL-3.0-or-later",
+    "   See the LICENSE file for full licensing terms.",
+    "",
+]
+
+PLAIN_TEXT_HEADER_LINES = [
+    "Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/",
+    "",
+    "This project is licensed under the GNU Affero General Public License v3.0",
+    "(AGPLv3). See the LICENSE file for details.",
     "",
 ]
 
@@ -53,9 +80,8 @@ HASH_COMMENT_EXTS = {
     ".env",
 }
 
-# Plain-text/doc formats (header/footer inserted as-is).
+# Plain-text/doc formats.
 PLAIN_TEXT_EXTS = {
-    ".md",
     ".rst",
     "",
 }
@@ -109,7 +135,7 @@ def is_binary(path: Path) -> bool:
 
 
 def classify_file(rel_path: str, path: Path) -> str:
-    """Return 'hash', 'plain', 'bat', or 'skip' for the given file."""
+    """Return 'hash', 'markdown', 'rst', 'plain', 'bat', or 'skip' for the given file."""
     if path.name in SKIP_FILENAMES:
         return "skip"
     if is_binary(path):
@@ -123,6 +149,10 @@ def classify_file(rel_path: str, path: Path) -> str:
         return "hash"
     if ext in HASH_COMMENT_EXTS or rel_path.startswith("."):
         return "hash"
+    if ext == ".md":
+        return "markdown"
+    if ext == ".rst":
+        return "rst"
     if ext in PLAIN_TEXT_EXTS:
         return "plain"
 
@@ -131,10 +161,132 @@ def classify_file(rel_path: str, path: Path) -> str:
 
 
 def has_license_markers(lines: list[str]) -> bool:
-    """Check whether both header and footer markers already exist."""
-    has_header = any("Copyright (C) 2026 - Bharadwaj Raman" in line for line in lines)
-    has_footer = any("Source code available under AGPLv3" in line for line in lines)
-    return has_header and has_footer
+    """Check whether a recognizable license notice already exists."""
+    return any("Copyright (C) 2026 - Bharadwaj Raman" in line for line in lines) or any(
+        "SPDX-License-Identifier: AGPL-3.0-or-later" in line for line in lines
+    )
+
+
+def strip_legacy_markdown_license(text: str) -> str:
+    """Remove older visible Markdown license text before reapplying."""
+    lines = text.splitlines()
+    start = 0
+
+    legacy_prefixes = {
+        "# Copyright (C) 2026 - Bharadwaj Raman",
+        "Copyright (C) 2026 - Bharadwaj Raman",
+        "# This program is free software",
+        "This project is licensed under the GNU Affero General Public License",
+        "# it under the terms of the GNU Affero General Public License v3.",
+        "# See the LICENSE file for details.",
+        "SPDX-License-Identifier: AGPL-3.0-or-later",
+        "See the LICENSE file for full licensing terms.",
+    }
+    legacy_exact_lines = {"#", "<!--", "-->"}
+
+    while start < len(lines):
+        line = lines[start].strip()
+        if not line:
+            start += 1
+            continue
+        if line in legacy_exact_lines:
+            start += 1
+            continue
+        if any(line.startswith(prefix) for prefix in legacy_prefixes):
+            start += 1
+            continue
+        break
+
+    end = len(lines)
+    while end > start and not lines[end - 1].strip():
+        end -= 1
+
+    if end > start and lines[end - 1].strip().startswith(
+        "Source code available under AGPLv3"
+    ):
+        end -= 1
+
+    while end > start and not lines[end - 1].strip():
+        end -= 1
+
+    cleaned_lines = lines[start:end]
+    if not cleaned_lines:
+        return ""
+    return "\n".join(cleaned_lines) + "\n"
+
+
+def strip_legacy_rst_license(text: str) -> str:
+    """Remove older visible RST license text before reapplying."""
+    lines = text.splitlines()
+    start = 0
+
+    legacy_prefixes = {
+        "# Copyright (C) 2026 - Bharadwaj Raman",
+        "Copyright (C) 2026 - Bharadwaj Raman",
+        "# This program is free software",
+        "This project is licensed under the GNU Affero General Public License",
+        "# it under the terms of the GNU Affero General Public License v3.",
+        "# See the LICENSE file for details.",
+        "SPDX-License-Identifier: AGPL-3.0-or-later",
+        "See the LICENSE file for full licensing terms.",
+        "..",
+        "Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/",
+    }
+    legacy_exact_lines = {"#"}
+
+    while start < len(lines):
+        line = lines[start].strip()
+        if not line:
+            start += 1
+            continue
+        if line in legacy_exact_lines:
+            start += 1
+            continue
+        if line.startswith("Source code available under AGPLv3"):
+            start += 1
+            continue
+        if any(line.startswith(prefix) for prefix in legacy_prefixes):
+            start += 1
+            continue
+        break
+
+    end = len(lines)
+    while end > start and not lines[end - 1].strip():
+        end -= 1
+
+    if end > start and lines[end - 1].strip().startswith(
+        "Source code available under AGPLv3"
+    ):
+        end -= 1
+
+    while end > start and not lines[end - 1].strip():
+        end -= 1
+
+    cleaned_lines = lines[start:end]
+    if not cleaned_lines:
+        return ""
+    return "\n".join(cleaned_lines) + "\n"
+
+
+def build_header_lines(mode: str) -> list[str]:
+    """Return the header block for the given file mode."""
+    if mode == "hash":
+        return HASH_HEADER_LINES.copy()
+    if mode == "bat":
+        result: list[str] = []
+        for line in HASH_HEADER_LINES:
+            if line.startswith("# "):
+                result.append("REM " + line[2:])
+            elif line == "#":
+                result.append("REM")
+            else:
+                result.append(line)
+        return result
+    if mode == "markdown":
+        return MARKDOWN_HEADER_LINES.copy()
+    if mode == "rst":
+        return RST_HEADER_LINES.copy()
+    return PLAIN_TEXT_HEADER_LINES.copy()
 
 
 def apply_to_file(rel_path: str) -> None:
@@ -150,6 +302,11 @@ def apply_to_file(rel_path: str) -> None:
         text = path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         return
+
+    if mode == "markdown":
+        text = strip_legacy_markdown_license(text)
+    elif mode == "rst":
+        text = strip_legacy_rst_license(text)
 
     lines = text.splitlines()
     if has_license_markers(lines):
@@ -170,23 +327,7 @@ def apply_to_file(rel_path: str) -> None:
         new_lines.extend(shebang_lines)
 
     # Header.
-    if mode == "hash":
-        # Use hash comments for header/footer.
-        for hl in HEADER_LINES:
-            if hl:
-                new_lines.append(hl)
-            else:
-                new_lines.append("")
-    elif mode == "bat":
-        for hl in HEADER_LINES:
-            if hl.startswith("# "):
-                new_lines.append("REM " + hl[2:])
-            elif hl == "#":
-                new_lines.append("REM")
-            else:
-                new_lines.append(hl)
-    else:  # "plain"
-        new_lines.extend(HEADER_LINES)
+    new_lines.extend(build_header_lines(mode))
 
     # Rest of file (skip any shebang lines already copied).
     if shebang_lines:
@@ -194,8 +335,10 @@ def apply_to_file(rel_path: str) -> None:
     else:
         new_lines.extend(lines)
 
-    # Footer (skip if already present in the new lines).
-    if not any("Source code available under AGPLv3" in line for line in new_lines):
+    # Footer (skip Markdown so docs stay visually clean).
+    if mode not in {"markdown", "rst"} and not any(
+        "Source code available under AGPLv3" in line for line in new_lines
+    ):
         if mode == "hash":
             new_lines.append(f"# {FOOTER_LINE}")
         elif mode == "bat":

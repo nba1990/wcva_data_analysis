@@ -1,9 +1,7 @@
-# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License v3.
-#
-# See the LICENSE file for details.
+..
+   Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+   SPDX-License-Identifier: AGPL-3.0-or-later
+   See the LICENSE file for full licensing terms.
 
 Contributing
 =============
@@ -39,4 +37,3 @@ Where to look
 * **Adding a page**: README “SROI & References” and ARCHITECTURE “Where to look when extending the app”.
 * **Testing strategy**: ``docs/LEARNING_AND_BACKLOG.md`` §3.
 * **Backlog and policy**: ``docs/LEARNING_AND_BACKLOG.md``, ``plans/policy_questions.md``.
-Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

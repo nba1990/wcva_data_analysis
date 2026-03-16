@@ -1,9 +1,8 @@
-# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License v3.
-#
-# See the LICENSE file for details.
+<!--
+Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+SPDX-License-Identifier: AGPL-3.0-or-later
+See the LICENSE file for full licensing terms.
+-->
 
 # ADR-003 – SROI evidence integration and chart separation
 
@@ -50,4 +49,3 @@ We created a dedicated SROI visualisation module, `src/sroi_charts/sroi_figures.
   - Changing `palette_mode` changes colours.
   - Increasing `text_scale` increases font sizes in the layout.
 - The Mermaid-based framework flow diagram was replaced by a Plotly-based implementation for SVG outputs (while retaining a Mermaid PNG flow where helpful), avoiding brittle SVG post-processing and ensuring consistent text rendering across viewers. This decision slightly increases the amount of plotting code but substantially improves robustness and testability.***
-Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

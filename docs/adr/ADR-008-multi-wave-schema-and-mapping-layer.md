@@ -1,3 +1,9 @@
+<!--
+Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+SPDX-License-Identifier: AGPL-3.0-or-later
+See the LICENSE file for full licensing terms.
+-->
+
 # ADR-008: Multi-wave schema and mapping layer
 
 - Status: Proposed
@@ -159,4 +165,3 @@ Introduce a **per-wave schema and mapping layer** backed by small configuration 
    - `docs/LEARNING_AND_BACKLOG.md` (multi-wave section),
    - `docs/learning/04_from_notebook_to_production.md` (“add a new wave” subsections).
 5. When a real Wave 3 dataset is available, add its schema file and extend `build_wave_registry_from_current_data` to include it.
-

@@ -1,9 +1,8 @@
-# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/ 
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License v3.
-#
-# See the LICENSE file for details.
+<!--
+Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+SPDX-License-Identifier: AGPL-3.0-or-later
+See the LICENSE file for full licensing terms.
+-->
 
 # Learning and Backlog
 
@@ -17,13 +16,13 @@ These items were identified during architecture and testing work; they are **not
 
 ### 1.1 Technology exploration
 
-- **PyGWalker / YData Profiling**  
+- **PyGWalker / YData Profiling**
   Evaluate for rapid EDA inside the dashboard (e.g. a separate “EDA playground” page for internal use). Would allow interactive exploration of columns and distributions without writing custom Streamlit widgets.
 
-- **DuckDB**  
+- **DuckDB**
   Assess whether DuckDB would simplify heavy analytical queries (e.g. aggregations over large slices, cross-wave joins) currently implemented in Pandas. Could reduce memory use and speed up some filters.
 
-- **PyDeck**  
+- **PyDeck**
   Consider a small geospatial view if geographic data (local authorities, regions) becomes central to a story—e.g. overlay Baromedr results on a Wales map.
 
 ### 1.2 Future dashboards (portfolio-style)
@@ -109,4 +108,3 @@ into the curated guides or the main docs instead of copying them verbatim.
 - **Unsafe**: Mutable module-level globals updated per request; open connections/cursors in globals without a clear lifecycle.
 
 See ADR-004 and the “Multi‑user and session model” section in `ARCHITECTURE.md` for full detail.
-Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis 

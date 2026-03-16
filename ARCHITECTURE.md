@@ -1,9 +1,8 @@
-# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/ 
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License v3.
-#
-# See the LICENSE file for details.
+<!--
+Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+SPDX-License-Identifier: AGPL-3.0-or-later
+See the LICENSE file for full licensing terms.
+-->
 
 # WCVA Baromedr Wave 2 – Architecture Overview
 
@@ -230,16 +229,16 @@ A short “tour” for maintainers and new developers: where to look first and h
 
 ### 9.1 Tests – what they guard
 
-- **`tests/unit/test_navigation.py`**  
+- **`tests/unit/test_navigation.py`**
   Ensures every sidebar page is wired: `NAV_ITEMS` IDs are unique and each ID is handled in the `app.py` dispatch block. Add a new page → add a `NavItem` and an `elif page == "new_id"` (or equivalent) and the test continues to pass.
 
-- **`tests/unit/test_sroi_figures.py`**  
+- **`tests/unit/test_sroi_figures.py`**
   Covers all SROI chart factories: each returns a `go.Figure` with a non‑empty title, and `palette_mode` / `text_scale` change colours and font sizes. Uses `fig.to_dict()` to read layout and trace data (including `colorscale` for heatmaps).
 
-- **`tests/unit/test_metrics_executive_overview.py`**  
+- **`tests/unit/test_metrics_executive_overview.py`**
   Regression guard for Overview/Executive metrics. Loads `tests/fixtures/wcva_sample_dataset.csv` via `load_dataset()` (so derived columns exist), then runs `demand_and_outlook`, `workforce_operations`, and `profile_summary` and asserts fixed percentages (e.g. demand increased, financial deteriorated, has_volunteers_pct). If you change EDA logic or the fixture, update the expected values or the fixture so the test still reflects the intended behaviour.
 
-- **`tests/fixtures/wcva_sample_dataset.csv`**  
+- **`tests/fixtures/wcva_sample_dataset.csv`**
   Small CSV with **raw** questionnaire columns (`demand`, `financial`, `shortage_staff_rec`, etc.) so that `load_dataset()` can run `_clean` and `_derive_columns` and produce the same derived columns the app uses. Keep this in sync with `data_loader` and `eda` column expectations.
 
 ### 9.2 Docs – where to read
@@ -268,4 +267,3 @@ When adding a **new evidence‑style or narrative page** (like the SROI page), r
 3. Use `st.components.v1.html` for embedded HTML (e.g. Markmap) if needed; keep assets under `references/` or a dedicated docs folder.
 
 Technology explorations (PyGWalker, YData Profiling, DuckDB, PyDeck) are summarised in `docs/LEARNING_AND_BACKLOG.md`.
-Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis 
