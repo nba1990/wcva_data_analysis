@@ -34,6 +34,7 @@ from src.config import (
     MULTI_SELECT_GROUPS,
     PROJECT_ROOT,
     RuntimeDataSource,
+    mask_runtime_value,
     resolve_dataset_source,
     resolve_la_context_source,
 )
@@ -42,7 +43,12 @@ from src.config import (
 def _read_csv_from_source(source: RuntimeDataSource) -> pd.DataFrame:
     """Read a CSV from a resolved runtime source."""
     if source.is_url:
-        return pd.read_csv(source.value)
+        try:
+            return pd.read_csv(source.value)
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to read CSV from {mask_runtime_value(source.value)}."
+            ) from exc
     return pd.read_csv(Path(source.value))
 
 
@@ -122,7 +128,7 @@ def check_runtime_assets(
             is_url=bool(dataset_url),
             attempted=(
                 (
-                    f"explicit_url -> {dataset_url}"
+                    f"explicit_url -> {mask_runtime_value(dataset_url)}"
                     if dataset_url
                     else f"explicit_path -> {dataset_path}"
                 ),
@@ -140,7 +146,7 @@ def check_runtime_assets(
             is_url=bool(la_context_url),
             attempted=(
                 (
-                    f"explicit_url -> {la_context_url}"
+                    f"explicit_url -> {mask_runtime_value(la_context_url)}"
                     if la_context_url
                     else f"explicit_path -> {la_context_path}"
                 ),
@@ -162,7 +168,7 @@ def check_runtime_assets(
     required_assets = [
         {
             "label": "Wave 2 dataset source",
-            "path": dataset_source.value,
+            "path": mask_runtime_value(dataset_source.value),
             "exists": dataset_source.exists,
             "kind": "required",
             "source_type": dataset_source.source_type,
@@ -179,7 +185,7 @@ def check_runtime_assets(
     optional_assets = [
         {
             "label": "Local authority context CSV",
-            "path": la_context_source.value,
+            "path": mask_runtime_value(la_context_source.value),
             "exists": la_context_source.exists,
             "kind": "optional",
             "source_type": la_context_source.source_type,

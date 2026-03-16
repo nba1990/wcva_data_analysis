@@ -14,6 +14,8 @@ from typing import Any
 import pandas as pd
 import streamlit as st
 
+from src.config import display_runtime_source, mask_runtime_value
+
 
 def render_deployment_health(
     asset_report: dict[str, Any],
@@ -74,7 +76,7 @@ def render_deployment_health(
                     "source": "Wave dataset",
                     "mode": "demo" if dataset_source.is_demo else "real",
                     "type": dataset_source.source_type,
-                    "value": dataset_source.value,
+                    "value": display_runtime_source(dataset_source),
                 }
             )
         if la_context_source is not None:
@@ -83,7 +85,7 @@ def render_deployment_health(
                     "source": "Local-authority context",
                     "mode": "public/override",
                     "type": la_context_source.source_type,
-                    "value": la_context_source.value,
+                    "value": display_runtime_source(la_context_source),
                 }
             )
         st.dataframe(pd.DataFrame(source_rows), width="stretch", hide_index=True)
@@ -91,22 +93,24 @@ def render_deployment_health(
     if dataset_source is not None:
         with st.expander("Dataset source resolution attempts"):
             for item in dataset_source.attempted:
-                st.write(f"- {item}")
+                st.write(f"- {mask_runtime_value(item)}")
 
     if la_context_source is not None:
         with st.expander("Local-authority context resolution attempts"):
             for item in la_context_source.attempted:
-                st.write(f"- {item}")
+                st.write(f"- {mask_runtime_value(item)}")
 
     st.subheader("Required Files")
     required_view = required.assign(
-        status=required["exists"].map(lambda ok: "OK" if ok else "Missing")
+        status=required["exists"].map(lambda ok: "OK" if ok else "Missing"),
+        path=required["path"].map(mask_runtime_value),
     )[["label", "status", "path", "source_type", "mode"]]
     st.dataframe(required_view, width="stretch", hide_index=True)
 
     st.subheader("Optional Files")
     optional_view = optional.assign(
-        status=optional["exists"].map(lambda ok: "OK" if ok else "Missing")
+        status=optional["exists"].map(lambda ok: "OK" if ok else "Missing"),
+        path=optional["path"].map(mask_runtime_value),
     )[["label", "status", "path", "source_type"]]
     st.dataframe(optional_view, width="stretch", hide_index=True)
 

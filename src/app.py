@@ -29,6 +29,7 @@ from src.config import (
     K_ANON_THRESHOLD,
     ORG_SIZE_ORDER,
     RuntimeDataSource,
+    display_runtime_source,
     get_app_ui_config,
 )
 from src.data_loader import check_runtime_assets, load_dataset
@@ -86,7 +87,7 @@ if is_demo_mode:
         "figures as demonstration outputs only."
     )
     st.caption(
-        f"Resolved dataset source: `{dataset_source.value}` "
+        f"Resolved dataset source: `{display_runtime_source(dataset_source)}` "
         f"({dataset_source.source_type})."
     )
 elif asset_report["missing_required"]:

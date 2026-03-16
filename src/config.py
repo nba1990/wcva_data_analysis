@@ -20,6 +20,7 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Iterable, Literal, TypeVar
+from urllib.parse import urlsplit, urlunsplit
 
 import pandas as pd
 import streamlit as st
@@ -139,7 +140,45 @@ def _get_runtime_setting(env_name: str, secret_key: str) -> str | None:
 
 def _candidate_description(label: str, value: str) -> str:
     """Format a source candidate for diagnostics."""
-    return f"{label} -> {value}"
+    return f"{label} -> {mask_runtime_value(value)}"
+
+
+def mask_runtime_value(value: str) -> str:
+    """Mask sensitive runtime locations for safe display in UI and logs.
+
+    Local filesystem paths are returned unchanged. HTTP(S) URLs are reduced to
+    their host plus a redacted path/query so shared-link tokens are not exposed.
+    """
+    stripped = str(value).strip()
+    if not stripped:
+        return stripped
+
+    parsed = urlsplit(stripped)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return stripped
+
+    segments = [segment for segment in parsed.path.split("/") if segment]
+    if not segments:
+        masked_path = "/[redacted]"
+    elif len(segments) == 1:
+        masked_path = "/[redacted]"
+    else:
+        masked_path = f"/{segments[0]}/[redacted]/{segments[-1]}"
+
+    return urlunsplit(
+        (
+            parsed.scheme,
+            parsed.netloc,
+            masked_path,
+            "[redacted]" if parsed.query else "",
+            "[redacted]" if parsed.fragment else "",
+        )
+    )
+
+
+def display_runtime_source(source: RuntimeDataSource) -> str:
+    """Return a redacted display value for a runtime source."""
+    return mask_runtime_value(source.value)
 
 
 def get_demo_output_mode() -> str:

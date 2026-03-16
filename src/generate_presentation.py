@@ -41,6 +41,7 @@ from src.config import (
     WCVA_BRAND,
     AltTextConfig,
     get_demo_output_mode,
+    mask_runtime_value,
     resolve_grouping,
 )
 from src.data_loader import load_dataset
@@ -85,12 +86,13 @@ def _apply_demo_mode_to_slides(slides: list[dict], dataset_source_value: str) ->
     if not slides:
         return
 
+    display_source = mask_runtime_value(dataset_source_value)
     slides[0]["title"] = "Baromedr Cymru Wave 2 — DEMO / SAMPLE DATA"
     slides[0]["subtitle"] = "Demonstration deck using the bundled sample dataset"
     slides[0]["body"] = (
         "<p><strong>Demo mode:</strong> the private Wave dataset was not available at "
         "runtime, so this presentation was generated from the bundled sample fixture.</p>"
-        f"<p>Resolved dataset source: <code>{escape(dataset_source_value)}</code></p>"
+        f"<p>Resolved dataset source: <code>{escape(display_source)}</code></p>"
         + slides[0]["body"]
     )
     slides[-1]["body"] = (
@@ -1082,11 +1084,11 @@ def main():
     if is_demo_mode:
         print(
             "Demo mode: private dataset not available, using bundled sample fixture "
-            f"from {dataset_source.value}."
+            f"from {mask_runtime_value(dataset_source.value)}."
         )
     else:
         print(
-            f"Using runtime dataset source: {dataset_source.value} "
+            f"Using runtime dataset source: {mask_runtime_value(dataset_source.value)} "
             f"({dataset_source.source_type})."
         )
     print(f"Building slides for {len(df)} organisations...")

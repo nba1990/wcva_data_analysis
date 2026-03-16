@@ -18,12 +18,14 @@ from src.config import (
     WCVA_BRAND,
     AltTextConfig,
     contrast_ratio,
+    display_runtime_source,
     format_group_summary,
     get_demo_output_mode,
     get_likert_colours,
     get_palette,
     make_pattern_grouper,
     make_stacked_bar_alt,
+    mask_runtime_value,
     normalise_label,
     resolve_dataset_source,
     resolve_grouping,
@@ -197,6 +199,32 @@ def test_resolve_la_context_source_defaults_to_public_reference(monkeypatch) -> 
     assert source.source_type == "default_path"
     assert source.is_demo is False
     assert source.exists is True
+
+
+def test_mask_runtime_value_redacts_http_urls() -> None:
+    url = "https://nextclouds.example.com/s/ASJDKJAHSDKJASKJDHSAD/download"
+
+    masked = mask_runtime_value(url)
+
+    assert masked == "https://nextclouds.example.com/s/[redacted]/download"
+    assert "ASJDKJAHSDKJASKJDHSAD" not in masked
+
+
+def test_display_runtime_source_keeps_paths_but_masks_urls(monkeypatch) -> None:
+    monkeypatch.setenv(
+        "WCVA_DATASET_URL",
+        "https://nextclouds.example.com/s/ASJDKJAHSDKJASKJDHSAD/download",
+    )
+
+    source = resolve_dataset_source()
+
+    assert display_runtime_source(source) == (
+        "https://nextclouds.example.com/s/[redacted]/download"
+    )
+    assert source.attempted == (
+        "env:WCVA_DATASET_URL -> "
+        "https://nextclouds.example.com/s/[redacted]/download",
+    )
 
 
 def test_get_demo_output_mode_defaults_to_separate_outputs(monkeypatch) -> None:

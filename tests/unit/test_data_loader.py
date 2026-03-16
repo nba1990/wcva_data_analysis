@@ -194,7 +194,36 @@ def test_check_runtime_assets_accepts_dataset_url_without_local_file(tmp_path) -
 
     assert result["all_required_present"] is True
     assert result["missing_required"] == []
-    assert result["required"][0]["path"] == "https://example.invalid/wcva.csv"
+    assert result["required"][0]["path"] == "https://example.invalid/[redacted]"
+
+
+def test_read_csv_from_private_url_redacts_runtime_error(monkeypatch) -> None:
+    import pandas as pd
+
+    from src.config import RuntimeDataSource
+    from src.data_loader import _read_csv_from_source
+
+    def _boom(*args, **kwargs):
+        raise ValueError("simulated failure")
+
+    monkeypatch.setattr(pd, "read_csv", _boom)
+
+    source = RuntimeDataSource(
+        label="Wave dataset",
+        value="https://nextclouds.example.com/s/ASJDKJAHSDKJASKJDHSAD/download",
+        source_type="env_url",
+        exists=True,
+        is_url=True,
+    )
+
+    try:
+        _read_csv_from_source(source)
+    except RuntimeError as exc:
+        message = str(exc)
+        assert "nextclouds.example.com" in message
+        assert "ASJDKJAHSDKJASKJDHSAD" not in message
+    else:
+        raise AssertionError("Expected RuntimeError for invalid URL test source")
 
 
 def test_check_runtime_assets_marks_demo_mode_for_sample_fixture(
