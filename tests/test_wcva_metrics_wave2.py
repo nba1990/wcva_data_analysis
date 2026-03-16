@@ -1,4 +1,13 @@
-from src.data_loader import load_dataset
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
+import pytest
+
+from src.data_loader import check_runtime_assets, load_dataset
 from src.eda import (
     demand_and_outlook,
     finance_recruitment_cross,
@@ -17,6 +26,16 @@ def test_wave2_headline_metrics_match_qa_expectations() -> None:
     and slide deck, so this test acts as a guard-rail against accidental
     changes in calculation logic or denominators.
     """
+    asset_report = check_runtime_assets()
+    if (
+        not asset_report["required"][0]["exists"]
+        or asset_report.get("app_mode") == "demo"
+    ):
+        pytest.skip(
+            "Requires the private Wave 2 dataset. Configure WCVA_DATASET_PATH / "
+            "WCVA_DATASET_URL or add an untracked local copy for this check."
+        )
+
     df = load_dataset()
     dem = demand_and_outlook(df)
     rec = volunteer_recruitment_analysis(df)
@@ -55,3 +74,6 @@ def test_wave2_headline_metrics_match_qa_expectations() -> None:
     assert cross["pct_rec_difficulty_if_finance_not_deteriorated"] == 48.5
     assert cross["n_finance_deteriorated"] == 39
     assert cross["n_finance_not_deteriorated"] == 72
+
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

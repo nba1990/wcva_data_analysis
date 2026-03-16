@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 """
 WCVA-branded Plotly chart generators for the Baromedr dashboard.
 
@@ -135,6 +142,19 @@ def horizontal_bar_ranked(
     fig.update_xaxes(
         showgrid=True, gridcolor=CHART_GRID, zeroline=False, showticklabels=False
     )
+
+    if data.empty:
+        fig.add_annotation(
+            text="No data available for this view",
+            xref="paper",
+            yref="paper",
+            x=0.5,
+            y=0.5,
+            showarrow=False,
+            font=dict(size=14, color=WCVA_BRAND["mid_grey"]),
+        )
+        alt = f"Bar chart: {title}. No ranked items available for this view. Based on {n} organisations."
+        return _set_alt_text(fig, alt)
 
     alt = f"Bar chart: {title}. Top item: {data.iloc[0][label_col]} ({data.iloc[0][value_col]}). Based on {n} organisations."
     return _set_alt_text(fig, alt)
@@ -651,3 +671,6 @@ def wave_trend_line(
         f"Waves and respondent counts: {wave_summaries}."
     )
     return _set_alt_text(fig, alt)
+
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/ 
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 # Changelog
 
 All notable changes to this project are documented in this file.
@@ -10,9 +17,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `.streamlit/secrets.example.toml` and `docs/HISTORY_REWRITE_AND_STREAMLIT_SECRETS.md` to document private dataset handling, Streamlit Community Cloud secrets setup, and the full `git filter-repo` history-rewrite sequence.
+- `docs/learning/` curated guides and ADR-007 to capture runtime-data, deployment, release, and git-hygiene lessons using this repo as the concrete example.
+- `docs/learning/04_from_notebook_to_production.md`, a concrete walkthrough for taking a CSV + exploratory notebook and landing a new metric/page in this dashboard with tests, k-anonymity safeguards, and CI all in place.
+
 ### Changed
 
+- Runtime data loading now supports secret- or environment-configured dataset paths and URLs, local private fallbacks, and explicit demo-mode fallback to the bundled sample fixture when the real dataset is unavailable.
+- The public local-authority context CSV now lives under `references/context/la_context_wales.csv` instead of `datasets/`.
+- The app now boots in explicit demo mode instead of failing hard when the private Wave dataset is missing, and `generate_presentation.py` now follows the same runtime-data policy.
+- `WCVA_OUTPUT_DIR` can override where generated presentation files are written, which helps in read-only or hosted environments.
+
 ### Fixed
+
+- QA metrics test now skips cleanly when the private Wave 2 dataset is not configured locally, instead of accidentally running against demo/sample data.
+- Demo mode now uses a slightly larger but proportion-preserving fixture dataset so the default unfiltered view exercises the full dashboard without immediately triggering k-anonymity suppression, while preserving the original regression metrics.
+- Accessibility controls in the sidebar (text size and colour-blind-friendly palette) now use stable session keys so the first click reliably registers, and the controls are grouped with clearer labels and helper text.
 
 ---
 
@@ -73,3 +93,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Initial WCVA Baromedr Cymru Wave 2 dashboard (Streamlit, multi-page, filters, SROI references, k-anonymity suppression).
 - ADRs 001–004 (Streamlit, navigation, SROI charts, state and caching).
+Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis 

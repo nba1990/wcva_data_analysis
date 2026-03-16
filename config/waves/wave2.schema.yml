@@ -1,0 +1,83 @@
+meta:
+  wave_label: "Wave 2"
+  wave_number: 2
+
+columns:
+  demand:
+    column: "demand"
+    type: "likert"
+    order:
+      - "Increased a lot"
+      - "Increased a little"
+      - "Stayed the same"
+      - "Decreased a little"
+      - "Decreased a lot"
+      - "Don't know"
+
+  financial_position:
+    column: "financial"
+    type: "likert"
+    order:
+      - "Improved a lot"
+      - "Improved a little"
+      - "Stayed the same"
+      - "Deteriorated a little"
+      - "Deteriorated a lot"
+      - "Don't know"
+
+  operating_likelihood:
+    column: "operating"
+    type: "likert"
+    likely_values:
+      - "Very likely"
+      - "Quite likely"
+
+metrics:
+  demand_increase:
+    from: "demand_direction"
+    type: "share_eq"
+    value: "Increased"
+
+  finance_deteriorated_costs:
+    from: "financedeteriorate"
+    type: "share_eq"
+    value: "Yes"
+
+  operating_likely:
+    from: "operating"
+    type: "share_in"
+    values:
+      - "Very likely"
+      - "Quite likely"
+
+  has_reserves:
+    from: "reserves"
+    type: "share_eq"
+    value: "Yes"
+
+  using_reserves:
+    type: "conditional_share"
+    condition:
+      column: "reserves"
+      equals: "Yes"
+    numerator:
+      column: "usingreserves"
+      equals: "Yes"
+
+  has_volunteers:
+    from: "peoplevol"
+    type: "share_gt"
+    threshold: 0
+
+  has_paid_staff:
+    from: "paidworkforce"
+    type: "share_eq"
+    value: "Yes"
+
+  too_few_volunteers:
+    from: "volobjectives"
+    type: "share_in"
+    values:
+      - "Slightly too few volunteers"
+      - "Significantly too few volunteers"
+

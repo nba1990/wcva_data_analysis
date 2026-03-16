@@ -1,4 +1,18 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/ 
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 # WCVA Baromedr Cymru – Wave 2 Dashboard
+
+[![CI](https://github.com/nba1990/wcva_data_analysis/actions/workflows/ci.yml/badge.svg)](https://github.com/nba1990/wcva_data_analysis/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)](https://github.com/nba1990/wcva_data_analysis)
+[![Issues](https://img.shields.io/github/issues/nba1990/wcva_data_analysis.svg)](https://github.com/nba1990/wcva_data_analysis/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/nba1990/wcva_data_analysis.svg)](https://github.com/nba1990/wcva_data_analysis/pulls)
+[![Release](https://img.shields.io/github/v/release/nba1990/wcva_data_analysis.svg)](https://github.com/nba1990/wcva_data_analysis/releases)
+[![Live demo](https://img.shields.io/badge/Streamlit-live%20demo-brightgreen.svg)](https://baromedr.streamlit.app/)
 
 Current release: **0.2.2**
 
@@ -17,7 +31,8 @@ For a deeper architectural description, see `ARCHITECTURE.md`. For a short **dev
 (2) **`ARCHITECTURE.md`**: how the code is structured (app → data → charts → section pages).  
 (3) **`CONTRIBUTING.md`**: dev setup, tests, formatting, and doc/typing standards (§7).  
 (4) **`docs/LEARNING_AND_BACKLOG.md`**: backlog, testing strategy, coverage, safe/unsafe patterns.  
-(5) **Sphinx docs** (see § Documentation below): single place for getting started, architecture, API reference. Build with `pip install -r docs/requirements-docs.txt` then `cd docs && make html`.
+(5) **`docs/learning/`**: curated "Python/data-science to app/deploy/git" guides grounded in this codebase.  
+(6) **Sphinx docs** (see § Documentation below): single place for getting started, architecture, API reference. Build with `pip install -r docs/requirements-docs.txt` then `cd docs && make html`.
 
 ---
 
@@ -65,14 +80,12 @@ For a deeper architectural description, see `ARCHITECTURE.md`. For a short **dev
 │   │   └── deployment_health.py  # Runtime/deployment checks for required assets
 │   ├── navigation.py             # NavItem definitions + sidebar navigation rendering
 │   ├── narratives.py             # Narrative text helpers for executive summaries
-│   ├── wave_context.py           # Cross-wave registry and trend helpers
+│   ├── wave_context.py           # Cross-wave registry and trend helpers (built from per-wave schemas)
+│   ├── wave_schema.py            # Loader + evaluators for per-wave schemas in config/waves/
 │   └── generate_presentation.py  # Slide deck / PDF generation (optional)
 │
-├── datasets/
-│   ├── WCVA_W2_Anonymised_Dataset.csv
-│   └── Baromedr_Cymru_QA_Response_Options.docx
-│
 ├── references/
+│   ├── context/                 # Public local-authority context CSV used by profile/geography views
 │   └── SROI_Wales_Voluntary_Sector/
 │       ├── docs/                 # SROI briefing, mind-map HTML/Markdown, PDF exports
 │       ├── output/               # Generated SROI charts (PNG/SVG) and meta JSON
@@ -89,13 +102,15 @@ For a deeper architectural description, see `ARCHITECTURE.md`. For a short **dev
 │   ├── source/                   # Sphinx source (index, getting_started, architecture, api/)
 │   ├── Makefile                  # make html to build Sphinx docs
 │   ├── requirements-docs.txt     # Sphinx and theme (install after requirements.txt)
-│   ├── adr/                      # Architecture Decision Records (ADR-001 … ADR-006)
+│   ├── adr/                      # Architecture Decision Records (ADR-001 … ADR-008)
+│   ├── learning/                 # Curated learning guides anchored to this repo
 │   ├── DOCKER_AND_DEPLOYMENT.md  # Docker build/run and self-hosting guide
 │   └── LEARNING_AND_BACKLOG.md   # Backlog, testing strategy, coverage
 │
 ├── output/                       # Presentation outputs (HTML/PDF) if generated
 ├── .streamlit/
 │   └── config.toml               # WCVA-branded Streamlit theme
+├── scratch/                      # Ignored temporary notes, transcripts, and drafts
 ├── ARCHITECTURE.md               # High-level architecture and flow
 ├── CHANGELOG.md                  # Version history and notable changes
 ├── CONTRIBUTING.md               # How to contribute (setup, tests, PRs)
@@ -167,6 +182,8 @@ Opens in your browser at `http://localhost:8501`. Use the sidebar to:
 - Adjust chart text size.
 - Download chart data where available.
 
+If the private dataset is not configured, the app boots in explicit **demo mode** using the bundled sample fixture. Check the **Deployment Health** page to see which runtime source was resolved.
+
 ### Generate Executive Presentation (optional)
 
 ```bash
@@ -177,6 +194,8 @@ Produces two files in `output/`:
 
 - `presentation.html` — self-contained reveal.js slide deck (emailable, opens in any browser).
 - `presentation.pdf` — structured PDF with table of contents and bookmarks.
+
+In demo mode, the default behavior is to write `presentation_demo.html` and `presentation_demo.pdf` with prominent sample-data labelling.
 
 ### Generate SROI Charts (optional)
 
@@ -213,8 +232,10 @@ Then open `docs/build/html/index.html` in a browser. On Windows use `docs\make.b
 | **CONTRIBUTING.md** | Dev setup, tests, lint, Sphinx build, branching, PRs, doc/typing standards (§7). |
 | **CHANGELOG.md** | Version history and notable changes. |
 | **docs/LEARNING_AND_BACKLOG.md** | Backlog, testing strategy, coverage, fixture notes, safe/unsafe patterns, policy pointers. |
+| **docs/learning/** | Curated learning guides for moving from Python/data-science work into app, deploy, testing, and git workflow using this repo. |
 | **docs/DOCKER_AND_DEPLOYMENT.md** | Docker build/run, docker-compose, self-hosting, env vars, security. |
-| **docs/adr/** (ADR-001 … ADR-006) | Decisions: Streamlit UI, navigation, SROI charts, state/caching, Docker, CI and testing. |
+| **docs/HISTORY_REWRITE_AND_STREAMLIT_SECRETS.md** | Runbook for purging `datasets/` from Git history and configuring private runtime data on Streamlit Community Cloud. |
+| **docs/adr/** (ADR-001 … ADR-008) | Decisions: Streamlit UI, navigation, SROI charts, state/caching, Docker, CI/testing, runtime data/demo mode, and the multi-wave schema/mapping layer. |
 | **Sphinx** (`docs/source/`, build: `docs/build/html/`) | Getting started, architecture, contributing, full API reference. |
 | **pytest.ini** | Test discovery, `e2e` marker. |
 | **pyproject.toml** | Black, isort, mypy config. |
@@ -232,10 +253,23 @@ All core configuration is centralised in `src/config.py`:
 - **k-anonymity threshold** (`K_ANON_THRESHOLD`, default: 5) used for suppression logic.
 - **Wave context** mapping for cross-wave comparisons.
 - **Debug flags** (environment variables): set `WCVA_DEBUG_MEMORY=1` (or `true`/`yes`) to show process memory usage in the sidebar when running the Streamlit app.
+- **Output override** (environment variable): set `WCVA_OUTPUT_DIR` to write presentation outputs somewhere other than the repo-local `output/` folder.
 
 The Streamlit theme is set in `.streamlit/config.toml`.
 
-**Secrets**: Do not commit API keys, passwords, or tokens. Use environment variables or Streamlit’s [Secrets Manager](https://docs.streamlit.io/develop/concepts/security/secrets-management) (e.g. `.streamlit/secrets.toml`) for any credentials; see deployment docs for production.
+**Runtime data sources**: The private Wave 2 dataset is no longer tracked in Git. The app resolves it in this order:
+
+- `WCVA_DATASET_PATH`
+- `dataset_path` in Streamlit secrets
+- `WCVA_DATASET_URL`
+- `dataset_url` in Streamlit secrets
+- local untracked fallback: `datasets/WCVA_W2_Anonymised_Dataset.csv`
+
+The public local-authority context file now lives at `references/context/la_context_wales.csv`, with optional overrides via `WCVA_LA_CONTEXT_PATH`, `WCVA_LA_CONTEXT_URL`, or the matching Streamlit secret keys.
+
+**Secrets**: Do not commit API keys, passwords, tokens, or private dataset URLs. Use environment variables or Streamlit’s [Secrets Manager](https://docs.streamlit.io/develop/concepts/connections/secrets-management) (see `.streamlit/secrets.example.toml`) for runtime configuration.
+
+**Demo mode**: If the real Wave dataset is unavailable, the app and presentation generator fall back to the bundled sample fixture and mark the session/output as **DEMO / SAMPLE DATA**. This keeps docs builds, smoke tests, and first deployments working without pretending the fixture is a real Wave release.
 
 ---
 
@@ -279,7 +313,8 @@ python -c "from src.data_loader import load_dataset; df = load_dataset(); print(
 - **"Results suppressed" in the dashboard** – The filtered sample has fewer than 5 organisations (k-anonymity). Widen or clear filters so more rows are included.
 - **Sphinx build prints Streamlit warnings** – Expected when building docs; the app is imported outside `streamlit run`. Ignore them; the HTML output is correct.
 - **Executive-overview or executive-highlights test skips / fails** – The fixture `tests/fixtures/wcva_sample_dataset.csv` must include multi-select columns (`concerns_1`, `concerns_2`, `actions_10`, etc.) so that `executive_highlights()` has data. See `docs/LEARNING_AND_BACKLOG.md` §3.2 and the fixture file.
-- **Dataset not found** – Place the main CSV at `datasets/WCVA_W2_Anonymised_Dataset.csv` or point the code to your path.
+- **Dataset not found** – Set `WCVA_DATASET_PATH` or `WCVA_DATASET_URL`, add `dataset_path` / `dataset_url` in Streamlit secrets, or place an untracked local copy at `datasets/WCVA_W2_Anonymised_Dataset.csv`.
+- **App shows DEMO / SAMPLE DATA** – The private Wave dataset was not resolved, so the bundled fixture was used. Review the **Deployment Health** page and configure a real dataset path or URL.
 - **Unsure which deployment file is missing** – Open the in-app **Deployment Health** page; it reports required and optional runtime files.
 
 ---
@@ -290,7 +325,7 @@ python -c "from src.data_loader import load_dataset; df = load_dataset(); print(
 
 - **Docker**: use the included `Dockerfile` and `docker-compose.yml` to build and run the dashboard in a container. See **`docs/DOCKER_AND_DEPLOYMENT.md`** for:
   - Build and run commands (Compose and plain Docker).
-  - Data and asset requirements (`datasets/`, `references/`) and optional volume mounts.
+  - Runtime data-source options, public reference assets, and optional volume mounts.
   - Self-hosting on a server with a reverse proxy (e.g. Nginx).
   - Environment variables (e.g. `WCVA_DEBUG_MEMORY`) and basic security notes.
 
@@ -305,7 +340,7 @@ python -c "from src.data_loader import load_dataset; df = load_dataset(); print(
 Considerations:
 
 - Choose **Python 3.11 or 3.12** in the app's **Advanced settings**. Streamlit Community Cloud sets the Python version from the deploy UI, not from a repo file such as `runtime.txt`.
-- Use Streamlit **Secrets Manager** (`.streamlit/secrets.toml`) for any credentials (if introduced).
+- Store the private dataset as a secret-backed **URL or runtime path**, not in the repo. See `.streamlit/secrets.example.toml` and `docs/HISTORY_REWRITE_AND_STREAMLIT_SECRETS.md`.
 - Use the in-app **Deployment Health** page after startup to verify that required files and optional reference assets are present in the runtime environment.
 - `st.cache_data` is used for dataset loading so all sessions share the same read‑only base DataFrame.
 - Avoid unnecessary large in-memory artefacts; prefer computed summaries.
@@ -349,7 +384,7 @@ On Streamlit Community Cloud and similar deployments:
 - Each browser tab gets its own **session**.
 - Per-user UI state (filters, page, accessibility settings) lives in `st.session_state`, including the UI config dataclass accessed via `get_app_ui_config()`.
 - Shared resources:
-  - The main dataset is loaded via `st.cache_data`, so all sessions reuse the same DataFrame.
+  - The main dataset is loaded via `st.cache_data`, whether it comes from a local file path or a secret-backed URL.
 
 This means:
 
@@ -363,6 +398,7 @@ See `ARCHITECTURE.md` and the ADRs in `docs/adr/` (e.g. ADR-004 for state/cachin
 ## Backlog and learning
 
 - **`docs/LEARNING_AND_BACKLOG.md`** – Backlog items (PyGWalker, DuckDB, PyDeck, future dashboards), testing strategy notes, and safe/unsafe patterns.
+- **`docs/learning/`** – Curated guides on repo structure, private data/secrets, demo mode, deployment, testing, releases, and git hygiene using this repo as the example.
 - **`docs/DOCKER_AND_DEPLOYMENT.md`** – Docker build/run, docker-compose, self-hosting, and deployment options.
 - **`ARCHITECTURE.md`** – Sections 9–10: developer tour (how to read tests and docs) and future dashboards/backlog.
 - **`plans/policy_questions.md`** – High-priority policy questions for WCVA teams; useful for Wave 3 design and briefings.
@@ -384,14 +420,17 @@ Full details: **`CONTRIBUTING.md`**.
 
 ---
 
-## License
+## License and third-party notices
 
-GNU Affero General Public License v3.0 (AGPL v3.0)
-
-Permissions of this strongest copyleft license are conditioned on making available complete source code of licensed works and modifications, which include larger works using a licensed work, under the same license. Copyright and license notices must be preserved. Contributors provide an express grant of patent rights. When a modified version is used to provide a service over a network, the complete source code of the modified version must be made available.
+- **Project license**: GNU Affero General General Public License v3.0 (AGPL v3.0).  
+  Permissions of this strongest copyleft license are conditioned on making available complete source code of licensed works and modifications, which include larger works using a licensed work, under the same license. Copyright and license notices must be preserved. Contributors provide an express grant of patent rights. When a modified version is used to provide a service over a network, the complete source code of the modified version must be made available.
+- **Third-party dependencies**: see `THIRD_PARTY_LICENSES.md` for a curated list of major libraries, tools, and their licenses.
+- **License headers**: most source, config, and documentation files include a standard AGPLv3 header and footer.
+- **Idempotent re-application**: run `python tools/apply_license_headers.py` from the repo root to (re)apply headers/footers to new files in an idempotent way.
 
 ---
 
 ## Maintainers
 
 - Project maintainers can be reached via the repository issue tracker or pull requests.
+Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis 

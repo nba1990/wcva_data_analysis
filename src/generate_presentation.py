@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 """
 Generate dual-format executive presentation from Baromedr Cymru Wave 2 data.
 
@@ -33,6 +40,7 @@ from src.config import (
     OUTPUT_DIR,
     WCVA_BRAND,
     AltTextConfig,
+    get_demo_output_mode,
     resolve_grouping,
 )
 from src.data_loader import load_dataset
@@ -58,6 +66,8 @@ from src.wave_context import (
 )
 
 CHART_W, CHART_H = 1200, 550
+DEMO_DECK_TITLE = "Baromedr Cymru Wave 2 — Executive Presentation (DEMO / SAMPLE DATA)"
+REAL_DECK_TITLE = "Baromedr Cymru Wave 2 — Executive Presentation"
 
 
 def _fig_to_base64(fig, width: int = CHART_W, height: int = CHART_H) -> str:
@@ -68,6 +78,26 @@ def _fig_to_base64(fig, width: int = CHART_W, height: int = CHART_H) -> str:
 
 def _fig_to_bytes(fig, width: int = CHART_W, height: int = CHART_H) -> bytes:
     return fig.to_image(format="png", width=width, height=height, scale=2)
+
+
+def _apply_demo_mode_to_slides(slides: list[dict], dataset_source_value: str) -> None:
+    """Annotate slide content so sample-data outputs stay unmistakable."""
+    if not slides:
+        return
+
+    slides[0]["title"] = "Baromedr Cymru Wave 2 — DEMO / SAMPLE DATA"
+    slides[0]["subtitle"] = "Demonstration deck using the bundled sample dataset"
+    slides[0]["body"] = (
+        "<p><strong>Demo mode:</strong> the private Wave dataset was not available at "
+        "runtime, so this presentation was generated from the bundled sample fixture.</p>"
+        f"<p>Resolved dataset source: <code>{escape(dataset_source_value)}</code></p>"
+        + slides[0]["body"]
+    )
+    slides[-1]["body"] = (
+        "<p><strong>Demo mode:</strong> all figures in this deck come from the sample "
+        "fixture dataset and must not be used as the real Wave release.</p>"
+        + slides[-1]["body"]
+    )
 
 
 def render_executive_insights_list_html(
@@ -101,6 +131,18 @@ def render_executive_insights_list_html(
 
     parts.append(f"</{list_tag}>")
     return "".join(parts)
+
+
+def _top_ranked_text(
+    df: pd.DataFrame,
+    *,
+    fallback_label: str = "No data available in this view",
+) -> tuple[str, int]:
+    """Return the top ranked label/count pair, or a safe fallback."""
+    if df.empty:
+        return fallback_label, 0
+    first = df.iloc[0]
+    return str(first["label"]), int(first["count"])
 
 
 # ---------------------------------------------------------------------------
@@ -348,6 +390,11 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         "volunteer availability, and recruitment and retention difficulty.",
     )
 
+    top_rec_method_label, top_rec_method_count = _top_ranked_text(rec["rec_methods"])
+    top_rec_barrier_label, top_rec_barrier_count = _top_ranked_text(rec["rec_barriers"])
+    top_ret_barrier_label, top_ret_barrier_count = _top_ranked_text(ret["ret_barriers"])
+    top_shortage_label, top_shortage_count = _top_ranked_text(wf["shortage_affect"])
+
     slides = [
         {
             "title": "Baromedr Cymru Wave 2",
@@ -482,10 +529,10 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         {
             "title": "Recruitment: What Works, What Blocks",
             "subtitle": "Response appears to be low",
-            "body": f"<p><strong>Top method</strong>: {rec['rec_methods'].iloc[0]['label']} <br>"
-            f"({rec['rec_methods'].iloc[0]['count']} orgs)</p> <br>"
-            f"<p><strong>Top barrier</strong>: {rec['rec_barriers'].iloc[0]['label']} <br>"
-            f"({rec['rec_barriers'].iloc[0]['count']} orgs)</p> <br>"
+            "body": f"<p><strong>Top method</strong>: {top_rec_method_label} <br>"
+            f"({top_rec_method_count} orgs)</p> <br>"
+            f"<p><strong>Top barrier</strong>: {top_rec_barrier_label} <br>"
+            f"({top_rec_barrier_count} orgs)</p> <br>"
             f"<p>Low response to recruitment campaigns underlines why triangulation with "
             f"surveys of individual volunteers and non-volunteers would be valuable.</p> <br>",
             "chart": fig_rec_barriers,
@@ -495,8 +542,8 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         {
             "title": "Retention: Why Volunteers Leave",
             "subtitle": "Mostly external factors. Not dissatisfaction",
-            "body": f"<p><strong>Top barrier</strong>: {ret['ret_barriers'].iloc[0]['label']} <br>"
-            f"({ret['ret_barriers'].iloc[0]['count']} orgs)</p> <br>"
+            "body": f"<p><strong>Top barrier</strong>: {top_ret_barrier_label} <br>"
+            f"({top_ret_barrier_count} orgs)</p> <br>"
             f"<p>Work/study changes, caring responsibilities, and natural endings dominate. <br>"
             f"Factors largely outside organisational control.</p> <br>",
             "chart": fig_ret_barriers,
@@ -519,7 +566,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
             "title": "Impact of Shortages on Operations",
             "subtitle": "Shortages are not abstract; they cause real pressure on volunteers",
             "body": f"<ul>"
-            f"<li>Top consequence: {wf['shortage_affect'].iloc[0]['label']} ({wf['shortage_affect'].iloc[0]['count']} orgs)</li> <br>"
+            f"<li>Top consequence: {top_shortage_label} ({top_shortage_count} orgs)</li> <br>"
             f"<li>Organisations are stretching existing staff and volunteers to cover gaps</li> <br>"
             f"</ul>",
             "chart": fig_shortage,
@@ -637,7 +684,7 @@ REVEAL_TEMPLATE = """<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Baromedr Cymru Wave 2 — Executive Presentation</title>
+<title>{deck_title}</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.css">
 <style>
@@ -663,11 +710,15 @@ REVEAL_TEMPLATE = """<!doctype html>
 </style>
 </head>
 <body>
+{demo_banner}
 <div class="reveal">
 <div class="slides">
 {slides_html}
 </div>
-<div class="footer">Baromedr Cymru Wave 2 | WCVA | {date}</div>
+<div class="footer">
+  {footer_label} | WCVA | {date} |
+  Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis
+</div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
 <script>Reveal.initialize({{ hash: true, slideNumber: true, width: 1600, height: 1000, margin: 0.04, minScale: 0.8, maxScale: 1.0 }});</script>
@@ -675,11 +726,16 @@ REVEAL_TEMPLATE = """<!doctype html>
 </html>"""
 
 
-def generate_html(slides: list[dict]) -> str:
+def generate_html(
+    slides: list[dict],
+    *,
+    demo_mode: bool = False,
+    include_chart_images: bool = True,
+) -> str:
     sections = []
     for s in slides:
         chart_html = ""
-        if s["chart"] is not None:
+        if include_chart_images and s["chart"] is not None:
             b64 = _fig_to_base64(s["chart"], width=800, height=380)
             alt = s.get("alt_text", "")
             chart_html = (
@@ -698,11 +754,24 @@ def generate_html(slides: list[dict]) -> str:
         )
         sections.append(section)
 
+    demo_banner = (
+        '<div style="background:#fff3cd;border:2px solid #F5A623;color:#1B2A4A;'
+        'padding:10px 18px;font-family:sans-serif;font-weight:700;">'
+        "DEMO / SAMPLE DATA MODE: this deck was generated without the private Wave dataset."
+        "</div>"
+        if demo_mode
+        else ""
+    )
     return REVEAL_TEMPLATE.format(
         slides_html="\n".join(sections),
         navy=WCVA_BRAND["navy"],
         teal=WCVA_BRAND["teal"],
         date=date.today().strftime("%B %Y"),
+        deck_title=DEMO_DECK_TITLE if demo_mode else REAL_DECK_TITLE,
+        footer_label=(
+            "Baromedr Cymru Wave 2 — DEMO" if demo_mode else "Baromedr Cymru Wave 2"
+        ),
+        demo_banner=demo_banner,
     )
 
 
@@ -726,14 +795,15 @@ _SEVERITY_RGB = {
 class BaromedrPDF(FPDF):
     """Custom PDF with WCVA branding, TOC, and bookmarks."""
 
-    def __init__(self):
+    def __init__(self, footer_label: str):
         super().__init__(orientation="L", unit="mm", format="A4")
         self.set_auto_page_break(auto=True, margin=20)
+        self.footer_label = footer_label
 
     def header(self):
         self.set_font("Helvetica", "I", 8)
         self.set_text_color(140, 140, 140)
-        self.cell(0, 6, "Baromedr Cymru Wave 2 | WCVA", align="L")
+        self.cell(0, 6, f"{self.footer_label} | WCVA", align="L")
         self.cell(
             0, 6, f"Page {self.page_no()}", align="R", new_x="LMARGIN", new_y="NEXT"
         )
@@ -755,11 +825,12 @@ class BaromedrPDF(FPDF):
         trends_summary_text: str | None = None,
     ):
         self.add_page()
-        self.start_section(title)
+        pdf_title = title.replace("—", "-")
+        self.start_section(pdf_title)
 
         self.set_font("Helvetica", "B", 22)
         self.set_text_color(*_NAVY_RGB)
-        self.cell(0, 14, title, new_x="LMARGIN", new_y="NEXT")
+        self.cell(0, 14, pdf_title, new_x="LMARGIN", new_y="NEXT")
         self.ln(3)
 
         if is_exec_summary and highlights:
@@ -946,15 +1017,24 @@ def _render_toc(pdf, outline):
         )
 
 
-def generate_pdf(slides: list[dict], highlights: list[dict] | None = None) -> bytes:
-    pdf = BaromedrPDF()
-    pdf.set_title("Baromedr Cymru Wave 2 - Executive Presentation")
+def generate_pdf(
+    slides: list[dict],
+    highlights: list[dict] | None = None,
+    *,
+    demo_mode: bool = False,
+    include_chart_images: bool = True,
+) -> bytes:
+    footer_label = (
+        "Baromedr Cymru Wave 2 - DEMO" if demo_mode else "Baromedr Cymru Wave 2"
+    )
+    pdf = BaromedrPDF(footer_label=footer_label)
+    pdf.set_title(DEMO_DECK_TITLE if demo_mode else REAL_DECK_TITLE)
     pdf.set_author("Bharadwaj Raman - https://github.com/nba1990/")
 
     first = True
     for s in slides:
         chart_bytes = None
-        if s["chart"] is not None:
+        if include_chart_images and s["chart"] is not None:
             chart_bytes = _fig_to_bytes(s["chart"])
 
         body = s["body"]
@@ -972,7 +1052,8 @@ def generate_pdf(slides: list[dict], highlights: list[dict] | None = None) -> by
                 trends_table=s.get("trends_table"),
                 trends_summary_text=s.get("trends_summary_text"),
             )
-            pdf.insert_toc_placeholder(_render_toc, pages=2)
+            toc_pages = 1 if len(slides) <= 4 else 2
+            pdf.insert_toc_placeholder(_render_toc, pages=toc_pages)
             first = False
         else:
             pdf.add_slide_page(
@@ -996,19 +1077,54 @@ def generate_pdf(slides: list[dict], highlights: list[dict] | None = None) -> by
 
 def main():
     print("Loading data...")
-    df = load_dataset()
+    df, dataset_source = load_dataset(return_source=True)
+    is_demo_mode = bool(dataset_source.is_demo)
+    if is_demo_mode:
+        print(
+            "Demo mode: private dataset not available, using bundled sample fixture "
+            f"from {dataset_source.value}."
+        )
+    else:
+        print(
+            f"Using runtime dataset source: {dataset_source.value} "
+            f"({dataset_source.source_type})."
+        )
     print(f"Building slides for {len(df)} organisations...")
     palette_mode = "brand"
     slides = build_slides(df, palette_mode)
+    if is_demo_mode:
+        _apply_demo_mode_to_slides(slides, dataset_source.value)
     highlights = executive_highlights(df)
 
-    html_path = OUTPUT_DIR / "presentation.html"
-    html_content = generate_html(slides)
+    demo_output_mode = get_demo_output_mode()
+    use_demo_filenames = is_demo_mode and demo_output_mode == "separate_outputs"
+    include_chart_images = not is_demo_mode
+    if is_demo_mode:
+        print(
+            "Demo mode: chart image export is disabled, so demo outputs are text-first "
+            "and explicitly sample-labelled."
+        )
+
+    html_path = OUTPUT_DIR / (
+        "presentation_demo.html" if use_demo_filenames else "presentation.html"
+    )
+    html_content = generate_html(
+        slides,
+        demo_mode=is_demo_mode,
+        include_chart_images=include_chart_images,
+    )
     html_path.write_text(html_content, encoding="utf-8")
     print(f"HTML presentation: {html_path}")
 
-    pdf_path = OUTPUT_DIR / "presentation.pdf"
-    pdf_bytes = generate_pdf(slides, highlights=highlights)
+    pdf_path = OUTPUT_DIR / (
+        "presentation_demo.pdf" if use_demo_filenames else "presentation.pdf"
+    )
+    pdf_bytes = generate_pdf(
+        slides,
+        highlights=highlights,
+        demo_mode=is_demo_mode,
+        include_chart_images=include_chart_images,
+    )
     pdf_path.write_bytes(pdf_bytes)
     print(f"PDF presentation:  {pdf_path}")
 
@@ -1017,3 +1133,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

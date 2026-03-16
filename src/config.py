@@ -1,16 +1,17 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 """
 Central configuration for the Baromedr Cymru Wave 2 analysis.
 
-Provides:
-- Paths: PROJECT_ROOT, DATA_DIR, OUTPUT_DIR, DATASET_PATH.
-- Constants: K_ANON_THRESHOLD, DEBUG_MEMORY, WCVA_BRAND, palette sequences.
-- StreamlitAppUISharedConfigState: Per-session UI state (filters, accessibility).
-- AltTextConfig: Chart alt-text generation options.
-- Label groupers and orderings: GROUPERS, GROUP_ORDER, ORDER_TO_GROUPING_KEY,
-  resolve_grouping, summarise_stacked_categories, format_group_summary,
-  make_stacked_bar_alt.
-- Column-to-label mappings: CONCERNS_LABELS, ACTIONS_LABELS, REC_METHODS_LABELS,
-  etc., used by data_loader and eda.
+This module provides project paths and runtime data-source helpers,
+presentation constants, session-state helpers, accessibility configuration,
+label grouping utilities, and the shared questionnaire label mappings used by
+`src.data_loader` and `src.eda`.
 """
 
 from __future__ import annotations
@@ -18,10 +19,11 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Iterable, TypeVar
+from typing import Callable, Iterable, Literal, TypeVar
 
 import pandas as pd
 import streamlit as st
+from streamlit.errors import StreamlitSecretNotFoundError
 
 # ---------------------------------------------------------------------------
 # Debug / development flags (configurable via environment)
@@ -34,16 +36,321 @@ DEBUG_MEMORY = os.environ.get("WCVA_DEBUG_MEMORY", "").lower() in (
 )
 
 LabelGrouper = Callable[[str], str]
+RuntimeSourceType = Literal[
+    "env_path",
+    "secret_path",
+    "env_url",
+    "secret_url",
+    "default_path",
+    "sample_path",
+]
+
+
+@dataclass(frozen=True)
+class RuntimeDataSource:
+    """Resolved runtime data source for a dataset or context file.
+
+    Attributes:
+        label: Human-readable name of the source being resolved.
+        value: Resolved filesystem path or URL string.
+        source_type: Which resolution rule produced the value.
+        exists: Whether the resolved path exists locally, or True for URL sources.
+        is_url: True when the source is a URL rather than a local file path.
+        is_demo: True when the app had to fall back to bundled sample data.
+        attempted: Ordered list of candidates that were checked.
+    """
+
+    label: str
+    value: str
+    source_type: RuntimeSourceType
+    exists: bool
+    is_url: bool
+    is_demo: bool = False
+    attempted: tuple[str, ...] = ()
+
 
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "datasets"
-OUTPUT_DIR = PROJECT_ROOT / "output"
-DATASET_PATH = DATA_DIR / "WCVA_W2_Anonymised_Dataset.csv"
+OUTPUT_DIR = Path(
+    os.environ.get("WCVA_OUTPUT_DIR", "").strip() or PROJECT_ROOT / "output"
+)
+DEFAULT_DATASET_PATH = DATA_DIR / "WCVA_W2_Anonymised_Dataset.csv"
+SAMPLE_DATASET_PATH = PROJECT_ROOT / "tests" / "fixtures" / "wcva_sample_dataset.csv"
+DEFAULT_LA_CONTEXT_PATH = (
+    PROJECT_ROOT / "references" / "context" / "la_context_wales.csv"
+)
 
 OUTPUT_DIR.mkdir(exist_ok=True)
+
+
+def _get_secret_value(key: str) -> str | None:
+    """Return a runtime value from Streamlit secrets if available.
+
+    Looks for either a top-level key or a nested ``[wcva_data]`` section.
+    Missing secrets are treated as unset so local CLI/test usage stays simple.
+    """
+    try:
+        if key in st.secrets:
+            value = st.secrets[key]
+            return str(value).strip() if value else None
+
+        if "wcva_data" in st.secrets:
+            wcva_data = st.secrets["wcva_data"]
+            if key in wcva_data:
+                value = wcva_data[key]
+                return str(value).strip() if value else None
+    except StreamlitSecretNotFoundError:
+        return None
+
+    return None
+
+
+def _get_secret_value_with_source(key: str) -> tuple[str | None, str | None]:
+    """Return a Streamlit secret value and a short source label if available."""
+    try:
+        if key in st.secrets:
+            value = st.secrets[key]
+            return (str(value).strip() if value else None, f"secret:{key}")
+
+        if "wcva_data" in st.secrets:
+            wcva_data = st.secrets["wcva_data"]
+            if key in wcva_data:
+                value = wcva_data[key]
+                return (
+                    str(value).strip() if value else None,
+                    f"secret:wcva_data.{key}",
+                )
+    except StreamlitSecretNotFoundError:
+        return (None, None)
+
+    return (None, None)
+
+
+def _get_runtime_setting(env_name: str, secret_key: str) -> str | None:
+    """Return a runtime setting from environment first, then Streamlit secrets."""
+    value = os.environ.get(env_name, "").strip()
+    if value:
+        return value
+    return _get_secret_value(secret_key)
+
+
+def _candidate_description(label: str, value: str) -> str:
+    """Format a source candidate for diagnostics."""
+    return f"{label} -> {value}"
+
+
+def get_demo_output_mode() -> str:
+    """Return how demo-mode presentation outputs should be labelled.
+
+    Supported values:
+    - ``separate_outputs`` (default): write demo-specific filenames and titles.
+    - ``banner_only``: keep filenames but still show demo warnings in content.
+    """
+    configured = _get_runtime_setting("WCVA_DEMO_OUTPUT_MODE", "demo_output_mode")
+    if configured in {"separate_outputs", "banner_only"}:
+        return configured
+    return "separate_outputs"
+
+
+def resolve_dataset_source() -> RuntimeDataSource:
+    """Resolve the Wave dataset source with demo fallback.
+
+    Resolution order:
+    1. ``WCVA_DATASET_PATH``
+    2. ``dataset_path`` in Streamlit secrets
+    3. ``WCVA_DATASET_URL``
+    4. ``dataset_url`` in Streamlit secrets
+    5. Local private fallback under ``datasets/``
+    6. Bundled sample fixture (demo mode)
+    """
+    attempted: list[str] = []
+
+    env_path = os.environ.get("WCVA_DATASET_PATH", "").strip()
+    if env_path:
+        attempted.append(_candidate_description("env:WCVA_DATASET_PATH", env_path))
+        path = Path(env_path)
+        if path.exists():
+            return RuntimeDataSource(
+                label="Wave dataset",
+                value=str(path),
+                source_type="env_path",
+                exists=True,
+                is_url=False,
+                attempted=tuple(attempted),
+            )
+
+    secret_path, secret_path_source = _get_secret_value_with_source("dataset_path")
+    if secret_path:
+        attempted.append(
+            _candidate_description(
+                secret_path_source or "secret:dataset_path", secret_path
+            )
+        )
+        path = Path(secret_path)
+        if path.exists():
+            return RuntimeDataSource(
+                label="Wave dataset",
+                value=str(path),
+                source_type="secret_path",
+                exists=True,
+                is_url=False,
+                attempted=tuple(attempted),
+            )
+
+    env_url = os.environ.get("WCVA_DATASET_URL", "").strip()
+    if env_url:
+        attempted.append(_candidate_description("env:WCVA_DATASET_URL", env_url))
+        return RuntimeDataSource(
+            label="Wave dataset",
+            value=env_url,
+            source_type="env_url",
+            exists=True,
+            is_url=True,
+            attempted=tuple(attempted),
+        )
+
+    secret_url, secret_url_source = _get_secret_value_with_source("dataset_url")
+    if secret_url:
+        attempted.append(
+            _candidate_description(
+                secret_url_source or "secret:dataset_url", secret_url
+            )
+        )
+        return RuntimeDataSource(
+            label="Wave dataset",
+            value=secret_url,
+            source_type="secret_url",
+            exists=True,
+            is_url=True,
+            attempted=tuple(attempted),
+        )
+
+    attempted.append(_candidate_description("default_path", str(DEFAULT_DATASET_PATH)))
+    if DEFAULT_DATASET_PATH.exists():
+        return RuntimeDataSource(
+            label="Wave dataset",
+            value=str(DEFAULT_DATASET_PATH),
+            source_type="default_path",
+            exists=True,
+            is_url=False,
+            attempted=tuple(attempted),
+        )
+
+    attempted.append(_candidate_description("sample_path", str(SAMPLE_DATASET_PATH)))
+    return RuntimeDataSource(
+        label="Wave dataset",
+        value=str(SAMPLE_DATASET_PATH),
+        source_type="sample_path",
+        exists=SAMPLE_DATASET_PATH.exists(),
+        is_url=False,
+        is_demo=True,
+        attempted=tuple(attempted),
+    )
+
+
+def resolve_la_context_source() -> RuntimeDataSource:
+    """Resolve the public local-authority context source."""
+    attempted: list[str] = []
+
+    env_path = os.environ.get("WCVA_LA_CONTEXT_PATH", "").strip()
+    if env_path:
+        attempted.append(_candidate_description("env:WCVA_LA_CONTEXT_PATH", env_path))
+        path = Path(env_path)
+        if path.exists():
+            return RuntimeDataSource(
+                label="Local-authority context",
+                value=str(path),
+                source_type="env_path",
+                exists=True,
+                is_url=False,
+                attempted=tuple(attempted),
+            )
+
+    secret_path, secret_path_source = _get_secret_value_with_source("la_context_path")
+    if secret_path:
+        attempted.append(
+            _candidate_description(
+                secret_path_source or "secret:la_context_path", secret_path
+            )
+        )
+        path = Path(secret_path)
+        if path.exists():
+            return RuntimeDataSource(
+                label="Local-authority context",
+                value=str(path),
+                source_type="secret_path",
+                exists=True,
+                is_url=False,
+                attempted=tuple(attempted),
+            )
+
+    env_url = os.environ.get("WCVA_LA_CONTEXT_URL", "").strip()
+    if env_url:
+        attempted.append(_candidate_description("env:WCVA_LA_CONTEXT_URL", env_url))
+        return RuntimeDataSource(
+            label="Local-authority context",
+            value=env_url,
+            source_type="env_url",
+            exists=True,
+            is_url=True,
+            attempted=tuple(attempted),
+        )
+
+    secret_url, secret_url_source = _get_secret_value_with_source("la_context_url")
+    if secret_url:
+        attempted.append(
+            _candidate_description(
+                secret_url_source or "secret:la_context_url", secret_url
+            )
+        )
+        return RuntimeDataSource(
+            label="Local-authority context",
+            value=secret_url,
+            source_type="secret_url",
+            exists=True,
+            is_url=True,
+            attempted=tuple(attempted),
+        )
+
+    attempted.append(
+        _candidate_description("default_path", str(DEFAULT_LA_CONTEXT_PATH))
+    )
+    return RuntimeDataSource(
+        label="Local-authority context",
+        value=str(DEFAULT_LA_CONTEXT_PATH),
+        source_type="default_path",
+        exists=DEFAULT_LA_CONTEXT_PATH.exists(),
+        is_url=False,
+        attempted=tuple(attempted),
+    )
+
+
+def get_dataset_path() -> Path:
+    """Return the configured Wave 2 dataset file path."""
+    source = resolve_dataset_source()
+    return Path(source.value)
+
+
+def get_dataset_url() -> str | None:
+    """Return the configured Wave 2 dataset URL, if any."""
+    source = resolve_dataset_source()
+    return source.value if source.is_url else None
+
+
+def get_la_context_path() -> Path:
+    """Return the configured local-authority context file path."""
+    source = resolve_la_context_source()
+    return Path(source.value)
+
+
+def get_la_context_url() -> str | None:
+    """Return the configured local-authority context URL, if any."""
+    source = resolve_la_context_source()
+    return source.value if source.is_url else None
+
 
 # ---------------------------------------------------------------------------
 # K-anonymity threshold (matches Baromedr dashboard suppression rule)
@@ -886,3 +1193,4 @@ LA_TO_REGION = {
     "Monmouthshire": "South East Wales",
     "Newport": "South East Wales",
 }
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

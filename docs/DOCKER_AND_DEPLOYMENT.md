@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/ 
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 # Docker and deployment guide
 
 This document describes how to run the WCVA Baromedr Cymru Wave 2 Dashboard in Docker and how to self-host or deploy it on a server or cloud.
@@ -7,7 +14,7 @@ This document describes how to run the WCVA Baromedr Cymru Wave 2 Dashboard in D
 ## Prerequisites
 
 - **Docker** (Engine 20.10+) and **Docker Compose** (v2+), or a compatible container runtime (Podman, etc.).
-- The **Wave 2 dataset** and any **reference assets** (see [Data and assets](#data-and-assets) below).
+- Access to the **private Wave 2 dataset** and any **reference assets** (see [Data and assets](#data-and-assets) below).
 
 ---
 
@@ -82,16 +89,21 @@ docker compose up -d
 
 The app expects:
 
-1. **`datasets/WCVA_W2_Anonymised_Dataset.csv`** — main Wave 2 survey data (required for the dashboard).
-2. **`datasets/la_context_wales.csv`** — local authority context (required for profile/geography views).
+1. **Wave 2 dataset source** — required. Configure one of:
+   - `WCVA_DATASET_PATH`
+   - `WCVA_DATASET_URL`
+   - `dataset_path` in Streamlit secrets
+   - `dataset_url` in Streamlit secrets
+   - local untracked fallback: `datasets/WCVA_W2_Anonymised_Dataset.csv`
+2. **Local authority context** — optional override; by default the app uses `references/context/la_context_wales.csv`.
 3. **`references/SROI_Wales_Voluntary_Sector/`** — SROI reference docs and the mind-map HTML (optional but needed for the SROI & References page).
 
 The app includes an in-app **Deployment Health** page and a startup guard:
 
-- If a required runtime file is missing, the app stops early and shows the health page instead of failing deeper in the analysis flow.
+- If the private dataset is unavailable, the app falls back to the bundled sample fixture and enters explicit demo mode instead of failing deeper in the analysis flow.
 - Optional reference assets are reported as missing in the health view but do not block general dashboard use.
 
-By default, the Dockerfile **copies the whole project** into the image, so any files present in `datasets/` and `references/` at build time are included. If you do **not** want to bake data into the image (e.g. for privacy or to swap datasets without rebuilding), use **volume mounts** with Compose:
+By default, the Dockerfile **copies the whole project** into the image, but the private Wave 2 dataset is expected to be supplied outside Git. For self-hosting, use an environment variable or a read-only volume mount:
 
 ```yaml
 services:
@@ -99,12 +111,14 @@ services:
     build: .
     ports:
       - "8501:8501"
+    environment:
+      - WCVA_DATASET_PATH=/app/runtime-data/WCVA_W2_Anonymised_Dataset.csv
     volumes:
-      - ./datasets:/app/datasets:ro
+      - ./runtime-data:/app/runtime-data:ro
       - ./references:/app/references:ro
 ```
 
-Then ensure `datasets/` and `references/` on the host contain the required files before starting the stack.
+Then ensure `./runtime-data/WCVA_W2_Anonymised_Dataset.csv` exists on the host before starting the stack. The checked-in local-authority context file under `references/context/` will continue to work unless you explicitly override it.
 
 ---
 
@@ -157,7 +171,7 @@ The `docker-compose.yml` in this repo sets `restart: unless-stopped`, so the con
 
 ## Deploying to a cloud or PaaS
 
-- **Streamlit Community Cloud**: use the GitHub repo, set **Main file** to `src/app.py`, and choose Python **3.11** or **3.12** in the app's **Advanced settings**. Community Cloud does not read a repo `runtime.txt` here. No Docker required there.
+- **Streamlit Community Cloud**: use the GitHub repo, set **Main file** to `src/app.py`, and choose Python **3.11** or **3.12** in the app's **Advanced settings**. Community Cloud does not read a repo `runtime.txt` here. No Docker required there. Store the private dataset URL or runtime path in Secrets Manager; see `docs/HISTORY_REWRITE_AND_STREAMLIT_SECRETS.md`.
 - **Generic cloud (AWS, GCP, Azure, etc.)**: build the image and run it on a container service (ECS, Cloud Run, ACI, etc.). Use the same environment variables and volume mounts as above; expose port 8501 and put a load balancer or API gateway in front if needed.
 - **Kubernetes**: use the same image; define a Deployment and Service that expose 8501 and, if needed, mount datasets via a ConfigMap or PVC.
 
@@ -168,6 +182,7 @@ The `docker-compose.yml` in this repo sets `restart: unless-stopped`, so the con
 | Variable | Description | Default |
 |----------|-------------|--------|
 | `WCVA_DEBUG_MEMORY` | Set to `1`, `true`, or `yes` to show process memory in the sidebar. | (off) |
+| `WCVA_OUTPUT_DIR` | Override where generated presentation files are written. | `output/` under the project root |
 
 Streamlit’s own settings (e.g. `STREAMLIT_SERVER_*`) are set in the Dockerfile so the app listens on `0.0.0.0:8501` inside the container. Override them only if you need a different port or address.
 
@@ -177,8 +192,8 @@ Streamlit’s own settings (e.g. `STREAMLIT_SERVER_*`) are set in the Dockerfile
 
 - The Dockerfile runs the app as a non-root user (`appuser`).
 - Do not run the container as root in production.
-- **Secrets**: Do not bake API keys, passwords, or tokens into the image. Use environment variables or mounted secret files (e.g. Streamlit Secrets) and keep `.env` or `secrets.toml` out of version control.
-- If the dataset or reference material is sensitive, prefer **read-only volume mounts** (as in the Compose example) and avoid baking secrets into the image.
+- **Secrets**: Do not bake API keys, passwords, tokens, or private dataset URLs into the image. Use environment variables or mounted secret files (e.g. Streamlit Secrets) and keep `.env` or `secrets.toml` out of version control.
+- If the dataset is sensitive, prefer **read-only volume mounts** or a secret-backed private URL and avoid baking it into the image.
 - Use a reverse proxy for TLS and, if needed, authentication; the Streamlit app itself does not implement auth.
 
 ---
@@ -186,8 +201,10 @@ Streamlit’s own settings (e.g. `STREAMLIT_SERVER_*`) are set in the Dockerfile
 ## Troubleshooting
 
 - **App not loading**: ensure port 8501 is not in use and the container is running (`docker compose ps` or `docker ps`).
-- **Missing data / empty dashboard**: confirm `datasets/WCVA_W2_Anonymised_Dataset.csv` (and, if used, `la_context_wales.csv`) exist in the image or in the mounted volume.
+- **Missing data / empty dashboard**: confirm the app has a valid `WCVA_DATASET_PATH` or `WCVA_DATASET_URL` (or matching Streamlit secrets), and check the in-app Deployment Health page for the resolved source.
+- **App is running in demo mode**: the private Wave dataset was not resolved, so the bundled sample fixture is being used. Configure a real dataset path/URL or mount the private data into the container.
 - **Unsure which runtime file is missing**: open the in-app **Deployment Health** page after startup, or rely on the startup guard if the app stops immediately.
 - **Permission errors**: if you use volume mounts, ensure the host directories are readable by the container user (UID 1000 in the Dockerfile).
 
 For more on the app’s architecture and configuration, see `ARCHITECTURE.md` and `README.md`.
+Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis 

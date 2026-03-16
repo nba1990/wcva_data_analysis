@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/ 
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 # Learning and Backlog
 
 This document captures backlog items, testing strategy notes, and pointers to policy questions and plans so that knowledge from past planning and development remains actionable. **New or returning?** The main **README** has a short "New here? Picking this up again?" orientation and a "Documentation index" table listing all key docs (this file, ARCHITECTURE, CONTRIBUTING, ADRs, Sphinx, etc.).
@@ -24,8 +31,19 @@ These items were identified during architecture and testing work; they are **not
 - **Retrofit Impact Dashboard** – Impact of retrofit/energy efficiency programmes (if data becomes available).
 - **Fuel Poverty Risk Map** – Geospatial view of fuel poverty risk by area, optionally overlaying voluntary sector presence.
 - **Community Energy Investment Simulator** – Exploratory idea; no current implementation.
-
 These can be separate apps or new pages; the same patterns (section page, nav item, shared chart helpers, optional Markmap/HTML embed) apply.
+
+### 1.3 Multi-wave and schema evolution
+
+- **Additional survey waves** – Extend `src/wave_context.py` and the Trends & Waves page to:
+  - derive `WaveContext` models for new waves from row-level datasets (using `build_wave_context_from_df`);
+  - append them to the `WaveRegistry` via `build_wave_registry_from_current_data`;
+  - expand `TREND_METRICS` only for indicators that are genuinely comparable across waves.
+- **Per-wave mapping layer (planned)** – Introduce a small configuration layer that maps raw per-wave columns onto canonical metrics used in WaveContext and trends:
+  - allows future waves to introduce new or renamed questions while keeping cross-wave metrics stable;
+  - provides clear fallbacks when a metric is missing in a given wave;
+  - can be extended to handle a mix of quantitative and qualitative responses in an enterprise-ready way.
+  This mapping layer is deliberately not implemented yet, but is the preferred direction once a second “real” multi-wave release is in scope.
 
 ---
 
@@ -75,8 +93,13 @@ Adding tests: prefer unit tests for pure functions and EDA/data_loader; use mock
   - `README.md` (quickstart, testing, deployment),
   - `CONTRIBUTING.md` (development setup, pre-commit, PR guidelines),
   - `CHANGELOG.md` (version history),
-  - `docs/adr/` (ADR-001–006),
+  - `docs/adr/` (ADR-001–007),
+  - `docs/learning/` (curated practical guides),
   - This file (backlog, testing notes, policy reference).
+
+Temporary notes and chat exports should go into the ignored `scratch/` folder
+rather than being committed directly. If they are worth keeping, distil them
+into the curated guides or the main docs instead of copying them verbatim.
 
 ---
 
@@ -86,3 +109,4 @@ Adding tests: prefer unit tests for pure functions and EDA/data_loader; use mock
 - **Unsafe**: Mutable module-level globals updated per request; open connections/cursors in globals without a clear lifecycle.
 
 See ADR-004 and the “Multi‑user and session model” section in `ARCHITECTURE.md` for full detail.
+Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis 

@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 from __future__ import annotations
 
 import pandas as pd
@@ -133,8 +140,8 @@ def test_data_quality_profile_structure() -> None:
 
 def test_check_runtime_assets_reports_required_and_optional_files(tmp_path) -> None:
     project_root = tmp_path
-    dataset_path = project_root / "datasets" / "WCVA_W2_Anonymised_Dataset.csv"
-    la_context_path = project_root / "datasets" / "la_context_wales.csv"
+    dataset_path = project_root / "runtime-data" / "WCVA_W2_Anonymised_Dataset.csv"
+    la_context_path = project_root / "runtime-data" / "la_context_wales.csv"
     streamlit_config = project_root / ".streamlit" / "config.toml"
     mindmap_html = (
         project_root
@@ -165,10 +172,49 @@ def test_check_runtime_assets_reports_required_and_optional_files(tmp_path) -> N
 def test_check_runtime_assets_flags_missing_required_files(tmp_path) -> None:
     result = check_runtime_assets(
         project_root=tmp_path,
-        dataset_path=tmp_path / "datasets" / "missing.csv",
-        la_context_path=tmp_path / "datasets" / "la_context_wales.csv",
+        dataset_path=tmp_path / "runtime-data" / "missing.csv",
+        la_context_path=tmp_path / "runtime-data" / "la_context_wales.csv",
     )
 
     assert result["all_required_present"] is False
-    assert "Wave 2 dataset CSV" in result["missing_required"]
+    assert "Wave 2 dataset source" in result["missing_required"]
     assert "Streamlit config" in result["missing_required"]
+
+
+def test_check_runtime_assets_accepts_dataset_url_without_local_file(tmp_path) -> None:
+    streamlit_config = tmp_path / ".streamlit" / "config.toml"
+    streamlit_config.parent.mkdir(parents=True)
+    streamlit_config.write_text("[server]\nheadless = true\n", encoding="utf-8")
+
+    result = check_runtime_assets(
+        project_root=tmp_path,
+        dataset_path=tmp_path / "runtime-data" / "missing.csv",
+        dataset_url="https://example.invalid/wcva.csv",
+    )
+
+    assert result["all_required_present"] is True
+    assert result["missing_required"] == []
+    assert result["required"][0]["path"] == "https://example.invalid/wcva.csv"
+
+
+def test_check_runtime_assets_marks_demo_mode_for_sample_fixture(
+    tmp_path, monkeypatch
+) -> None:
+    streamlit_config = tmp_path / ".streamlit" / "config.toml"
+    streamlit_config.parent.mkdir(parents=True)
+    streamlit_config.write_text("[server]\nheadless = true\n", encoding="utf-8")
+
+    # Ensure the default dataset path is treated as missing so that
+    # resolve_dataset_source falls back to the bundled sample fixture and
+    # marks the app as running in demo mode, independently of any real
+    # dataset that may exist in the developer's working tree.
+    fake_default = tmp_path / "datasets" / "missing_wave.csv"
+    monkeypatch.setattr("src.config.DEFAULT_DATASET_PATH", fake_default, raising=False)
+    result = check_runtime_assets(project_root=tmp_path)
+
+    assert result["app_mode"] == "demo"
+    assert result["dataset_source"].is_demo is True
+    assert result["required"][0]["mode"] == "demo"
+
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

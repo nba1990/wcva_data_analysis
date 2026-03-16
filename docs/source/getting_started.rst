@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/ 
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 Getting started
 ===============
 
@@ -39,10 +46,11 @@ Then open the URL shown in the terminal (typically http://localhost:8501).
 Configuration
 -------------
 
-* **Data**: Place the main survey CSV at ``datasets/WCVA_W2_Anonymised_Dataset.csv`` (or set the path in code/config). Optional: ``datasets/la_context_wales.csv`` for local-authority context.
-* **Secrets**: Use Streamlit Secrets (e.g. ``.streamlit/secrets.toml``) for any credentials; see the main README.
+* **Data**: Configure the main survey CSV with ``WCVA_DATASET_PATH`` / ``WCVA_DATASET_URL`` or the matching Streamlit secrets keys (``dataset_path`` / ``dataset_url``). For local-only work, an untracked fallback at ``datasets/WCVA_W2_Anonymised_Dataset.csv`` still works.
+* **Context data**: The public local-authority context file is checked in at ``references/context/la_context_wales.csv``. Override it only if needed with ``WCVA_LA_CONTEXT_PATH`` / ``WCVA_LA_CONTEXT_URL`` or matching Streamlit secrets.
+* **Secrets**: Use Streamlit Secrets (see ``.streamlit/secrets.example.toml``) for private dataset URLs or runtime paths; see the main README.
 * **Debug**: Set ``WCVA_DEBUG_MEMORY=1`` to show process memory in the sidebar.
-* **Deployment checks**: The app includes a ``Deployment Health`` page and a startup guard to help diagnose missing runtime files in hosted environments.
+* **Deployment checks**: The app includes a ``Deployment Health`` page and explicit demo-mode fallback to help diagnose missing runtime files in hosted environments.
 
 First steps for developers
 ---------------------------
@@ -62,3 +70,4 @@ To run the dashboard in a container:
    docker compose up --build
 
 See ``docs/DOCKER_AND_DEPLOYMENT.md`` in the repo for full Docker and self-hosting notes.
+Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis 

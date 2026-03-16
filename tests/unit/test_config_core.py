@@ -1,20 +1,33 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 from __future__ import annotations
 
 import pandas as pd
 
 from src.config import (
+    DEFAULT_DATASET_PATH,
+    DEFAULT_LA_CONTEXT_PATH,
     DEMAND_ORDER,
     FINANCIAL_ORDER,
+    SAMPLE_DATASET_PATH,
     WCVA_BRAND,
     AltTextConfig,
     contrast_ratio,
     format_group_summary,
+    get_demo_output_mode,
     get_likert_colours,
     get_palette,
     make_pattern_grouper,
     make_stacked_bar_alt,
     normalise_label,
+    resolve_dataset_source,
     resolve_grouping,
+    resolve_la_context_source,
     summarise_stacked_categories,
     validate_palette_contrast,
 )
@@ -138,3 +151,62 @@ def test_make_stacked_bar_alt_includes_title_and_sample_size() -> None:
     )
     assert "Stacked bar: Change in demand." in alt
     assert "n=40" in alt
+
+
+def test_resolve_dataset_source_prefers_env_path(monkeypatch, tmp_path) -> None:
+    dataset = tmp_path / "wave.csv"
+    dataset.write_text("a,b\n1,2\n", encoding="utf-8")
+    monkeypatch.setenv("WCVA_DATASET_PATH", str(dataset))
+    monkeypatch.delenv("WCVA_DATASET_URL", raising=False)
+
+    source = resolve_dataset_source()
+
+    assert source.value == str(dataset)
+    assert source.source_type == "env_path"
+    assert source.is_demo is False
+
+
+def test_resolve_dataset_source_falls_back_to_sample_fixture(
+    monkeypatch, tmp_path
+) -> None:
+    monkeypatch.delenv("WCVA_DATASET_PATH", raising=False)
+    monkeypatch.delenv("WCVA_DATASET_URL", raising=False)
+
+    # Ensure the default dataset path is treated as missing, even if a real
+    # dataset exists in the developer's working tree. Point it to a
+    # non-existent path under a temporary root so we exercise the
+    # sample-data fallback branch deterministically.
+    fake_default = tmp_path / "datasets" / "missing_wave.csv"
+    monkeypatch.setattr("src.config.DEFAULT_DATASET_PATH", fake_default, raising=False)
+
+    source = resolve_dataset_source()
+
+    assert source.value == str(SAMPLE_DATASET_PATH)
+    assert source.source_type == "sample_path"
+    assert source.is_demo is True
+    assert source.exists is True
+
+
+def test_resolve_la_context_source_defaults_to_public_reference(monkeypatch) -> None:
+    monkeypatch.delenv("WCVA_LA_CONTEXT_PATH", raising=False)
+    monkeypatch.delenv("WCVA_LA_CONTEXT_URL", raising=False)
+
+    source = resolve_la_context_source()
+
+    assert source.value == str(DEFAULT_LA_CONTEXT_PATH)
+    assert source.source_type == "default_path"
+    assert source.is_demo is False
+    assert source.exists is True
+
+
+def test_get_demo_output_mode_defaults_to_separate_outputs(monkeypatch) -> None:
+    monkeypatch.delenv("WCVA_DEMO_OUTPUT_MODE", raising=False)
+    assert get_demo_output_mode() == "separate_outputs"
+
+
+def test_get_demo_output_mode_accepts_banner_only(monkeypatch) -> None:
+    monkeypatch.setenv("WCVA_DEMO_OUTPUT_MODE", "banner_only")
+    assert get_demo_output_mode() == "banner_only"
+
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

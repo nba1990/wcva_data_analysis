@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 """
 Exploratory data analysis functions for Baromedr Cymru Wave 2.
 
@@ -507,13 +514,22 @@ def volunteering_types(df: pd.DataFrame) -> dict[str, Any]:
         if col in df.columns:
             type_data[label] = _value_counts_ordered(df[col], VOL_TYPEUSE_ORDER)
 
+    earned_settlement = (
+        _value_counts_ordered(df["earnedsettlement"], EARNED_SETTLEMENT_ORDER)
+        if "earnedsettlement" in df.columns
+        else pd.DataFrame(columns=["value", "count", "pct"])
+    )
+    settlement_capacity = (
+        df["settlement_capacity"].value_counts().to_dict()
+        if "settlement_capacity" in df.columns
+        else {}
+    )
+
     return {
         "n": len(df),
         "type_data": type_data,
-        "earned_settlement": _value_counts_ordered(
-            df["earnedsettlement"], EARNED_SETTLEMENT_ORDER
-        ),
-        "settlement_capacity": df["settlement_capacity"].value_counts().to_dict(),
+        "earned_settlement": earned_settlement,
+        "settlement_capacity": settlement_capacity,
     }
 
 
@@ -709,3 +725,6 @@ def executive_highlights(df: pd.DataFrame) -> list[dict[str, Any]]:
                 }
             )
     return highlights
+
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

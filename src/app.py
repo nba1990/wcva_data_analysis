@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 """
 Baromedr Cymru Wave 2 — Interactive Analysis Dashboard
 
@@ -21,6 +28,7 @@ from src.config import (
     CONCERNS_LABELS,
     K_ANON_THRESHOLD,
     ORG_SIZE_ORDER,
+    RuntimeDataSource,
     get_app_ui_config,
 )
 from src.data_loader import check_runtime_assets, load_dataset
@@ -56,53 +64,82 @@ st.set_page_config(
 # Data loading (cached)
 # ---------------------------------------------------------------------------
 
-asset_report = check_runtime_assets()
-
-if not asset_report["all_required_present"]:
-    st.error(
-        "Required runtime files are missing. Fix the deployment before using the app."
-    )
-    render_deployment_health(asset_report, df_full=None)
-    st.stop()
-
 
 @st.cache_data
-def get_data() -> pd.DataFrame:
-    """Load and return the main analysis dataset (cleaned, with derived columns)."""
-    return load_dataset()
+def get_data() -> tuple[pd.DataFrame, RuntimeDataSource]:
+    """Load and return the main analysis dataset plus runtime source metadata."""
+    df, source = load_dataset(return_source=True)
+    assert isinstance(
+        source, RuntimeDataSource
+    ), "load_dataset(return_source=True) must return RuntimeDataSource metadata"
+    return df, source
 
 
-df_full = (
-    get_data()
-)  # Analysis DataFrame used throughout the app (includes derived columns). # noqa
+df_full, dataset_source = get_data()
+asset_report = check_runtime_assets()
+is_demo_mode = bool(getattr(dataset_source, "is_demo", False))
+
+if is_demo_mode:
+    st.warning(
+        "Demo / sample data mode is active. The private Wave dataset could not be "
+        "resolved, so the app is using the bundled fixture dataset. Treat all "
+        "figures as demonstration outputs only."
+    )
+    st.caption(
+        f"Resolved dataset source: `{dataset_source.value}` "
+        f"({dataset_source.source_type})."
+    )
+elif asset_report["missing_required"]:
+    st.warning(
+        "Some runtime prerequisites are missing or incomplete. Review the "
+        "Deployment Health page before trusting this environment."
+    )
 
 # ---------------------------------------------------------------------------
 # Sidebar: filters + accessibility toggle
 # ---------------------------------------------------------------------------
 st.sidebar.title("Baromedr Cymru")
-st.sidebar.caption("Wave 2 Analysis Dashboard")
+st.sidebar.caption(
+    "Wave 2 Analysis Dashboard" + (" — DEMO / SAMPLE DATA" if is_demo_mode else "")
+)
+if is_demo_mode:
+    st.sidebar.warning("Demo mode: running from the bundled sample dataset.")
 st.sidebar.divider()
 
-st.sidebar.subheader("Accessibility Features")
+st.sidebar.subheader("Accessibility & Display")
 
 ui_config = get_app_ui_config()
 
-_radio_options = ["Normal", "Larger"]
-ui_config.text_size_mode = st.sidebar.radio(
-    "Chart label size",
-    _radio_options,
-    index=(
-        _radio_options.index(ui_config.text_size_mode)
-        if ui_config.text_size_mode in _radio_options
-        else 0
-    ),
-)
-ui_config.text_scale = 1.0 if ui_config.text_size_mode == "Normal" else 1.3
+with st.sidebar.container():
+    st.caption(
+        "Tune how charts are displayed for readability and colour accessibility. "
+        "These settings only affect your session."
+    )
 
-ui_config.accessible_mode = st.sidebar.checkbox(
-    "Colour-blind friendly mode", value=ui_config.accessible_mode
-)
-ui_config.palette_mode = "accessible" if ui_config.accessible_mode else "brand"
+    _radio_options = ["Normal", "Larger"]
+    if ui_config.text_size_mode not in _radio_options:
+        ui_config.text_size_mode = "Normal"
+
+    ui_config.text_size_mode = st.radio(
+        "Text size for charts",
+        _radio_options,
+        index=_radio_options.index(ui_config.text_size_mode),
+        key="ui_text_size_mode",
+        horizontal=True,
+        help="Larger text can improve readability on projectors or smaller screens.",
+    )
+    ui_config.text_scale = 1.0 if ui_config.text_size_mode == "Normal" else 1.3
+
+    ui_config.accessible_mode = st.checkbox(
+        "Colour-blind friendly palette",
+        key="ui_accessible_mode",
+        value=ui_config.accessible_mode,
+        help=(
+            "Use a palette designed for common colour-vision conditions while "
+            "keeping WCVA branding where possible."
+        ),
+    )
+    ui_config.palette_mode = "accessible" if ui_config.accessible_mode else "brand"
 
 st.sidebar.divider()
 st.sidebar.subheader("Filters")
@@ -226,6 +263,12 @@ if DEBUG_MEMORY:
     process = psutil.Process(os.getpid())
     st.sidebar.caption(f"Memory: {process.memory_info().rss / 1024**2:.1f} MB")
 
+st.sidebar.divider()
+st.sidebar.caption(
+    "Source code available under AGPLv3: "
+    "https://github.com/nba1990/wcva_data_analysis"
+)
+
 # ---------------------------------------------------------------------------
 # Navigation: WCVA pill-style sidebar
 # ---------------------------------------------------------------------------
@@ -321,3 +364,15 @@ elif page == "Deployment Health":
 # =========================================================================
 elif page == "Data Notes":
     render_data_notes(df)
+
+
+# ---------------------------------------------------------------------------
+# Global footer (shown on every page)
+# ---------------------------------------------------------------------------
+st.divider()
+st.caption(
+    "Source code available under AGPLv3: "
+    "https://github.com/nba1990/wcva_data_analysis"
+)
+
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

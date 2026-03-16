@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/ 
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 # WCVA Baromedr Wave 2 – Architecture Overview
 
 This document explains how the dashboard is structured, how the main modules interact, and what to keep in mind when extending it. It assumes general Python knowledge but no prior Streamlit experience.
@@ -17,8 +24,8 @@ Browser ⇄ Streamlit frontend ⇄ `src/app.py` (backend script)
 ### 1.1 Entry point – `src/app.py`
 
 - Configures the Streamlit page (title, layout, favicon).
-- Runs a runtime asset check before loading data; if required files are missing, the app shows a health view and stops early.
-- Loads the Wave 2 dataset via `data_loader.load_dataset()` using `st.cache_data` so all users share the same read‑only DataFrame.
+- Resolves the runtime dataset source before loading data and falls back to the bundled sample fixture in explicit demo mode when the private Wave dataset is unavailable.
+- Loads the Wave 2 dataset via `data_loader.load_dataset()` using `st.cache_data` so all users share the same read‑only DataFrame and the resolved runtime-source metadata.
 - Sets up the sidebar:
   - Accessibility controls (text size, colour‑blind friendly palette) backed by per-session UI config from `get_app_ui_config()` (stored in `st.session_state["app_ui_config"]`).
   - Filter controls (organisation size, scope, local authority, main activity, paid staff, selected concerns).
@@ -58,16 +65,16 @@ The `sroi_references.py` page is slightly different in that it:
 The `deployment_health.py` page is operational rather than analytical:
 
 - It renders the output of `data_loader.check_runtime_assets()`.
-- It shows which required files are missing and which optional files are unavailable.
-- It doubles as the fallback page shown by `app.py` during startup if required files are missing.
+- It shows which runtime sources were resolved, whether the app is in real-data or demo mode, and which optional files are unavailable.
+- It serves as the canonical in-app explanation of deployment state and runtime configuration.
 
 ## 2. Data and analytical layer
 
 ### 2.1 `src/data_loader.py`
 
-- Responsible for loading the anonymised Wave 2 CSV from `datasets/`.
+- Responsible for loading the anonymised Wave 2 CSV from a runtime path, URL, local fallback, or bundled sample fixture.
 - Applies light cleaning, derived columns, and joins against auxiliary context tables where needed.
-- Exposes `check_runtime_assets()` to verify required and optional files for deployment.
+- Exposes `check_runtime_assets()` to verify required and optional files for deployment, plus resolved runtime-source metadata.
 - Returns a single canonical DataFrame that the rest of the app uses.
 
 ### 2.2 `src/eda.py`
@@ -81,12 +88,15 @@ The `deployment_health.py` page is operational rather than analytical:
   - `render_overview`, `render_executive_summary`, and other section pages.
   - Tests in `tests/test_wcva_metrics_wave2.py` and `tests/unit/test_metrics_executive_overview.py` (fixture‑based regression guards).
 
-### 2.3 `src/wave_context.py`
+### 2.3 `src/wave_context.py` and per-wave schemas
 
 - Encapsulates cross‑wave comparisons using a registry model.
 - Provides helpers such as:
   - `get_wave_registry(df)` and `build_trend_long(...)` / `build_trend_pivot(...)`.
   - Comparison functions like `compare_demand_increase(...)` and `compare_financial_deterioration(...)`.
+- Uses a small per‑wave schema and mapping layer:
+  - `config/waves/wave2.schema.yml` (and future `waveN.schema.yml` files) describe how raw columns map onto a stable set of canonical metrics (e.g. demand increase, finances deteriorated, has volunteers, has reserves).
+  - `src/wave_schema.py` loads these schemas and evaluates metrics via a tiny vocabulary (e.g. `share_eq`, `share_in`, `share_gt`, `conditional_share`), so cross‑wave trends are configured declaratively rather than hard‑coded per wave.
 - Consumed by:
   - `render_trends_and_waves` for the cross‑wave trend table and charts.
   - `render_executive_summary` for contextual call‑outs and earliest vs latest comparisons.
@@ -148,7 +158,7 @@ Streamlit runs the same Python script per browser session, rerunning top‑to‑
     - `st.session_state["app_ui_config"]` for the UI config dataclass (`StreamlitAppUISharedConfigState`), accessed via `get_app_ui_config()` from `src.config`. One instance per session; do not use a module-level singleton.
   - Each browser tab has its own session, so these values are isolated per user/tab.
 - **Shared resources**:
-  - The dataset is loaded once per process using `@st.cache_data` (`get_data()` in `app.py`), so all users share a single in‑memory copy.
+  - The dataset is loaded once per process using `@st.cache_data` (`get_data()` in `app.py`), so all users share a single in‑memory copy and the same resolved runtime-source metadata.
   - The local-authority context CSV is loaded via `load_la_context()` in `data_loader.py`, which is cached with `@functools.lru_cache` so it is read from disk once per process.
   - The SROI mind-map HTML is loaded via `_get_mindmap_html()` in `sroi_references.py`, cached with `@st.cache_data`.
   - Heavy or external resources (if any) should use `st.cache_resource`.
@@ -208,9 +218,9 @@ The SROI & References page (`src/section_pages/sroi_references.py`) brings sever
 
 ### 8.1 Deployment and Docker
 
-The app can be run in a container for self-hosting or deployment. A `Dockerfile` and `docker-compose.yml` are provided; full instructions (build, run, data mounts, reverse proxy, env vars) are in **`docs/DOCKER_AND_DEPLOYMENT.md`**. Streamlit Community Cloud remains an option without Docker (see README).
+The app can be run in a container for self-hosting or deployment. A `Dockerfile` and `docker-compose.yml` are provided; full instructions (build, run, runtime data configuration, reverse proxy, env vars) are in **`docs/DOCKER_AND_DEPLOYMENT.md`**. Streamlit Community Cloud remains an option without Docker (see README).
 
-The deployment guard in `src/app.py` adds one extra protection for hosted environments: if required runtime files are missing, the app stops before normal page rendering and shows the Deployment Health view instead of failing deeper in the analysis code.
+The runtime-data model in `src/app.py` adds one extra protection for hosted environments: if the private dataset is unavailable, the app falls back to the bundled sample fixture and marks the session as demo mode instead of failing deeper in the analysis code.
 
 ---
 
@@ -236,9 +246,10 @@ A short “tour” for maintainers and new developers: where to look first and h
 
 - **`README.md`** – Quickstart, structure, testing, deployment (including Docker), SROI page, multi‑user behaviour. Also has a **"New here? Picking this up again?"** orientation and a **Documentation index** table of all key docs.
 - **`ARCHITECTURE.md`** (this file) – Flow, modules, session model, performance/caching, how to extend, developer tour, future dashboards.
-- **`docs/adr/`** – ADR-001 (Streamlit), ADR-002 (navigation), ADR-003 (SROI charts), ADR-004 (state and caching), ADR-005 (Docker and self-hosting), ADR-006 (CI and testing). Read these when changing UI framework, nav, SROI chart location, session/cache design, deployment approach, or CI/test pipeline.
+- **`docs/adr/`** – ADR-001 (Streamlit), ADR-002 (navigation), ADR-003 (SROI charts), ADR-004 (state and caching), ADR-005 (Docker and self-hosting), ADR-006 (CI and testing), ADR-007 (runtime data and demo mode). Read these when changing UI framework, nav, SROI chart location, session/cache design, deployment approach, CI/test pipeline, or runtime data behaviour.
 - **`docs/DOCKER_AND_DEPLOYMENT.md`** – Docker build/run, docker-compose, self-hosting, and deployment options.
 - **`docs/LEARNING_AND_BACKLOG.md`** – Backlog items (PyGWalker, DuckDB, PyDeck, new dashboards), testing strategy notes, and pointers to policy questions and plans.
+- **`docs/learning/`** – Curated learning guides that explain how this repo handles private data, deployment, testing, releases, and git hygiene for a Python/data-science audience.
 
 ---
 
@@ -257,3 +268,4 @@ When adding a **new evidence‑style or narrative page** (like the SROI page), r
 3. Use `st.components.v1.html` for embedded HTML (e.g. Markmap) if needed; keep assets under `references/` or a dedicated docs folder.
 
 Technology explorations (PyGWalker, YData Profiling, DuckDB, PyDeck) are summarised in `docs/LEARNING_AND_BACKLOG.md`.
+Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis 

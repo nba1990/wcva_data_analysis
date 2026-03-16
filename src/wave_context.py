@@ -1,3 +1,10 @@
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License v3.
+#
+# See the LICENSE file for details.
+
 """
 Wave-level context and comparison for Baromedr.
 
@@ -16,6 +23,8 @@ from typing import Any, Dict, Mapping, Optional
 import pandas as pd
 import streamlit as st
 from pydantic import BaseModel, ConfigDict, Field
+
+from src.wave_schema import evaluate_metric, load_wave_schema
 
 
 class StrictBaseModel(BaseModel):
@@ -389,6 +398,15 @@ def build_wave_context_from_df(
 
     n = prof["n"]
 
+    # Load per-wave schema for canonical metric evaluation. For Wave 2 this
+    # should reproduce existing behaviour; if a schema is missing we fall back
+    # to direct EDA-derived values.
+    schema_id = f"wave{wave_number}"
+    try:
+        schema = load_wave_schema(schema_id)
+    except FileNotFoundError:
+        schema = None
+
     meta = Meta(
         title="Key Performance Indicators",
         subtitle="Organisational survey",
@@ -398,22 +416,41 @@ def build_wave_context_from_df(
         wave_response_desc=f"{n} organisations responded to {wave_label}",
     )
 
+    if schema and "finance_deteriorated_costs" in schema.metrics:
+        fin_det_pct = evaluate_metric(df, schema.metrics["finance_deteriorated_costs"])
+    else:
+        fin_det_pct = int(round(wf["finance_deteriorated_pct"]))
+
+    if schema and "using_reserves" in schema.metrics:
+        using_reserves_pct = evaluate_metric(df, schema.metrics["using_reserves"])
+    else:
+        using_reserves_pct = int(round(wf["using_reserves_pct"]))
+
+    if schema and "has_reserves" in schema.metrics:
+        has_reserves_pct = evaluate_metric(df, schema.metrics["has_reserves"])
+    else:
+        has_reserves_pct = int(round(wf["reserves_yes_pct"]))
+
     financial_health = HeadlineFinancialHealth(
-        financial_position_deteriorated_due_to_rising_costs_pct=int(
-            round(wf["finance_deteriorated_pct"])
-        ),
-        using_reserves_to_cover_operational_costs_pct=int(
-            round(wf["using_reserves_pct"])
-        ),
-        has_financial_reserves_pct=int(round(wf["reserves_yes_pct"])),
-        using_reserves_among_those_with_reserves_pct=int(
-            round(wf["using_reserves_pct"])
-        ),
+        financial_position_deteriorated_due_to_rising_costs_pct=fin_det_pct,
+        using_reserves_to_cover_operational_costs_pct=using_reserves_pct,
+        has_financial_reserves_pct=has_reserves_pct,
+        using_reserves_among_those_with_reserves_pct=using_reserves_pct,
     )
 
+    if schema and "has_volunteers" in schema.metrics:
+        has_volunteers_pct = evaluate_metric(df, schema.metrics["has_volunteers"])
+    else:
+        has_volunteers_pct = int(round(prof["has_volunteers_pct"]))
+
+    if schema and "has_paid_staff" in schema.metrics:
+        has_paid_staff_pct = evaluate_metric(df, schema.metrics["has_paid_staff"])
+    else:
+        has_paid_staff_pct = int(round(prof["has_paid_staff_pct"]))
+
     workforce_headline = WorkforceHeadline(
-        has_volunteers_pct=int(round(prof["has_volunteers_pct"])),
-        has_paid_staff_pct=int(round(prof["has_paid_staff_pct"])),
+        has_volunteers_pct=has_volunteers_pct,
+        has_paid_staff_pct=has_paid_staff_pct,
         face_staff_recruitment_difficulties_pct=int(
             round(wf["staff_rec_difficulty_pct"])
         ),
@@ -464,19 +501,11 @@ def build_wave_context_from_df(
         )
         ranked_concerns: list[RankedConcern] = []
     else:
-        income_row = concerns_df[concerns_df["label"] == "Income"].iloc[0]
-        inc_demand_row = concerns_df[concerns_df["label"] == "Increasing demand"].iloc[
-            0
-        ]
-        inflation_row = concerns_df[
-            concerns_df["label"] == "Inflation (non-energy)"
-        ].iloc[0]
-
         key_concerns_top_cards = KeyOrganisationalConcernsTopCards(
-            income_pct=int(round(income_row["pct"])),
-            increasing_demand_for_services_pct=int(round(inc_demand_row["pct"])),
-            inflation_goods_and_services_prices_other_than_energy_pct=int(
-                round(inflation_row["pct"])
+            income_pct=_pct_for_concern("Income"),
+            increasing_demand_for_services_pct=_pct_for_concern("Increasing demand"),
+            inflation_goods_and_services_prices_other_than_energy_pct=_pct_for_concern(
+                "Inflation (non-energy)"
             ),
         )
 
@@ -1257,3 +1286,4 @@ WAVE_REGISTRY = load_wave_registry(ALL_WAVES_RAW)
 #     WAVE_REGISTRY.get("Wave 2"),
 # )
 # print(result)
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis
