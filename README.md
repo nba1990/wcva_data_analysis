@@ -14,7 +14,7 @@ See the LICENSE file for full licensing terms.
 [![Live demo](https://img.shields.io/badge/Streamlit-live%20demo-brightgreen.svg)](https://baromedr.streamlit.app/)
 [![Docs](https://readthedocs.org/projects/baromedr/badge/?version=latest)](https://baromedr.readthedocs.io/en/latest/)
 
-Current release: **0.2.3**
+Current release: **0.3.0**
 
 This repository contains an interactive **Streamlit** dashboard and supporting scripts for analysing **Baromedr Cymru Wave 2** – a quarterly temperature check of the Welsh voluntary sector – with a particular focus on volunteering, workforce, finances, and SROI evidence for the Welsh voluntary sector.
 

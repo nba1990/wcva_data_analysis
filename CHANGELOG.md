@@ -16,6 +16,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.3.0] - 2026-03-18
+
+### Added
+
+- `requirements-dev.txt` to separate development and CI tooling from runtime dependencies.
+- `scripts/run_quality_checks.sh` as a one-command local runner for Ruff, import-linter, mypy, tests, security checks, packaging, diagrams, and docs builds.
+- `.github/dependabot.yml` for automated dependency and GitHub Actions update proposals.
+- `tests/unit/test_import_linter_contracts.py` to guard against silent import-linter contract misconfiguration.
+
+### Changed
+
+- The project now uses Ruff for linting, formatting, and import sorting across CI, local development, and contributor guidance.
+- GitHub Actions now covers Ruff, import-linter, mypy, security scans, packaging validation, docs builds, and broader workflow controls such as concurrency and timeouts.
+- Packaging metadata is now managed through `pyproject.toml`, including the build backend, package discovery, and coverage configuration.
+- Contributor and release documentation now points to the unified quality runner and the expanded release verification process.
+- Read the Docs configuration now installs the system Graphviz dependency so code-derived diagrams render correctly in hosted docs.
+
+### Fixed
+
+- The Read the Docs hosted architecture pages now have the required Graphviz system dependency available, preventing raw DOT source from being shown instead of rendered diagrams.
+- Import-linter configuration now uses section names that the current tool version actually loads, avoiding false “0 kept, 0 broken” reports.
+- The runtime-source integration test now clears the cached dataset loader and uses a schema-valid temporary CSV fixture, so CI correctly verifies non-demo dataset metadata resolution.
+
 ## [0.2.3] - 2026-03-16
 
 ### Added
