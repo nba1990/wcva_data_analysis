@@ -53,9 +53,7 @@ def _base_layout(
     title: str, n: int, height: int = 450, width: int | None = None
 ) -> dict:
     """Build shared Plotly layout dict (title with n= subtitle, fonts, bg, margins)."""
-    subtitle = (
-        "<span style='font-size:12px;color:#666'>" f"n = {n} organisations" "</span>"
-    )
+    subtitle = f"<span style='font-size:12px;color:#666'>n = {n} organisations</span>"
     layout = dict(
         title=dict(
             text=f"<b>{title}</b><br>{subtitle}",
@@ -480,7 +478,7 @@ def heatmap_matrix(
 
     text = [
         [
-            f"{pct.iloc[i, j]:.{decimals}f}%\n" f"({int(plot_counts.iloc[i, j])})"
+            f"{pct.iloc[i, j]:.{decimals}f}%\n({int(plot_counts.iloc[i, j])})"
             for j in range(len(x_labels))
         ]
         for i in range(len(data))
@@ -630,9 +628,9 @@ def show_chart(fig: go.Figure, key: str, data_df: pd.DataFrame | None = None) ->
                     "alt_text": fig._alt_text,
                 },
             )
-        except Exception:
-            # Diagnostics must never break chart rendering; swallow errors.
-            pass
+        except Exception as exc:
+            # Diagnostics must never break chart rendering.
+            WCVA_LOGGER.debug("Accessibility diagnostics failed", exc_info=exc)
 
     st.plotly_chart(fig, width="stretch", key=key)
     if hasattr(fig, "_alt_text"):

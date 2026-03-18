@@ -20,17 +20,41 @@ Thank you for your interest in contributing. This document explains how to set u
   python -m venv .venv
   source .venv/bin/activate   # Windows: .venv\Scripts\activate
   pip install -r requirements.txt
+  pip install -r requirements-dev.txt
   ```
-- **Optional – pre-commit hooks** (run Black, isort, and tests before each commit):
+- **Optional – pre-commit hooks** (run Ruff, mypy, architecture checks, and tests before each commit):
   ```bash
-  pip install pre-commit
   pre-commit install
   ```
   After this, `git commit` will run the hooks. Run manually with: `pre-commit run --all-files`.
+- **Recommended one-shot local validation**:
+  ```bash
+  scripts/run_quality_checks.sh
+  ```
+  For a faster developer pass, use:
+  ```bash
+  scripts/run_quality_checks.sh --quick
+  ```
+  The script uses the project `.venv` and bundles the repo’s main quality gates in one place.
+  In `--full` mode, `pip-audit` needs outbound network access to query vulnerability data.
 
 ---
 
 ## 2. Before you submit
+
+If you want the main local checks in one go, run:
+
+```bash
+scripts/run_quality_checks.sh
+```
+
+For a faster pre-push pass while iterating locally, run:
+
+```bash
+scripts/run_quality_checks.sh --quick
+```
+
+You can still run the underlying commands individually if you only need one category of check.
 
 1. **Tests**: From the project root, run:
    ```bash
@@ -42,24 +66,36 @@ Thank you for your interest in contributing. This document explains how to set u
    ```
    To run with coverage: `pytest tests/ -m "not e2e" --cov=src --cov-report=term-missing`. See `docs/LEARNING_AND_BACKLOG.md` (§3.2) for coverage goals.
 
-2. **Formatting**: The project uses **Black** and **isort**. CI will fail if files are not formatted.
+2. **Formatting and linting**: The project uses **Ruff** for linting, import sorting, and formatting. CI will fail if files are not compliant.
    ```bash
-   black src/ tests/
-   isort src/ tests/
+   ruff check .
+   ruff format .
    ```
-   Or use pre-commit (above) to do this automatically.
+   Or use pre-commit (above) to do this automatically. For a non-mutating check, use `ruff format --check .`.
 
-3. **Type checking** (optional): If mypy is configured, run:
+3. **Type checking**: Run:
    ```bash
    mypy src/
    ```
 
-4. **Logging and observability**:
+4. **Architecture contracts**: Run:
+   ```bash
+   lint-imports
+   ```
+
+5. **Security checks**: Run:
+   ```bash
+   XDG_CACHE_HOME=/tmp pip-audit
+   bandit -q -r src references/SROI_Wales_Voluntary_Sector/scripts tools
+   git ls-files -z | xargs -0 detect-secrets-hook --baseline .secrets.baseline
+   ```
+
+6. **Logging and observability**:
    - Use the shared `WCVA_LOGGER` from `src.config` instead of creating new loggers.
    - Prefer structured logs with `extra={...}` for key fields (for example: `{"app_mode": "demo", "n_rows": len(df)}`).
    - Log configuration and data-source decisions at **INFO**; use **WARNING** for insecure or unexpected but recoverable situations; use **ERROR** when a request or page cannot proceed.
 
-5. **Secrets scanning (detect-secrets)**:
+7. **Secrets scanning (detect-secrets)**:
    - This repo is configured to use [`detect-secrets`](https://github.com/Yelp/detect-secrets) via pre-commit.
    - To (re)generate the baseline after installing `detect-secrets`:
      ```bash
@@ -68,10 +104,7 @@ Thank you for your interest in contributing. This document explains how to set u
    - The `.pre-commit-config.yaml` hook uses this baseline:
      ```yaml
      - id: detect-secrets
-       name: detect-secrets (scan for secrets)
-       entry: .venv/bin/detect-secrets-hook --baseline .secrets.baseline
-       language: system
-       pass_filenames: true
+       args: ["--baseline", ".secrets.baseline"]
      ```
    - After updating the baseline, run:
      ```bash
@@ -103,12 +136,15 @@ The maintainers may ask for adjustments; once approved, your PR will be merged.
 To build the project documentation (getting started, architecture, API reference):
 
 ```bash
-pip install -r requirements.txt
-pip install -r docs/requirements-docs.txt
-cd docs && make html
+  pip install -r requirements.txt
+  pip install -r requirements-dev.txt
+  pip install -r docs/requirements-docs.txt
+  cd docs && make html
 ```
 
 Output is in `docs/build/html/`; open `index.html` in a browser. The API reference is generated from the same docstrings and type hints you add in code (see §7). When you run the build, Streamlit may print warnings (e.g. "No runtime found", "missing ScriptRunContext") because Sphinx imports the app outside a Streamlit run; these are expected and can be ignored.
+
+If you have already installed `docs/requirements-docs.txt`, the same docs build is included in `scripts/run_quality_checks.sh`.
 
 The public hosted documentation is available on Read the Docs at `https://baromedr.readthedocs.io/en/latest/`.
 
@@ -127,7 +163,7 @@ The public hosted documentation is available on Read the Docs at `https://barome
 
 - **Session state**: Per-user state lives in `st.session_state`; use `get_app_ui_config()` from `src.config` for the UI config. Do not use module-level mutable globals for per-request data (see ADR-004).
 - **Caching**: Use `st.cache_data` for read-only data loading; keep heavy or shared resources in `st.cache_resource` where appropriate.
-- **Style**: Follow Black and isort; use type hints for function parameters and return values where they add clarity.
+- **Style**: Follow Ruff formatting and lint rules; use type hints for function parameters and return values where they add clarity.
 - **Docstrings**: Public functions and modules should have a short docstring; use comprehensive docstrings for non-obvious behaviour (e.g. EDA helpers, config grouping).
 
 ---

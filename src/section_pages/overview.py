@@ -32,7 +32,6 @@ from src.config import (
 from src.eda import (
     demand_and_outlook,
     volunteer_recruitment_analysis,
-    volunteer_retention_analysis,
     workforce_operations,
 )
 from src.narratives import demand_finance_scissor_phrase
@@ -79,7 +78,6 @@ def render_overview(
     dem = demand_and_outlook(df)
     wf_overview = workforce_operations(df)
     rec_overview = volunteer_recruitment_analysis(df)
-    ret_overview = volunteer_retention_analysis(df)
 
     cols = st.columns(4)
     cols[0].markdown(

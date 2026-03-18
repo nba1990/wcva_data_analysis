@@ -67,6 +67,10 @@ For a deeper architectural description, see `ARCHITECTURE.md`. For a short **dev
 ```text
 <project-root>/
 │
+├── scripts/
+│   ├── generate_diagrams.py      # Refresh Graphviz/Mermaid-derived documentation diagrams
+│   └── run_quality_checks.sh     # One-shot local quality runner (quick or full)
+│
 ├── src/
 │   ├── __init__.py
 │   ├── app.py                    # Streamlit multi-page app: filters, nav, page dispatch
@@ -116,10 +120,11 @@ For a deeper architectural description, see `ARCHITECTURE.md`. For a short **dev
 ├── CONTRIBUTING.md               # How to contribute (setup, tests, PRs)
 ├── Dockerfile                    # Container image for the dashboard
 ├── docker-compose.yml            # Compose stack for local or server deployment
-├── .pre-commit-config.yaml       # Optional pre-commit hooks (Black, isort, pytest)
-├── pyproject.toml                # Black, isort, mypy config; project metadata
+├── .pre-commit-config.yaml       # Optional pre-commit hooks (Ruff, mypy, pytest, import-linter)
+├── pyproject.toml                # Ruff, mypy, coverage, packaging config; project metadata
 ├── pytest.ini                    # Pytest discovery and markers (e.g. e2e)
 ├── requirements.txt
+├── requirements-dev.txt          # Dev / CI tooling (Ruff, mypy, pytest, security, build)
 ├── README.md
 └── LICENSE
 ```
@@ -136,15 +141,18 @@ cd wcva_data_analysis  # or your chosen directory name
 python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-# Install dependencies
+# Install runtime dependencies
 pip install -r requirements.txt
+
+# Install development and CI tooling
+pip install -r requirements-dev.txt
 ```
 
 **Tested with** Python 3.11 and 3.12. The project uses lower-bound version constraints in `requirements.txt`; for reproducible installs you can pin versions (e.g. `pip freeze > requirements-lock.txt`) or use the same minor Python version as CI.
 
 ### Pre-commit (optional)
 
-To run Black, isort, and tests automatically before each commit:
+To run Ruff, type checking, architecture checks, and tests automatically before each commit:
 
 ```bash
 pip install pre-commit
@@ -152,6 +160,23 @@ pre-commit install
 ```
 
 Then `git commit` will run the hooks. See **`CONTRIBUTING.md`** for more.
+
+### One-shot local quality checks
+
+If you want one command that runs the main local quality gates, use:
+
+```bash
+scripts/run_quality_checks.sh
+```
+
+That runs the broader local suite: Ruff, import-linter, mypy, non-e2e tests with coverage, the e2e smoke test, security scans, package build, diagram generation, and the Sphinx docs build.
+`pip-audit` in that full pass needs outbound network access to query vulnerability data.
+
+For a faster day-to-day pass while you are iterating on code, use:
+
+```bash
+scripts/run_quality_checks.sh --quick
+```
 
 ### Docker (optional)
 
@@ -245,7 +270,7 @@ This repository also includes a minimal [Read the Docs](https://readthedocs.org/
 | **docs/source/capability_clusters.md** | General-purpose capability-cluster map (PaaS/SaaS/product engineering), linked back to this repo’s concrete practices. |
 | **docs/source/improvements_review.md** | Capability-cluster audit + prioritised improvement backlog for this codebase. |
 | **pytest.ini** | Test discovery, `e2e` marker. |
-| **pyproject.toml** | Black, isort, mypy config. |
+| **pyproject.toml** | Ruff, mypy, coverage, and packaging config. |
 
 ---
 
@@ -282,7 +307,19 @@ The public local-authority context file now lives at `references/context/la_cont
 
 ## Testing
 
-Run the full test suite with:
+For the closest local equivalent to the project quality gates, run:
+
+```bash
+scripts/run_quality_checks.sh
+```
+
+For a faster developer pass, run:
+
+```bash
+scripts/run_quality_checks.sh --quick
+```
+
+You can still run individual commands directly when needed. For example, run the full test suite with:
 
 ```bash
 pytest
@@ -294,7 +331,7 @@ To exclude end-to-end tests (e.g. in CI or when you don't have a Streamlit runti
 pytest -m "not e2e"
 ```
 
-**CI (GitHub Actions):** On every push to `main`/`master`, the `.github/workflows/ci.yml` workflow runs tests (Python 3.11 and 3.12) and lint (Black and isort). The previous Conda and Pylint workflows were removed; the project uses `requirements.txt` and pip. See `pytest.ini` for test discovery and the `e2e` marker.
+**CI (GitHub Actions):** On every push and pull request, `.github/workflows/ci.yml` runs tests (Python 3.11 and 3.12), Ruff lint/format checks, import-linter contracts, mypy, dependency and code security scans, package build validation, docs build, and an e2e smoke test. The project uses pip-based requirements files rather than Conda. The local `scripts/run_quality_checks.sh` runner mirrors those quality gates in one place. See `pytest.ini` for test discovery and the `e2e` marker.
 
 Highlights:
 
@@ -419,7 +456,7 @@ Guidelines for contributions:
 1. Fork the repository and create a feature branch.
 2. Install dependencies and (optionally) pre-commit (see above).
 3. Add or update tests where appropriate; run `pytest` (or `pytest -m "not e2e"`).
-4. Run `black src/ tests/` and `isort src/ tests/` so CI passes.
+4. Run `ruff check .` and `ruff format .` so CI passes.
 5. Follow the project’s **documentation and typing standards**: module and function docstrings (with Args/Returns where useful), type hints on parameters and return values. See **`CONTRIBUTING.md`** §7.
 6. Submit a pull request describing the change and motivation.
 

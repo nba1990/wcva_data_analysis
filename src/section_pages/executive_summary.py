@@ -80,7 +80,6 @@ def render_executive_summary(df: pd.DataFrame, suppressed: bool) -> None:
     with st.expander("Show detailed calculations for these executive highlights"):
         dem_exec = demand_and_outlook(df)
         rec_exec = volunteer_recruitment_analysis(df)
-        ret_exec = volunteer_retention_analysis(df)
         wf_exec = workforce_operations(df)
         cross_exec = finance_recruitment_cross(df)
 

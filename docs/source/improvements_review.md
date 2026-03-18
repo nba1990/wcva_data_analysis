@@ -16,7 +16,7 @@ This is grounded in this repository, but phrased so the same review method can b
 This repo is already unusually strong for a data-heavy Streamlit dashboard:
 
 - **Operational robustness is first-class**: explicit demo mode, runtime source resolution, deployment health UI, operator runbook.
-- **Quality gates exist and are automated**: CI covers tests, lint (Black/isort), import-linter architecture contracts, mypy, pip-audit, docs build.
+- **Quality gates exist and are automated**: CI covers tests, Ruff lint/format checks, import-linter architecture contracts, mypy, security scans, packaging validation, and docs build.
 - **Documentation is treated as a product artefact**: Sphinx site with architecture, operations, privacy/suppression, lifecycle guidance.
 
 The biggest opportunities are now mostly “maturity” improvements:

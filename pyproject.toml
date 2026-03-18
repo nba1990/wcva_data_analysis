@@ -5,6 +5,10 @@
 #
 # See the LICENSE file for details.
 
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "wcva-baromedr-dashboard"
 version = "0.2.3"
@@ -12,24 +16,44 @@ description = "WCVA Baromedr Cymru Wave 2 Analysis Dashboard"
 readme = "README.md"
 requires-python = ">=3.11"
 
-[tool.black]
-line-length = 88
-target-version = ["py311"]
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # default excludes
-  \.eggs
-  | \.git
-  | \.venv
-  | __pycache__
-)/
-'''
+[tool.setuptools.packages.find]
+include = ["src*"]
 
-[tool.isort]
-profile = "black"
-line_length = 88
-known_first_party = ["src"]
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+extend-exclude = [
+  ".eggs",
+  ".git",
+  ".venv",
+  "__pycache__",
+  "build",
+  "dist",
+  "*.egg-info",
+]
+
+[tool.ruff.lint]
+select = [
+  "E4",
+  "E7",
+  "E9",
+  "F",
+  "I",
+  "B",
+  "UP",
+]
+ignore = [
+  "B905",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"docs/source/conf.py" = ["E402"]
+"src/app.py" = ["E402"]
+"src/debug_metrics.py" = ["E402"]
+"src/generate_presentation.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -60,4 +84,13 @@ module = [
 # codes while we keep the rest of the codebase on gradual typing.
 disable_error_code = ["union-attr", "arg-type", "assignment", "return-value"]
 warn_return_any = true
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+
+[tool.coverage.report]
+fail_under = 57
+show_missing = true
+skip_empty = true
 # Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

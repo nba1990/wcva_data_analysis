@@ -186,7 +186,7 @@ pytest tests/ -m "not e2e"
 pytest tests/e2e/test_streamlit_smoke.py  # optional local e2e smoke
 ```
 
-CI will also run mypy, Black, and isort (see §7).
+CI will also run mypy and Ruff (see §7).
 
 ---
 
@@ -217,8 +217,8 @@ This repository treats formatting, tests, and typing as part of “production qu
 Locally you can run:
 
 ```bash
-black src/ tests/
-isort src/ tests/
+ruff check .
+ruff format .
 pytest tests/ -m "not e2e"
 mypy src/ tests/
 ```
@@ -226,8 +226,7 @@ mypy src/ tests/
 If you have `pre-commit` installed (see the README and `CONTRIBUTING.md`):
 
 - `pre-commit run --all-files` will run:
-  - Black
-  - isort
+  - Ruff
   - the fast non‑e2e test subset
   - mypy (on `src/` and `tests/`)
 
@@ -305,7 +304,7 @@ When you next move work from a notebook into this repo, treat this as your check
 3. **Wire the helper** into an existing or new `src/section_pages/` page.
 4. **Respect demo mode and k‑anonymity**; keep the app usable without private data.
 5. **Add tests** (unit + integration where appropriate).
-6. **Run Black, isort, pytest, mypy** (or pre‑commit) locally.
+6. **Run Ruff, pytest, mypy** (or pre‑commit) locally.
 7. **Update docs and changelog**.
 8. **Open a PR** with a short description that links code, tests, and docs.
 

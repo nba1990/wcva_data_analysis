@@ -10,10 +10,10 @@ import json
 import os
 import re
 import urllib.request
-import xml.etree.ElementTree as ET
-from typing import Dict, Iterable, Optional
+from collections.abc import Iterable
 
 import plotly.graph_objects as go
+from defusedxml import ElementTree as ET
 
 from src.sroi_charts.sroi_figures import (
     make_alignment_heatmap_figure,
@@ -45,11 +45,11 @@ def save_plotly_figure(
     fig: go.Figure,
     basename: str,
     *,
-    width: Optional[int] = None,
-    height: Optional[int] = None,
+    width: int | None = None,
+    height: int | None = None,
     png: bool = True,
     svg: bool = True,
-    meta: Optional[Dict[str, str]] = None,
+    meta: dict[str, str] | None = None,
 ) -> None:
     """Save a Plotly figure in a consistent way (PNG/SVG + optional meta)."""
     if width is not None or height is not None:
@@ -67,7 +67,7 @@ def save_plotly_figure(
         write_meta(basename, caption=meta["caption"], description=meta["description"])
 
 
-def _parse_transform_translate(transform: str) -> Optional[Iterable[float]]:
+def _parse_transform_translate(transform: str) -> Iterable[float] | None:
     """Extract x, y from a simple 'translate(x,y)' transform string."""
     if not transform:
         return None
@@ -140,7 +140,6 @@ def normalize_mermaid_svg_text(svg_path: str) -> None:
         # Find an appropriate rect: for normal nodes, it is in the node group;
         # for cluster labels, the rect is on the enclosing cluster group.
         rect = None
-        search_group = node_group
         if node_group is not None:
             for candidate in node_group.findall(rect_tag):
                 cls = candidate.attrib.get("class", "")
@@ -238,7 +237,7 @@ def create_mermaid_diagram(
 ) -> None:
     """Render a Mermaid diagram to PNG/SVG using mmdc or mermaid.ink, then normalise SVG text."""
     import shutil
-    import subprocess
+    import subprocess  # nosec B404
     import tempfile
 
     png_path = os.path.join(OUTPUT_DIR, f"{basename}.png")
@@ -261,7 +260,7 @@ def create_mermaid_diagram(
             input_path = f.name
         try:
             if png:
-                subprocess.run(
+                subprocess.run(  # nosec B603
                     [
                         mmdc,
                         "-i",
@@ -277,7 +276,7 @@ def create_mermaid_diagram(
                     env=env,
                 )
             if svg:
-                subprocess.run(
+                subprocess.run(  # nosec B603
                     [
                         mmdc,
                         "-i",
@@ -307,7 +306,10 @@ def create_mermaid_diagram(
                     ),
                 },
             )
-            with urllib.request.urlopen(req) as resp, open(png_path, "wb") as out:
+            with (
+                urllib.request.urlopen(req) as resp,  # nosec B310
+                open(png_path, "wb") as out,
+            ):
                 out.write(resp.read())
 
         if svg:
@@ -321,7 +323,10 @@ def create_mermaid_diagram(
                     ),
                 },
             )
-            with urllib.request.urlopen(req) as resp, open(svg_path, "wb") as out:
+            with (
+                urllib.request.urlopen(req) as resp,  # nosec B310
+                open(svg_path, "wb") as out,
+            ):
                 out.write(resp.read())
 
     if svg:
@@ -332,7 +337,7 @@ def create_mermaid_diagram(
 
 
 def create_funding_flows_chart() -> None:
-    print(f"Creating Chart 1: Funding flows...")
+    print("Creating Chart 1: Funding flows...")
 
     fig = make_funding_flows_figure()
 
@@ -352,7 +357,7 @@ def create_funding_flows_chart() -> None:
 
 
 def create_sroi_comparison_chart() -> None:
-    print(f"Creating Chart 2: SROI Comparison...")
+    print("Creating Chart 2: SROI Comparison...")
 
     fig = make_sroi_comparison_figure()
 
@@ -377,7 +382,7 @@ def create_sroi_comparison_chart() -> None:
 
 
 def create_volunteering_value_chart() -> None:
-    print(f"Creating Chart 3: Volunteering Value...")
+    print("Creating Chart 3: Volunteering Value...")
 
     fig = make_volunteering_value_figure()
 
@@ -406,7 +411,7 @@ def create_measurement_gap_chart() -> None:
     # Refer: https://baromedr.cymru/en/respondents-profile/
     # Refer: https://covid19.public-inquiry.uk/wp-content/uploads/2023/07/21173118/INQ000177813-1.pdf
 
-    print(f"Creating Chart 4: The Measurement Gap...")
+    print("Creating Chart 4: The Measurement Gap...")
 
     fig = make_measurement_gap_figure()
 
@@ -432,7 +437,7 @@ def create_measurement_gap_chart() -> None:
 
 
 def create_wcva_funding_chart() -> None:
-    print(f"Creating Chart 5: WCVA Funding Flows from WG Over Time...")
+    print("Creating Chart 5: WCVA Funding Flows from WG Over Time...")
 
     fig = make_wcva_wg_funding_figure()
 
@@ -457,7 +462,7 @@ def create_wcva_funding_chart() -> None:
 
 
 def create_nlcf_wales_chart() -> None:
-    print(f"Creating Chart 6: NLCF Wales Funding...")
+    print("Creating Chart 6: NLCF Wales Funding...")
 
     fig = make_nlcf_wales_figure()
 
@@ -477,7 +482,7 @@ def create_nlcf_wales_chart() -> None:
 
 
 def create_alignment_heatmap() -> None:
-    print(f"Creating Chart 7: Mapping Table HeatMap...")
+    print("Creating Chart 7: Mapping Table HeatMap...")
 
     fig = make_alignment_heatmap_figure()
 
@@ -503,7 +508,7 @@ def create_alignment_heatmap() -> None:
 
 
 def create_framework_flow_diagram() -> None:
-    print(f"Creating Chart 8: Mermaid Flowchart...")
+    print("Creating Chart 8: Mermaid Flowchart...")
 
     mermaid_code = """flowchart LR
     subgraph E["Enablers"]
@@ -592,7 +597,7 @@ def create_framework_flow_chart_plotly() -> None:
 
 
 def create_implementation_timeline_chart() -> None:
-    print(f"Creating Chart 9: Implementation Timeline...")
+    print("Creating Chart 9: Implementation Timeline...")
 
     fig = make_timeline_figure()
 

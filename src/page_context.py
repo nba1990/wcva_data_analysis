@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any
 
 import pandas as pd
 
@@ -27,5 +27,5 @@ class PageContext:
     df_full: pd.DataFrame
     n: int
     ui_config: StreamlitAppUISharedConfigState
-    prof: Dict[str, Any]
-    asset_report: Dict[str, Any]
+    prof: dict[str, Any]
+    asset_report: dict[str, Any]

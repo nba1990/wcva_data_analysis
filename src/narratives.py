@@ -15,7 +15,7 @@ executive summary, at-a-glance, and similar pages.
 
 from __future__ import annotations
 
-from typing import Mapping
+from collections.abc import Mapping
 
 
 def _safe_pct(mapping: Mapping[str, object], key: str) -> float:

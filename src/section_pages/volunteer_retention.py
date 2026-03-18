@@ -55,9 +55,6 @@ def render_volunteer_retention(df: pd.DataFrame, n: int) -> None:
         "workforce.headline.face_volunteer_retention_difficulties_pct",
     )
 
-    alt_config = AltTextConfig(
-        value_col="value", count_col="count", pct_col="pct", sample_size=n
-    )
     cols = st.columns(3)
     cols[0].markdown(
         kpi_card_html(

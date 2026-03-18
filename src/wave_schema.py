@@ -5,8 +5,6 @@
 #
 # See the LICENSE file for details.
 
-from __future__ import annotations
-
 """
 Schema and mapping layer for per-wave configurations.
 
@@ -19,6 +17,8 @@ This module is intentionally small and focused on:
 It does not attempt to be a generic transformation engine; complex logic
 should remain in src.eda or specialised helpers.
 """
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path

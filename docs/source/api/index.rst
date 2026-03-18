@@ -8,7 +8,7 @@ API Reference
 
 This section documents the main Python modules and packages.
 
-If you're following the :doc:`architecture` pages, you can think of the API in four layers:
+If you're following the :doc:`/architecture` pages, you can think of the API in four layers:
 
 - **Core runtime & configuration** – app entry point, navigation, and config.
 - **Data loading & analysis** – how CSVs are resolved, loaded, and transformed.

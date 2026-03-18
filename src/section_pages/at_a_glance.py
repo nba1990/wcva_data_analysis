@@ -213,9 +213,7 @@ def render_at_a_glance(df: pd.DataFrame, n: int, accessible_mode: bool) -> None:
             first_wave.workforce.headline.face_volunteer_retention_difficulties_pct
         )
         # Wave 1 finance headline is "deteriorated due to rising costs", not Likert; card uses Likert
-        f_old_rising = (
-            first_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
-        )
+        f_old_rising = first_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
 
         st.markdown(
             "**This view** = the same percentages as the cards above (current filters). "

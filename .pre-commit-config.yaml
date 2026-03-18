@@ -10,8 +10,15 @@
 # Run manually: pre-commit run --all-files
 
 repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.6
+    hooks:
+      - id: ruff-check
+        args: ["--fix"]
+      - id: ruff-format
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -21,19 +28,14 @@ repos:
       - id: check-merge-conflict
       - id: detect-private-key
 
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
     hooks:
-      - id: isort
-        args: ["--settings-path", "pyproject.toml"]
+      - id: detect-secrets
+        args: ["--baseline", ".secrets.baseline"]
 
   - repo: local
     hooks:
-      - id: black
-        name: black
-        entry: .venv/bin/black --config pyproject.toml
-        language: system
-        types_or: [python, pyi]
       - id: pytest
         name: pytest (non-e2e)
         entry: .venv/bin/pytest tests/ -m "not e2e" -q --tb=line
@@ -44,15 +46,9 @@ repos:
         entry: .venv/bin/mypy src/ tests/
         language: system
         pass_filenames: false
-      # Optional: enable this hook locally for extra safety.
-      # - id: pyupgrade
-      #   name: pyupgrade (modernise syntax)
-      #   entry: .venv/bin/pyupgrade --py311-plus
-      #   language: system
-      #   types: [python]
-      - id: detect-secrets
-        name: detect-secrets (scan for secrets)
-        entry: .venv/bin/detect-secrets-hook --baseline .secrets.baseline
+      - id: lint-imports
+        name: import-linter
+        entry: .venv/bin/lint-imports
         language: system
-        pass_filenames: true
+        pass_filenames: false
 # Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

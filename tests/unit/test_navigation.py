@@ -7,8 +7,6 @@
 
 from __future__ import annotations
 
-import ast
-
 from src.navigation import NAV_ITEMS, get_default_page, get_nav_item_ids
 
 

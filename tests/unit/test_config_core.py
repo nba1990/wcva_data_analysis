@@ -10,7 +10,6 @@ from __future__ import annotations
 import pandas as pd
 
 from src.config import (
-    DEFAULT_DATASET_PATH,
     DEFAULT_LA_CONTEXT_PATH,
     DEMAND_ORDER,
     FINANCIAL_ORDER,
@@ -222,8 +221,7 @@ def test_display_runtime_source_keeps_paths_but_masks_urls(monkeypatch) -> None:
         "https://nextclouds.example.com/s/[redacted]/download"
     )
     assert source.attempted == (
-        "env:WCVA_DATASET_URL -> "
-        "https://nextclouds.example.com/s/[redacted]/download",
+        "env:WCVA_DATASET_URL -> https://nextclouds.example.com/s/[redacted]/download",
     )
 
 

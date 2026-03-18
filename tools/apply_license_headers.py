@@ -22,7 +22,8 @@ The script:
 
 from __future__ import annotations
 
-import subprocess
+import shutil
+import subprocess  # nosec B404
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -63,8 +64,7 @@ PLAIN_TEXT_HEADER_LINES = [
 ]
 
 FOOTER_LINE = (
-    "Source code available under AGPLv3: "
-    "https://github.com/nba1990/wcva_data_analysis "
+    "Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis "
 )
 
 # Extensions treated as code/config where `#` comments are safe.
@@ -350,7 +350,15 @@ def apply_to_file(rel_path: str) -> None:
 
 
 def main() -> None:
-    result = subprocess.check_output(["git", "ls-files"], cwd=REPO_ROOT, text=True)
+    git_executable = shutil.which("git")
+    if git_executable is None:
+        raise RuntimeError("git is required to enumerate tracked files.")
+
+    result = subprocess.check_output(  # nosec B603
+        [git_executable, "ls-files"],
+        cwd=REPO_ROOT,
+        text=True,
+    )
     files = [line.strip() for line in result.splitlines() if line.strip()]
 
     for rel in files:

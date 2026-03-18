@@ -15,8 +15,8 @@ page dispatch keys in src/app.py.
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, List
 
 import streamlit as st
 
@@ -41,7 +41,7 @@ class NavItem:
 
 
 # Keep IDs aligned with the existing page dispatch values in app.py
-NAV_ITEMS: List[NavItem] = [
+NAV_ITEMS: list[NavItem] = [
     NavItem(
         "Executive Summary",
         "Executive Summary",

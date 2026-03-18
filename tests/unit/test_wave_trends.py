@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pandas as pd
-
 from src.wave_context import (
     TREND_METRICS,
     WaveContext,
@@ -32,9 +30,7 @@ def make_registry_with_partial_wave2() -> WaveRegistry:
     # Deliberately remove a couple of attributes from Wave 2 so that some
     # TREND_METRICS attr_paths resolve to None and should be skipped.
     wave2.headline_kpis.financial_health.has_financial_reserves_pct = None
-    wave2.headline_kpis.financial_health.using_reserves_among_those_with_reserves_pct = (
-        None
-    )
+    wave2.headline_kpis.financial_health.using_reserves_among_those_with_reserves_pct = None
 
     return WaveRegistry(waves={"Wave 1": wave1, "Wave 2": wave2})
 

@@ -5,8 +5,6 @@
 #
 # See the LICENSE file for details.
 
-from __future__ import annotations
-
 """
 Quick comparison of key metrics between:
 - EDA aggregates (eda.py)
@@ -16,6 +14,8 @@ Run with:
 
     python -m src.debug_metrics
 """
+
+from __future__ import annotations
 
 import sys
 from pathlib import Path
@@ -27,9 +27,9 @@ if str(ROOT) not in sys.path:
 
 import pandas as pd
 
-from src.data_loader import load_dataset  # noqa: E402
-from src.eda import volunteer_recruitment_analysis, workforce_operations  # noqa: E402
-from src.wave_context import build_wave_context_from_df  # noqa: E402
+from src.data_loader import load_dataset
+from src.eda import volunteer_recruitment_analysis, workforce_operations
+from src.wave_context import build_wave_context_from_df
 
 
 def main() -> None:

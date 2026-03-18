@@ -77,7 +77,7 @@ This repo is a Streamlit dashboard with a strong “operate it safely” posture
 
 - **Quality_governance_and_compliance**
   - Unit/integration/property tests: `tests/` (notably `tests/unit/test_eda_properties.py`).
-  - Dependency security audit in CI: `.github/workflows/ci.yml` (`pip-audit` job).
+  - Dependency and code security checks in CI: `.github/workflows/ci.yml` (`pip-audit`, `bandit`, `detect-secrets`).
 
 - **Developer_enablement_and_ways_of_working**
   - Contribution workflow: `CONTRIBUTING.md`.

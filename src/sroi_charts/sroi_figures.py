@@ -117,11 +117,14 @@ def make_sroi_comparison_figure(
     fig.add_trace(
         go.Bar(
             y=sroi_labels,
-            x=[h - l for l, h in zip(sroi_low, sroi_high)],
+            x=[high - low for low, high in zip(sroi_low, sroi_high)],
             orientation="h",
             name="Range to high",
             marker_color=range_colour,
-            text=[f"→ £{h:.2f}" if h != l else "" for l, h in zip(sroi_low, sroi_high)],
+            text=[
+                f"→ £{high:.2f}" if high != low else ""
+                for low, high in zip(sroi_low, sroi_high)
+            ],
             textposition="inside",
             textfont=dict(color="#1E90FF", size=10),
             insidetextanchor="middle",
@@ -681,7 +684,7 @@ def make_timeline_figure(
             )
         )
 
-    for yr, label in [
+    for yr, _label in [
         (0, "Jul 2025"),
         (12, "Jul 2026"),
         (24, "Jul 2027"),

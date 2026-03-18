@@ -130,9 +130,6 @@ def render_volunteer_recruitment(df: pd.DataFrame, n: int) -> None:
             "  - The table below shows the exact counts and bases used."
         )
         st.dataframe(rec_df, hide_index=True, width="stretch")
-    alt_config = AltTextConfig(
-        value_col="value", count_col="count", pct_col="pct", sample_size=n
-    )
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Recruitment Difficulty")

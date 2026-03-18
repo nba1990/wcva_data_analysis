@@ -18,9 +18,10 @@ from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Iterable, Literal, TypeVar
+from typing import Literal
 from urllib.parse import urlsplit, urlunsplit
 
 import pandas as pd
@@ -1066,7 +1067,7 @@ def make_stacked_bar_alt(
         max_groups=config.max_groups,
     )
 
-    return f"{config.chart_type}: {title}. " f"{summary}. n={config.sample_size}."
+    return f"{config.chart_type}: {title}. {summary}. n={config.sample_size}."
 
 
 # ---------------------------------------------------------------------------

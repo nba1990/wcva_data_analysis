@@ -44,20 +44,29 @@ Notes:
 
 Run these from the project root using the project virtual environment at `.venv`.
 
+For the closest local equivalent to the repository quality gates in one command, run:
+
+```bash
+scripts/run_quality_checks.sh
+```
+
+You can still use the explicit checklist below when you want to run or debug individual stages separately.
+
 ### 1) Install dependencies (clean env)
 
 ```bash
 source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 pip install -r docs/requirements-docs.txt
 ```
 
 ### 2) Formatting
 
 ```bash
-black src/ tests/
-isort src/ tests/
+ruff check .
+ruff format .
 ```
 
 ### 3) Tests (unit + integration)
@@ -69,7 +78,7 @@ pytest tests/ -v --tb=short -m "not e2e"
 Optional (coverage):
 
 ```bash
-pytest tests/ -m "not e2e" --cov=src --cov-report=term-missing
+pytest tests/ -m "not e2e" --cov=src --cov-report=term-missing --cov-fail-under=57
 ```
 
 ### 4) Type checking
@@ -81,14 +90,22 @@ mypy src/ tests/ --config-file pyproject.toml
 ### 5) Security audit (dependencies)
 
 ```bash
-pip-audit
+XDG_CACHE_HOME=/tmp pip-audit
+bandit -q -r src references/SROI_Wales_Voluntary_Sector/scripts tools
+git ls-files -z | xargs -0 detect-secrets-hook --baseline .secrets.baseline
 ```
 
-### 6) Documentation build (diagrams + Sphinx)
+### 6) Packaging validation
+
+```bash
+python -m build --sdist --wheel --no-isolation
+```
+
+### 7) Documentation build (diagrams + Sphinx)
 
 ```bash
 python scripts/generate_diagrams.py
-cd docs && make html
+sphinx-build -b html docs/source docs/build/html
 ```
 
 ## Release steps (git + GitHub)
@@ -130,13 +147,16 @@ git push --tags
 The canonical CI workflow is `.github/workflows/ci.yml`. A release commit should have green status for:
 
 - tests (Python 3.11 and 3.12) with coverage artefact
-- lint (Black/isort + import-linter contracts)
+- lint (Ruff + import-linter contracts)
 - typecheck (mypy)
-- security (pip-audit)
+- security (pip-audit, Bandit, detect-secrets)
+- packaging (sdist and wheel build)
 - docs build (diagrams + Sphinx HTML)
 - e2e smoke import (Streamlit app import)
 
 If CI is red, fix CI first. Do not “release around” a failing pipeline.
+
+The local `scripts/run_quality_checks.sh` runner is intended to give contributors a one-command way to exercise the same categories of checks before pushing.
 
 ## Post-release hygiene
 

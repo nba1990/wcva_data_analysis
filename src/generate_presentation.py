@@ -19,10 +19,11 @@ from __future__ import annotations
 import base64
 import io
 import sys
+from collections.abc import Mapping, Sequence
 from datetime import date
 from html import escape
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -284,7 +285,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         grouper=grouper,
         group_order=group_order,
     )
-    fig_methods = horizontal_bar_ranked(
+    horizontal_bar_ranked(
         rec["rec_methods"],
         "label",
         "count",
@@ -342,7 +343,7 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         group_order=group_order_ed,
     )
     grouper_ef, group_order_ef = resolve_grouping(EXPECT_FINANCIAL_ORDER)
-    fig_expect_financial = stacked_bar_ordinal(
+    stacked_bar_ordinal(
         dem["expect_financial"],
         "Expected financial position (next 3 months)",
         n,
@@ -385,11 +386,9 @@ def build_slides(df, palette_mode: str) -> list[dict]:
         height=320,
     )
     # Ensure clear alt text for the infographic slide
-    setattr(
-        fig_infographic,
-        "_alt_text",
+    fig_infographic._alt_text = (
         "Horizontal bar chart showing key percentages for demand, finances, "
-        "volunteer availability, and recruitment and retention difficulty.",
+        "volunteer availability, and recruitment and retention difficulty."
     )
 
     top_rec_method_label, top_rec_method_count = _top_ranked_text(rec["rec_methods"])
@@ -667,7 +666,6 @@ def _earned_settlement_body(vt: dict) -> str:
     disagree = es[es["value"].isin(["Somewhat disagree", "Strongly disagree"])][
         "count"
     ].sum()
-    cap = vt["settlement_capacity"]
     return (
         f"<ul>"
         f"<li><strong>{agree}</strong> organisations agree/strongly agree with the principle</li> <br>"
@@ -748,7 +746,7 @@ def generate_html(
 
         section = (
             f"<section>\n"
-            f'  <h2>{s["title"]}</h2>\n'
+            f"  <h2>{s['title']}</h2>\n"
             f"  {subtitle}\n"
             f'  <div class="slide-content">{s["body"]}</div>\n'
             f"  {chart_html}\n"

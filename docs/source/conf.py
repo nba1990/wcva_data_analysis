@@ -127,6 +127,13 @@ autodoc_default_options = {
 autodoc_preserve_defaults = True
 autodoc_typehints = "description"
 autodoc_typehints_description_target = "documented"
+suppress_warnings = [
+    # API generation currently documents some dataclass attributes in more than
+    # one place; those duplicate-description warnings are noisy but harmless.
+    "autodoc",
+    # Local/sandboxed builds may not be able to fetch remote inventories.
+    "intersphinx.external",
+]
 
 # Intersphinx for Python and pandas (streamlit objects.inv often missing, so omitted)
 intersphinx_mapping = {

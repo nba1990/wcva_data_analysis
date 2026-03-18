@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import os
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -74,9 +74,10 @@ st.set_page_config(
 def get_data() -> tuple[pd.DataFrame, RuntimeDataSource]:
     """Load and return the main analysis dataset plus runtime source metadata."""
     df, source = load_dataset(return_source=True)
-    assert isinstance(
-        source, RuntimeDataSource
-    ), "load_dataset(return_source=True) must return RuntimeDataSource metadata"
+    if not isinstance(source, RuntimeDataSource):
+        raise RuntimeError(
+            "load_dataset(return_source=True) must return RuntimeDataSource metadata"
+        )
     return df, source
 
 
@@ -256,8 +257,7 @@ if DEBUG_MEMORY:
 
 st.sidebar.divider()
 st.sidebar.caption(
-    "Source code available under AGPLv3: "
-    "https://github.com/nba1990/wcva_data_analysis"
+    "Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis"
 )
 
 # ---------------------------------------------------------------------------
@@ -329,8 +329,7 @@ _run_page(page, ctx)
 # ---------------------------------------------------------------------------
 st.divider()
 st.caption(
-    "Source code available under AGPLv3: "
-    "https://github.com/nba1990/wcva_data_analysis"
+    "Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis"
 )
 
 # Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

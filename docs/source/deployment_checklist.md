@@ -62,7 +62,7 @@ The main GitHub Actions workflow (`.github/workflows/ci.yml`) runs:
 
 - `test` – unit and integration tests with coverage on Python 3.11 and 3.12.
 - `e2e-smoke` – Streamlit import smoke test.
-- `lint` – Black, isort, Import Linter (architecture contracts).
+- `lint` – Ruff and Import Linter (architecture contracts).
 - `typecheck` – mypy over `src/` and `tests/`.
 - `security` – `pip-audit` to check for known vulnerabilities.
 - `docs` – diagram generation (`scripts/generate_diagrams.py`) and Sphinx HTML build.

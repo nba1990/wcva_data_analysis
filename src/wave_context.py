@@ -18,7 +18,8 @@ summarise_trend_changes; and pct_point_change.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Mapping, Optional
+from collections.abc import Mapping
+from typing import Any
 
 import pandas as pd
 import streamlit as st
@@ -97,7 +98,7 @@ class FinanceHeadline(StrictBaseModel):
 class IncomeBreakdown(StrictBaseModel):
     section_title: str
     organisations_answered: int = CountField
-    sources_pct: Dict[str, int]
+    sources_pct: dict[str, int]
 
     def model_post_init(self, __context) -> None:
         for key, value in self.sources_pct.items():
@@ -108,7 +109,7 @@ class IncomeBreakdown(StrictBaseModel):
 class ExpenditureBreakdown(StrictBaseModel):
     section_title: str
     organisations_answered: int = CountField
-    categories_pct: Dict[str, int]
+    categories_pct: dict[str, int]
 
     def model_post_init(self, __context) -> None:
         for key, value in self.categories_pct.items():
@@ -147,7 +148,7 @@ class Likert5Change(StrictBaseModel):
 class ActionsTakenDueToRisingCosts(StrictBaseModel):
     section_title: str
     organisations_answered: int = CountField
-    actions_pct: Dict[str, int]
+    actions_pct: dict[str, int]
 
     def model_post_init(self, __context) -> None:
         for key, value in self.actions_pct.items():
@@ -236,9 +237,9 @@ class RespondentProfile(StrictBaseModel):
     section_title: str
     subtitle: str
     responses_by_survey_wave: int = CountField
-    main_activities_of_participating_organisations: Dict[str, int]
-    organisation_size_by_income_band: Dict[str, int]
-    number_of_paid_staff_employed_by_organisations: Dict[str, int]
+    main_activities_of_participating_organisations: dict[str, int]
+    organisation_size_by_income_band: dict[str, int]
+    number_of_paid_staff_employed_by_organisations: dict[str, int]
 
     def model_post_init(self, __context) -> None:
         groups = {
@@ -276,36 +277,28 @@ class WaveContext(StrictBaseModel):
         return self.meta.wave_response_desc
 
     def staff_recruitment_concern_callout(self) -> str:
-        pct = (
-            self.workforce.recruitment_and_retention_concerns.staff_recruitment_concern_pct
-        )
+        pct = self.workforce.recruitment_and_retention_concerns.staff_recruitment_concern_pct
         return (
             f"{pct}% of {self.meta.wave_label} respondents listed staff recruitment "
             "as a key concern"
         )
 
     def staff_retention_concern_callout(self) -> str:
-        pct = (
-            self.workforce.recruitment_and_retention_concerns.staff_retention_concern_pct
-        )
+        pct = self.workforce.recruitment_and_retention_concerns.staff_retention_concern_pct
         return (
             f"{pct}% of {self.meta.wave_label} respondents listed staff retention "
             "as a key concern"
         )
 
     def volunteer_recruitment_concern_callout(self) -> str:
-        pct = (
-            self.workforce.recruitment_and_retention_concerns.volunteer_recruitment_concern_pct
-        )
+        pct = self.workforce.recruitment_and_retention_concerns.volunteer_recruitment_concern_pct
         return (
             f"{pct}% of {self.meta.wave_label} respondents listed volunteer recruitment "
             "as a key concern"
         )
 
     def volunteer_retention_concern_callout(self) -> str:
-        pct = (
-            self.workforce.recruitment_and_retention_concerns.volunteer_retention_concern_pct
-        )
+        pct = self.workforce.recruitment_and_retention_concerns.volunteer_retention_concern_pct
         return (
             f"{pct}% of {self.meta.wave_label} respondents listed volunteer retention "
             "as a key concern"
@@ -319,9 +312,7 @@ class WaveContext(StrictBaseModel):
         )
 
     def financial_deteriorated_callout(self) -> str:
-        pct = (
-            self.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
-        )
+        pct = self.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
         return (
             f"{pct}% of organisations reported their financial position deteriorated "
             f"due to rising costs in {self.meta.wave_label}"
@@ -348,7 +339,7 @@ class WaveContext(StrictBaseModel):
 
 
 class WaveRegistry(StrictBaseModel):
-    waves: Dict[str, WaveContext]
+    waves: dict[str, WaveContext]
 
     def get(self, wave_label: str) -> WaveContext:
         return self.waves[wave_label]
@@ -689,7 +680,7 @@ def load_wave_registry(raw_waves: Mapping[str, Mapping]) -> WaveRegistry:
     return WaveRegistry(waves=validated)
 
 
-def build_wave_registry_from_current_data(df: Optional[pd.DataFrame]) -> WaveRegistry:
+def build_wave_registry_from_current_data(df: pd.DataFrame | None) -> WaveRegistry:
     """
     Build a global WaveRegistry combining the hand-crafted Wave 1 context
     with Wave 2+ contexts derived from the current dataset.
@@ -719,7 +710,7 @@ def build_wave_registry_from_current_data(df: Optional[pd.DataFrame]) -> WaveReg
             "Built WaveContext for current data",
             extra={"wave_label": "Wave 2", "wave_number": 2, "n": len(df)},
         )
-        waves: Dict[str, WaveContext] = {
+        waves: dict[str, WaveContext] = {
             "Wave 1": WAVE1_CONTEXT,
             "Wave 2": wave2_ctx,
         }
@@ -736,7 +727,7 @@ def build_wave_registry_from_current_data(df: Optional[pd.DataFrame]) -> WaveReg
 
 
 @st.cache_data
-def get_wave_registry(df: Optional[pd.DataFrame]) -> WaveRegistry:
+def get_wave_registry(df: pd.DataFrame | None) -> WaveRegistry:
     """Shared cross-wave registry for trend analysis and narratives."""
     return build_wave_registry_from_current_data(df)
 
@@ -754,12 +745,8 @@ def pct_point_change(old: int, new: int) -> int:
 def compare_financial_deterioration(
     old_wave: WaveContext, new_wave: WaveContext
 ) -> dict[str, int | str]:
-    old_val = (
-        old_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
-    )
-    new_val = (
-        new_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
-    )
+    old_val = old_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
+    new_val = new_wave.finance.headline.financial_position_deteriorated_due_to_rising_costs_pct
 
     return {
         "metric": "financial_position_deteriorated_due_to_rising_costs_pct",
@@ -790,12 +777,8 @@ def compare_demand_increase(
 def compare_staff_recruitment(
     old_wave: WaveContext, new_wave: WaveContext
 ) -> dict[str, int | str]:
-    old_val = (
-        old_wave.workforce.recruitment_and_retention_concerns.staff_recruitment_concern_pct
-    )
-    new_val = (
-        new_wave.workforce.recruitment_and_retention_concerns.staff_recruitment_concern_pct
-    )
+    old_val = old_wave.workforce.recruitment_and_retention_concerns.staff_recruitment_concern_pct
+    new_val = new_wave.workforce.recruitment_and_retention_concerns.staff_recruitment_concern_pct
 
     return {
         "metric": "staff_recruitment_concern_pct",

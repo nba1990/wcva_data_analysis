@@ -16,8 +16,8 @@ and EDA outputs (demand, recruitment, retention) and embeds it via components.ht
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from textwrap import dedent
-from typing import Mapping, Tuple
 
 import streamlit.components.v1 as components
 
@@ -33,7 +33,7 @@ def _compute_trend(
     previous: float | None,
     *,
     higher_is_good: bool,  # noqa: ARG001  (kept for clarity; colour semantics handled separately)
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """
     Derive a trend symbol and CSS class from the *direction* of change only.
 
@@ -457,22 +457,22 @@ def render_at_a_glance_infographic(
             <div class="wcva-card {theme_class}">
               <div class="wcva-card-header">
                 <div class="wcva-card-icon" aria-hidden="true">{m.get("icon", "")}</div>
-                <div class="wcva-card-label">{m['label']}</div>
+                <div class="wcva-card-label">{m["label"]}</div>
               </div>
               <div class="wcva-card-value-row">
-                <div class="wcva-card-value">{m['value']}</div>
-                <div class="wcva-trend-icon {m.get('trend_class', '')}"
-                     aria-hidden="true">{m.get('trend_symbol', '')}</div>
+                <div class="wcva-card-value">{m["value"]}</div>
+                <div class="wcva-trend-icon {m.get("trend_class", "")}"
+                     aria-hidden="true">{m.get("trend_symbol", "")}</div>
               </div>
               {vs_wave_line}
               <div class="wcva-pill-bar">
                 <div class="wcva-pill-fill"
-                     style="--wcva-gauge-fill: {m.get('gauge_fill', 0)}; --wcva-gauge-colour: {m.get('gauge_colour', teal)};">
+                     style="--wcva-gauge-fill: {m.get("gauge_fill", 0)}; --wcva-gauge-colour: {m.get("gauge_colour", teal)};">
                 </div>
               </div>
-              <div class="wcva-card-caption">{m['caption']}</div>
+              <div class="wcva-card-caption">{m["caption"]}</div>
               <div class="wcva-card-severity">
-                {severity_phrases.get(m.get('severity', ''), '')}
+                {severity_phrases.get(m.get("severity", ""), "")}
               </div>
             </div>
             """)
@@ -484,7 +484,7 @@ def render_at_a_glance_infographic(
         <span><strong>Colours:</strong> teal = relatively positive, amber = mixed, coral = high concern</span>
       </div>
       <div class="wcva-info-grid">
-        {''.join(card_html_parts)}
+        {"".join(card_html_parts)}
       </div>
     </div>
     {css}

@@ -19,7 +19,6 @@ from src.config import (
 )
 from src.eda import volunteering_types
 from src.page_context import PageContext
-from src.wave_context import get_wave_registry
 
 
 def render_page(ctx: PageContext) -> None:
@@ -47,8 +46,6 @@ def render_earned_settlement(df: pd.DataFrame, n: int) -> None:
         st.stop()
 
     vt = volunteering_types(df)
-    registry = get_wave_registry(df)
-
     col1, col2 = st.columns(2)
     alt_config = AltTextConfig(
         value_col="value", count_col="count", pct_col="pct", sample_size=n

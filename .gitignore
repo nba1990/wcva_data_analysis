@@ -17,6 +17,9 @@ htmlcov/
 *.cover
 .mypy_cache/
 .ruff_cache/
+build/
+dist/
+*.egg-info/
 
 .venv/
 venv/

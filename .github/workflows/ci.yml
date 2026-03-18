@@ -5,18 +5,27 @@
 #
 # See the LICENSE file for details.
 
-# WCVA Baromedr Dashboard — CI (test, lint, typecheck, security, e2e smoke)
-# Runs on every push; uses pip and requirements.txt (no conda).
+# WCVA Baromedr Dashboard — CI (tests, lint, typecheck, security, packaging, docs)
+# Runs on every push and pull request using the same pip-based tooling as local dev.
 
 name: CI
 
 on:
   push:
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -34,11 +43,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
 
       - name: Run tests
         run: |
-          pytest tests/ -v --tb=short -x -m "not e2e" --cov=src --cov-report=term-missing --cov-report=xml
+          pytest tests/ -v --tb=short -x -m "not e2e" --cov=src --cov-report=term-missing --cov-report=xml --cov-fail-under=57
 
       - name: Upload coverage (artifact)
         uses: actions/upload-artifact@v4
@@ -48,6 +57,7 @@ jobs:
 
   e2e-smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -60,13 +70,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
 
       - name: E2E smoke (app import)
         run: pytest tests/e2e/test_streamlit_smoke.py -v --tb=short
 
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -79,20 +90,20 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install import-linter
+          pip install -r requirements-dev.txt
 
-      - name: Black (format check)
-        run: BLACK_NUM_WORKERS=1 black --check src/ tests/
+      - name: Ruff lint
+        run: ruff check .
 
-      - name: isort (import order check)
-        run: isort --check-only src/ tests/
+      - name: Ruff format
+        run: ruff format --check .
 
       - name: Import Linter (architecture contracts)
         run: lint-imports
 
   typecheck:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -105,13 +116,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt mypy types-PyYAML
+          pip install -r requirements-dev.txt
 
       - name: mypy
         run: mypy src/ tests/ --config-file pyproject.toml
 
   security:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -124,15 +136,40 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
 
       - name: pip-audit
+        run: XDG_CACHE_HOME=/tmp pip-audit
+
+      - name: Bandit
+        run: bandit -q -r src references/SROI_Wales_Voluntary_Sector/scripts tools
+
+      - name: detect-secrets
+        run: git ls-files -z | xargs -0 detect-secrets-hook --baseline .secrets.baseline
+
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
         run: |
-          pip install pip-audit
-          pip-audit
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Build sdist and wheel
+        run: python -m build --sdist --wheel --no-isolation
 
   docs:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -145,7 +182,7 @@ jobs:
       - name: Install dependencies (app + docs)
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
           pip install -r docs/requirements-docs.txt
 
       - name: Generate diagrams
@@ -153,8 +190,6 @@ jobs:
           python scripts/generate_diagrams.py
 
       - name: Build Sphinx HTML docs
-        working-directory: docs
-        run: |
-          make html
+        run: sphinx-build -b html docs/source docs/build/html
 
 # Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

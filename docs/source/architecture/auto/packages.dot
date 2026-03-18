@@ -93,7 +93,6 @@ charset="utf-8"
 "src.section_pages.earned_settlement" -> "src.config" [arrowhead="open", arrowtail="none"];
 "src.section_pages.earned_settlement" -> "src.eda" [arrowhead="open", arrowtail="none"];
 "src.section_pages.earned_settlement" -> "src.page_context" [arrowhead="open", arrowtail="none"];
-"src.section_pages.earned_settlement" -> "src.wave_context" [arrowhead="open", arrowtail="none"];
 "src.section_pages.executive_summary" -> "src.config" [arrowhead="open", arrowtail="none"];
 "src.section_pages.executive_summary" -> "src.eda" [arrowhead="open", arrowtail="none"];
 "src.section_pages.executive_summary" -> "src.page_context" [arrowhead="open", arrowtail="none"];
