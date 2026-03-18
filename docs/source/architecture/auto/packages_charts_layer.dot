@@ -1,0 +1,7 @@
+digraph "packages_charts_layer" {
+rankdir=BT
+charset="utf-8"
+"src.charts" [color="black", label=<src.charts>, shape="box", style="solid"];
+"src.sroi_charts" [color="black", label=<src.sroi_charts>, shape="box", style="solid"];
+"src.sroi_charts.sroi_figures" [color="black", label=<src.sroi_charts.sroi_figures>, shape="box", style="solid"];
+}

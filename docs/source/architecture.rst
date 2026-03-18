@@ -3,10 +3,36 @@
    SPDX-License-Identifier: AGPL-3.0-or-later
    See the LICENSE file for full licensing terms.
 
-Architecture overview
-=====================
+Architecture
+============
 
-This page summarises how the dashboard is structured. For the full document, see the repository file ``ARCHITECTURE.md``.
+This section collects **high-signal, low-noise** views of how the dashboard is put together.
+
+.. note::
+
+   **Start here if you're new to the codebase:**
+
+   #. :doc:`architecture/system_overview` – big-picture components and data flow.
+   #. :doc:`architecture/execution_flow` – what happens during a Streamlit rerun.
+   #. :doc:`architecture/streamlit_pages` – how sidebar navigation maps to section pages.
+   #. :doc:`architecture/module_dependencies` – how modules import and depend on each other.
+   #. :doc:`architecture/class_hierarchy` – key configuration and context classes.
+
+.. toctree::
+   :maxdepth: 1
+
+   architecture/system_overview
+   architecture/execution_flow
+   architecture/streamlit_pages
+   architecture/module_dependencies
+   architecture/class_hierarchy
+   architecture/contracts
+   architecture/reading_diagrams
+
+Legacy overview
+===============
+
+This section summarises how the dashboard was originally described. For the full document, see the repository file ``ARCHITECTURE.md``.
 
 High-level flow
 ---------------

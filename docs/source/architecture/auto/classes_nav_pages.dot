@@ -1,0 +1,5 @@
+digraph "classes_nav_pages" {
+rankdir=BT
+charset="utf-8"
+"src.navigation.NavItem" [color="black", fontcolor="black", label=<{NavItem|icon : str \| None<br ALIGN="LEFT"/>id : str<br ALIGN="LEFT"/>label : str<br ALIGN="LEFT"/>subtitle : str \| None<br ALIGN="LEFT"/>|}>, shape="record", style="solid"];
+}

@@ -79,3 +79,25 @@ Streamlit Community Cloud secrets:
 [wcva_data]
 dataset_url = "https://example.com/private/wcva-wave2.csv"
 ```
+
+## Secrets and env hygiene checklist
+
+Use this as a quick review before putting a deployment in front of real users:
+
+- **Keep private data out of Git**:
+  - Do not commit `datasets/WCVA_W2_Anonymised_Dataset.csv` or any other real survey extract.
+  - If you have accidentally committed private data, rotate the dataset and rewrite history before making the repo public.
+- **Use env vars / secrets for configuration**:
+  - Prefer `WCVA_DATASET_PATH` / `WCVA_DATASET_URL` and Streamlit secrets (`[wcva_data]`) over hard-coding.
+  - Store any API keys, database passwords, and presigned URLs in a secrets manager, not in `src/*.py`, `Dockerfile`, or `docker-compose.yml`.
+- **Treat URLs as secrets**:
+  - Private dataset URLs should normally be HTTPS and access-controlled (for example, presigned S3 or equivalent).
+  - Avoid long-lived public HTTP URLs for real Wave datasets; the app will log a warning if you use non-HTTPS sources.
+- **Rely on masking and avoid new leaks**:
+  - Deployment Health and the logging shim intentionally mask runtime paths and URLs when displaying them.
+  - When adding new log statements or diagnostics, use the existing helpers instead of printing raw paths or credentials.
+- **Understand demo mode vs real mode**:
+  - Demo mode is meant for documentation, smoke tests, and training; it uses the bundled fixture from `tests/fixtures/`.
+  - Real analysis should only be done once `Deployment Health` reports a non-demo dataset source and all required assets present.
+
+For container- and deployment-specific hardening tips (including reverse proxies and non-root users), see `docs/DOCKER_AND_DEPLOYMENT.md`.

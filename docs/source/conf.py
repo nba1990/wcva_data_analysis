@@ -81,18 +81,30 @@ version = "0.2"
 
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.graphviz",
+    "sphinx.ext.inheritance_diagram",
+    "myst_parser",
+    "sphinxcontrib.mermaid",
 ]
 
 templates_path = ["_templates"]
 exclude_patterns: Any = []
 
+autosummary_generate = True
+
 html_theme: str = "sphinx_rtd_theme"
 html_static_path: Any = []
 html_title = "Baromedr Cymru Wave 2 — Documentation"
 html_short_title = "Baromedr W2"
+
+# MyST (Markdown) configuration for docs under docs/source/.
+myst_enable_extensions = [
+    "colon_fence",
+]
 
 # Napoleon settings for Google-style docstrings
 napoleon_google_docstring = True

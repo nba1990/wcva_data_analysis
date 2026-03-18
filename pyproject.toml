@@ -37,11 +37,27 @@ warn_return_any = false
 warn_unused_ignores = true
 ignore_missing_imports = true
 exclude = ["references/", "tests/e2e/"]
-# Gradual typing: allow existing patterns; tighten over time
+# Gradual typing: allow existing patterns; tighten over time. Stricter rules
+# for core runtime modules are configured via module-specific overrides below.
 disable_error_code = ["no-any-return", "union-attr", "arg-type", "assignment", "return-value"]
 
 [[tool.mypy.overrides]]
 module = ["yaml"]
 ignore_missing_imports = true
 disable_error_code = ["import-untyped"]
+
+[[tool.mypy.overrides]]
+module = [
+  "src.config",
+  "src.data_loader",
+  "src.eda",
+  "src.wave_context",
+  "src.charts",
+  "src.wave_schema",
+  "src.page_context",
+]
+# For core modules, disallow implicit Any returns and tighten common error
+# codes while we keep the rest of the codebase on gradual typing.
+disable_error_code = ["union-attr", "arg-type", "assignment", "return-value"]
+warn_return_any = true
 # Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

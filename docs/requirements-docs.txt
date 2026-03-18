@@ -11,4 +11,9 @@
 sphinx>=7.0
 sphinx-rtd-theme>=2.0
 PyYAML>=6.0
+myst-parser>=3.0
+graphviz>=0.20
+sphinxcontrib-mermaid>=2.0
+pydeps>=3.0
+pylint>=4.0
 # Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

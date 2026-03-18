@@ -4,6 +4,10 @@ build:
   os: ubuntu-24.04
   tools:
     python: "3.12"
+  jobs:
+    pre_build:
+      - source .venv/bin/activate || true
+      - python scripts/generate_diagrams.py
 
 sphinx:
   configuration: docs/source/conf.py

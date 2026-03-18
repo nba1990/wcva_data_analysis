@@ -30,6 +30,11 @@ Code and documentation standards
 * **Style**: Black and isort; type hints on parameters and return values.
 * **Docstrings**: Module and function docstrings; use Args/Returns for public and non-obvious behaviour. See CONTRIBUTING.md §7 for the full documentation and typing standard.
 
+* **Architecture diagrams**:
+  - High-level diagrams live under :doc:`architecture` (Mermaid for flows, Graphviz for code-derived structure).
+  - To regenerate code-derived diagrams locally, run ``python scripts/generate_diagrams.py`` from the project root and then ``cd docs && make html``.
+  - Read :doc:`architecture/reading_diagrams` for details on how to interpret the diagrams and how RTD builds them.
+
 Where to look
 -------------
 

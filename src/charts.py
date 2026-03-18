@@ -31,18 +31,21 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from src.config import (
+    ACCESSIBILITY_DEBUG,
     CHART_BG,
     CHART_FONT,
     CHART_FONT_SIZE,
     CHART_GRID,
     CHART_TITLE_SIZE,
     WCVA_BRAND,
+    WCVA_LOGGER,
     AltTextConfig,
     LabelGrouper,
     get_app_ui_config,
     get_likert_colours,
     get_palette,
     make_stacked_bar_alt,
+    validate_palette_contrast,
 )
 
 
@@ -50,14 +53,21 @@ def _base_layout(
     title: str, n: int, height: int = 450, width: int | None = None
 ) -> dict:
     """Build shared Plotly layout dict (title with n= subtitle, fonts, bg, margins)."""
+    subtitle = (
+        "<span style='font-size:12px;color:#666'>" f"n = {n} organisations" "</span>"
+    )
     layout = dict(
         title=dict(
-            text=f"<b>{title}</b><br><span style='font-size:12px;color:#666'>n = {n} organisations</span>",
+            text=f"<b>{title}</b><br>{subtitle}",
             font=dict(family=CHART_FONT, size=CHART_TITLE_SIZE),
             x=0,
             xanchor="left",
         ),
-        font=dict(family=CHART_FONT, size=CHART_FONT_SIZE, color=WCVA_BRAND["navy"]),
+        font=dict(
+            family=CHART_FONT,
+            size=CHART_FONT_SIZE,
+            color=WCVA_BRAND["navy"],
+        ),
         plot_bgcolor=CHART_BG,
         paper_bgcolor=CHART_BG,
         height=height,
@@ -116,11 +126,12 @@ def horizontal_bar_ranked(
     palette = get_palette(mode)
     colour = palette[0]
 
-    text_vals = (
-        [f"{row[value_col]}  ({row[pct_col]}%)" for _, row in data.iterrows()]
-        if pct_col
-        else [str(v) for v in data[value_col]]
-    )
+    if pct_col:
+        text_vals = [
+            f"{row[value_col]}  ({row[pct_col]}%)" for _, row in data.iterrows()
+        ]
+    else:
+        text_vals = [str(v) for v in data[value_col]]
 
     fig = go.Figure(
         go.Bar(
@@ -156,7 +167,11 @@ def horizontal_bar_ranked(
         alt = f"Bar chart: {title}. No ranked items available for this view. Based on {n} organisations."
         return _set_alt_text(fig, alt)
 
-    alt = f"Bar chart: {title}. Top item: {data.iloc[0][label_col]} ({data.iloc[0][value_col]}). Based on {n} organisations."
+    alt = (
+        f"Bar chart: {title}. Top item: "
+        f"{data.iloc[0][label_col]} ({data.iloc[0][value_col]}). "
+        f"Based on {n} organisations."
+    )
     return _set_alt_text(fig, alt)
 
 
@@ -210,7 +225,8 @@ def stacked_bar_ordinal(
                 text=f"{label}: {pct}%" if pct >= 4 else "",
                 textposition="inside",
                 textfont=dict(
-                    size=12, color="white" if i not in (2,) else WCVA_BRAND["navy"]
+                    size=12,
+                    color="white" if i not in (2,) else WCVA_BRAND["navy"],
                 ),
                 marker_color=colour,
                 hovertemplate=f"{label}: {count} ({pct}%)<extra></extra>",
@@ -289,7 +305,7 @@ def donut_chart(
 
     # Sort by values in descending order
     org_sizes = sorted(zip(labels, values), key=lambda x: x[1], reverse=True)
-    alt = f"Donut chart: {title}. Descending Order: {org_sizes}. n={n}."  # noqa
+    alt = f"Donut chart: {title}. Descending Order: {org_sizes}. n={n}."
     return _set_alt_text(fig, alt)
 
 
@@ -354,7 +370,8 @@ def grouped_bar(
     fig.update_yaxes(autorange="reversed", tickfont=dict(size=12))
     fig.update_xaxes(showgrid=True, gridcolor=CHART_GRID, showticklabels=False)
 
-    alt = f"Grouped bar: {title}, comparing {', '.join(segment_cols)}. n={n}."
+    seg_list = ", ".join(segment_cols)
+    alt = f"Grouped bar: {title}, comparing {seg_list}. n={n}."
     return _set_alt_text(fig, alt)
 
 
@@ -437,7 +454,10 @@ def heatmap_matrix(
     # Silent dtype downcasting during operations like .fillna() is being removed in future versions of pandas.
     # In future, pandas will not automatically convert object arrays back to numeric types and this needs to be handled explicitly.
     pct = (
-        plot_counts.div(row_totals.replace(0, pd.NA), axis=0)
+        plot_counts.div(
+            row_totals.replace(0, pd.NA),
+            axis=0,
+        )
         .fillna(0)
         .infer_objects(copy=False)
         * 100
@@ -460,7 +480,7 @@ def heatmap_matrix(
 
     text = [
         [
-            f"{pct.iloc[i, j]:.{decimals}f}%\n({int(plot_counts.iloc[i, j])})"
+            f"{pct.iloc[i, j]:.{decimals}f}%\n" f"({int(plot_counts.iloc[i, j])})"
             for j in range(len(x_labels))
         ]
         for i in range(len(data))
@@ -583,13 +603,36 @@ def show_chart(fig: go.Figure, key: str, data_df: pd.DataFrame | None = None) ->
     ui_config = get_app_ui_config()
     # Apply dynamic text scaling from sidebar control
     if ui_config.text_scale != 1.0:
+        scale = ui_config.text_scale
         fig.update_layout(
-            font=dict(size=CHART_FONT_SIZE * ui_config.text_scale),
-            title_font_size=CHART_TITLE_SIZE * ui_config.text_scale,
-            legend=dict(font=dict(size=CHART_FONT_SIZE * ui_config.text_scale)),
+            font=dict(size=CHART_FONT_SIZE * scale),
+            title_font_size=CHART_TITLE_SIZE * scale,
+            legend=dict(font=dict(size=CHART_FONT_SIZE * scale)),
         )
-        fig.update_xaxes(tickfont_size=CHART_FONT_SIZE * ui_config.text_scale)
-        fig.update_yaxes(tickfont_size=CHART_FONT_SIZE * ui_config.text_scale)
+        fig.update_xaxes(tickfont_size=CHART_FONT_SIZE * scale)
+        fig.update_yaxes(tickfont_size=CHART_FONT_SIZE * scale)
+
+    # Optional accessibility diagnostics: when ACCESSIBILITY_DEBUG is enabled,
+    # log alt-text and basic palette contrast information for a few charts to
+    # make external accessibility review easier.
+    if ACCESSIBILITY_DEBUG and hasattr(fig, "_alt_text"):
+        try:
+            palette_mode = getattr(ui_config, "palette_mode", "brand")
+            palette = get_palette(palette_mode)
+            contrast = validate_palette_contrast(palette)
+            WCVA_LOGGER.info(
+                "Accessibility debug",
+                extra={
+                    "chart_key": key,
+                    "palette_mode": palette_mode,
+                    "palette": palette,
+                    "contrast_with_bg": contrast,
+                    "alt_text": fig._alt_text,
+                },
+            )
+        except Exception:
+            # Diagnostics must never break chart rendering; swallow errors.
+            pass
 
     st.plotly_chart(fig, width="stretch", key=key)
     if hasattr(fig, "_alt_text"):

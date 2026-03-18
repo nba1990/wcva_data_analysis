@@ -1,0 +1,20 @@
+ [importlinter]
+ root_package = src
+
+ [contract:section_pages_not_cross_importing]
+ name = Section pages do not import each other
+ type = independence
+ modules =
+     src.section_pages
+
+ [contract:section_pages_dependency_direction]
+ name = Section pages depend on core layers only
+ type = layers
+ layers =
+     config_and_core
+     analysis_and_charts
+     pages
+ containers =
+     config_and_core = src.config, src.navigation, src.app, src.wave_context
+     analysis_and_charts = src.data_loader, src.eda, src.charts, src.sroi_charts
+     pages = src.section_pages

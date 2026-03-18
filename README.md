@@ -32,7 +32,7 @@ For a deeper architectural description, see `ARCHITECTURE.md`. For a short **dev
 (3) **`CONTRIBUTING.md`**: dev setup, tests, formatting, and doc/typing standards (§7).
 (4) **`docs/LEARNING_AND_BACKLOG.md`**: backlog, testing strategy, coverage, safe/unsafe patterns.
 (5) **`docs/learning/`**: curated "Python/data-science to app/deploy/git" guides grounded in this codebase.
-(6) **Sphinx docs** (see § Documentation below): single place for getting started, architecture, API reference. Live docs: `https://baromedr.readthedocs.io/en/latest/`
+(6) **Sphinx docs** (see § Documentation below): single place for getting started, architecture, API reference. Live docs: `https://baromedr.readthedocs.io/en/latest/` – includes an operator-facing :doc:`deployment checklist <deployment_checklist>` when viewed on Read the Docs.
 
 ---
 
@@ -237,10 +237,13 @@ This repository also includes a minimal [Read the Docs](https://readthedocs.org/
 | **CHANGELOG.md** | Version history and notable changes. |
 | **docs/LEARNING_AND_BACKLOG.md** | Backlog, testing strategy, coverage, fixture notes, safe/unsafe patterns, policy pointers. |
 | **docs/learning/** | Curated learning guides for moving from Python/data-science work into app, deploy, testing, and git workflow using this repo. |
-| **docs/DOCKER_AND_DEPLOYMENT.md** | Docker build/run, docker-compose, self-hosting, env vars, security. |
+| **docs/DOCKER_AND_DEPLOYMENT.md** | Docker build/run, docker-compose, self-hosting, env vars, security, and a secrets/runtime configuration checklist. |
 | **docs/HISTORY_REWRITE_AND_STREAMLIT_SECRETS.md** | Runbook for purging `datasets/` from Git history and configuring private runtime data on Streamlit Community Cloud. |
 | **docs/adr/** (ADR-001 … ADR-008) | Decisions: Streamlit UI, navigation, SROI charts, state/caching, Docker, CI/testing, runtime data/demo mode, and the multi-wave schema/mapping layer. |
-| **Sphinx / Read the Docs** (`docs/source/`, build: `docs/build/html/`) | Getting started, architecture, contributing, full API reference. Live site: `https://baromedr.readthedocs.io/en/latest/`. |
+| **Sphinx / Read the Docs** (`docs/source/`, build: `docs/build/html/`) | Getting started, architecture, contributing, operations runbook, privacy/suppression explainer, full API reference. Live site: `https://baromedr.readthedocs.io/en/latest/`. |
+| **docs/source/release_process.md** | Canonical release runbook: verification checklist, tagging, and publishing steps. |
+| **docs/source/capability_clusters.md** | General-purpose capability-cluster map (PaaS/SaaS/product engineering), linked back to this repo’s concrete practices. |
+| **docs/source/improvements_review.md** | Capability-cluster audit + prioritised improvement backlog for this codebase. |
 | **pytest.ini** | Test discovery, `e2e` marker. |
 | **pyproject.toml** | Black, isort, mypy config. |
 

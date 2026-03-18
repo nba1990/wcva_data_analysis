@@ -1,0 +1,10 @@
+digraph "packages_analysis_layer" {
+rankdir=BT
+charset="utf-8"
+"src.data_loader" [color="black", label=<src.data_loader>, shape="box", style="solid"];
+"src.eda" [color="black", label=<src.eda>, shape="box", style="solid"];
+"src.wave_context" [color="black", label=<src.wave_context>, shape="box", style="solid"];
+"src.eda" -> "src.data_loader" [arrowhead="open", arrowtail="none"];
+"src.wave_context" -> "src.data_loader" [arrowhead="open", arrowtail="none"];
+"src.wave_context" -> "src.eda" [arrowhead="open", arrowtail="none"];
+}

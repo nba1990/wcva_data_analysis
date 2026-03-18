@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 import ast
-from pathlib import Path
 
 from src.navigation import NAV_ITEMS, get_default_page, get_nav_item_ids
 
@@ -35,36 +34,17 @@ def test_get_nav_item_ids_order_and_custom_items() -> None:
 
 def test_nav_item_ids_are_wired_in_app_dispatch() -> None:
     """
-    Ensure every NavItem.id is handled in src/app.py page dispatch.
+    Ensure every NavItem.id is handled in src.app.PAGE_RENDERERS.
 
-    This is a lightweight guard so new pages are not forgotten in the
-    main app routing.
+    This guards against adding a navigation item without a matching page renderer.
     """
-    app_path = Path(__file__).resolve().parents[2] / "src" / "app.py"
-    source = app_path.read_text(encoding="utf-8")
-    tree = ast.parse(source)
-
-    handled_ids: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.If) or isinstance(node, ast.IfExp):
-            # Look for patterns like: if page == "Overview": ...
-            test = node.test
-            if (
-                isinstance(test, ast.Compare)
-                and isinstance(test.left, ast.Name)
-                and test.left.id == "page"
-            ):
-                for comparator in test.comparators:
-                    if isinstance(comparator, ast.Constant) and isinstance(
-                        comparator.value, str
-                    ):
-                        handled_ids.add(comparator.value)
+    import src.app as app_module
 
     nav_ids = set(get_nav_item_ids())
+    handled_ids = set(app_module.PAGE_RENDERERS.keys())
 
-    # Every NavItem.id should appear in the dispatch block.
     missing = sorted(nav_ids - handled_ids)
-    assert not missing, f"Navigation IDs missing from app.py dispatch: {missing}"
+    assert not missing, f"Navigation IDs missing from PAGE_RENDERERS: {missing}"
 
 
 def test_nav_items_have_labels_and_subtitles() -> None:

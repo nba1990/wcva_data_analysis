@@ -33,6 +33,7 @@ from src.config import (
     LA_TO_REGION,
     MULTI_SELECT_GROUPS,
     PROJECT_ROOT,
+    WCVA_LOGGER,
     RuntimeDataSource,
     mask_runtime_value,
     resolve_dataset_source,
@@ -44,12 +45,51 @@ def _read_csv_from_source(source: RuntimeDataSource) -> pd.DataFrame:
     """Read a CSV from a resolved runtime source."""
     if source.is_url:
         try:
-            return pd.read_csv(source.value)
+            WCVA_LOGGER.info(
+                "Reading dataset from URL",
+                extra={
+                    "source_type": source.source_type,
+                    "url": mask_runtime_value(source.value),
+                },
+            )
+            df = pd.read_csv(source.value)
+            WCVA_LOGGER.info(
+                "Loaded dataset from URL",
+                extra={
+                    "source_type": source.source_type,
+                    "url": mask_runtime_value(source.value),
+                    "n_rows": int(len(df)),
+                    "n_cols": int(len(df.columns)),
+                },
+            )
+            return df
         except Exception as exc:
+            WCVA_LOGGER.error(
+                "Failed to read CSV from URL",
+                extra={
+                    "source_type": source.source_type,
+                    "url": mask_runtime_value(source.value),
+                },
+            )
             raise RuntimeError(
                 f"Failed to read CSV from {mask_runtime_value(source.value)}."
             ) from exc
-    return pd.read_csv(Path(source.value))
+    path = Path(source.value)
+    WCVA_LOGGER.info(
+        "Reading dataset from file",
+        extra={"source_type": source.source_type, "path": str(path)},
+    )
+    df = pd.read_csv(path)
+    WCVA_LOGGER.info(
+        "Loaded dataset from file",
+        extra={
+            "source_type": source.source_type,
+            "path": str(path),
+            "n_rows": int(len(df)),
+            "n_cols": int(len(df.columns)),
+        },
+    )
+    return df
 
 
 def load_dataset(
@@ -84,8 +124,28 @@ def load_dataset(
     )
 
     if source.exists:
+        WCVA_LOGGER.info(
+            "Resolved Wave dataset source",
+            extra={
+                "label": source.label,
+                "value": mask_runtime_value(source.value),
+                "source_type": source.source_type,
+                "is_url": source.is_url,
+                "is_demo": source.is_demo,
+            },
+        )
         df = _read_csv_from_source(source)
     else:
+        WCVA_LOGGER.error(
+            "Wave dataset not found",
+            extra={
+                "label": source.label,
+                "value": mask_runtime_value(source.value),
+                "source_type": source.source_type,
+                "is_url": source.is_url,
+                "is_demo": source.is_demo,
+            },
+        )
         raise FileNotFoundError(
             "Wave 2 dataset not found. Set WCVA_DATASET_PATH or WCVA_DATASET_URL, "
             "configure dataset_path / dataset_url in Streamlit secrets, or place "
@@ -163,6 +223,25 @@ def check_runtime_assets(
     sroi_briefing_pdf = (
         root
         / "references/SROI_Wales_Voluntary_Sector/docs/SROI_Wales_Voluntary_Sector.pdf"
+    )
+
+    WCVA_LOGGER.info(
+        "Runtime asset check",
+        extra={
+            "dataset_source": {
+                "value": mask_runtime_value(dataset_source.value),
+                "source_type": dataset_source.source_type,
+                "is_url": dataset_source.is_url,
+                "is_demo": dataset_source.is_demo,
+                "exists": dataset_source.exists,
+            },
+            "la_context_source": {
+                "value": mask_runtime_value(la_context_source.value),
+                "source_type": la_context_source.source_type,
+                "is_url": la_context_source.is_url,
+                "exists": la_context_source.exists,
+            },
+        },
     )
 
     required_assets = [

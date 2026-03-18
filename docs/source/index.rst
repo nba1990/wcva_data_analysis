@@ -18,6 +18,13 @@ New users and developers can get oriented here without extra setup: follow the l
    architecture
    contributing
    api/index
+   deployment_checklist
+   operations_runbook
+   privacy_and_suppression
+   engineering_clusters_and_lifecycle
+   capability_clusters
+   improvements_review
+   release_process
 
 Quick links
 -----------

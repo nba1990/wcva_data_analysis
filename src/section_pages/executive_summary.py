@@ -20,8 +20,14 @@ from src.eda import (
     volunteer_retention_analysis,
     workforce_operations,
 )
+from src.page_context import PageContext
 from src.wave_context import build_wave_registry_from_current_data as get_wave_registry
 from src.wave_context import compare_demand_increase, compare_financial_deterioration
+
+
+def render_page(ctx: PageContext) -> None:
+    """Standard section-page entrypoint used by src.app."""
+    render_executive_summary(ctx.df, ctx.ui_config.suppressed)
 
 
 def render_executive_summary(df: pd.DataFrame, suppressed: bool) -> None:

@@ -1,0 +1,19 @@
+digraph "packages_nav_pages" {
+rankdir=BT
+charset="utf-8"
+"src.navigation" [color="black", label=<src.navigation>, shape="box", style="solid"];
+"src.section_pages" [color="black", label=<src.section_pages>, shape="box", style="solid"];
+"src.section_pages.at_a_glance" [color="black", label=<src.section_pages.at_a_glance>, shape="box", style="solid"];
+"src.section_pages.concerns_and_risks" [color="black", label=<src.section_pages.concerns_and_risks>, shape="box", style="solid"];
+"src.section_pages.data_notes" [color="black", label=<src.section_pages.data_notes>, shape="box", style="solid"];
+"src.section_pages.demographics_and_types" [color="black", label=<src.section_pages.demographics_and_types>, shape="box", style="solid"];
+"src.section_pages.deployment_health" [color="black", label=<src.section_pages.deployment_health>, shape="box", style="solid"];
+"src.section_pages.earned_settlement" [color="black", label=<src.section_pages.earned_settlement>, shape="box", style="solid"];
+"src.section_pages.executive_summary" [color="black", label=<src.section_pages.executive_summary>, shape="box", style="solid"];
+"src.section_pages.overview" [color="black", label=<src.section_pages.overview>, shape="box", style="solid"];
+"src.section_pages.sroi_references" [color="black", label=<src.section_pages.sroi_references>, shape="box", style="solid"];
+"src.section_pages.trends_and_waves" [color="black", label=<src.section_pages.trends_and_waves>, shape="box", style="solid"];
+"src.section_pages.volunteer_recruitment" [color="black", label=<src.section_pages.volunteer_recruitment>, shape="box", style="solid"];
+"src.section_pages.volunteer_retention" [color="black", label=<src.section_pages.volunteer_retention>, shape="box", style="solid"];
+"src.section_pages.workforce_and_operations" [color="black", label=<src.section_pages.workforce_and_operations>, shape="box", style="solid"];
+}

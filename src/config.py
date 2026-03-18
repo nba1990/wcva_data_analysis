@@ -16,6 +16,7 @@ label grouping utilities, and the shared questionnaire label mappings used by
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -27,7 +28,7 @@ import streamlit as st
 from streamlit.errors import StreamlitSecretNotFoundError
 
 # ---------------------------------------------------------------------------
-# Debug / development flags (configurable via environment)
+# Debug / development flags and logging
 # ---------------------------------------------------------------------------
 # Set WCVA_DEBUG_MEMORY=1 (or true/yes) to show process memory in the sidebar.
 DEBUG_MEMORY = os.environ.get("WCVA_DEBUG_MEMORY", "").lower() in (
@@ -35,6 +36,36 @@ DEBUG_MEMORY = os.environ.get("WCVA_DEBUG_MEMORY", "").lower() in (
     "true",
     "yes",
 )
+
+# Set WCVA_ACCESSIBILITY_DEBUG=1 (or true/yes) to log chart alt-text
+# and palette contrast diagnostics for accessibility review.
+ACCESSIBILITY_DEBUG = os.environ.get("WCVA_ACCESSIBILITY_DEBUG", "").lower() in (
+    "1",
+    "true",
+    "yes",
+)
+
+
+def get_wcva_logger() -> logging.Logger:
+    """Return the shared application logger.
+
+    This is a thin shim over logging.getLogger("wcva") so that deployment
+    environments (Streamlit Cloud, Docker, etc.) can configure handlers and
+    formats in one place.
+    """
+    logger = logging.getLogger("wcva")
+    if not logger.handlers:
+        # Default to a simple stderr handler; production deployments are free
+        # to override this via logging.basicConfig or dictConfig.
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s [%(levelname)s] wcva - %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+    return logger
+
+
+WCVA_LOGGER = get_wcva_logger()
 
 LabelGrouper = Callable[[str], str]
 RuntimeSourceType = Literal[
@@ -242,7 +273,7 @@ def resolve_dataset_source() -> RuntimeDataSource:
     env_url = os.environ.get("WCVA_DATASET_URL", "").strip()
     if env_url:
         attempted.append(_candidate_description("env:WCVA_DATASET_URL", env_url))
-        return RuntimeDataSource(
+        source = RuntimeDataSource(
             label="Wave dataset",
             value=env_url,
             source_type="env_url",
@@ -250,6 +281,13 @@ def resolve_dataset_source() -> RuntimeDataSource:
             is_url=True,
             attempted=tuple(attempted),
         )
+        parsed = urlsplit(env_url)
+        if parsed.scheme != "https":
+            WCVA_LOGGER.warning(
+                "Insecure dataset URL (non-HTTPS)",
+                extra={"resolved_url": mask_runtime_value(env_url)},
+            )
+        return source
 
     secret_url, secret_url_source = _get_secret_value_with_source("dataset_url")
     if secret_url:
@@ -258,7 +296,7 @@ def resolve_dataset_source() -> RuntimeDataSource:
                 secret_url_source or "secret:dataset_url", secret_url
             )
         )
-        return RuntimeDataSource(
+        source = RuntimeDataSource(
             label="Wave dataset",
             value=secret_url,
             source_type="secret_url",
@@ -266,6 +304,13 @@ def resolve_dataset_source() -> RuntimeDataSource:
             is_url=True,
             attempted=tuple(attempted),
         )
+        parsed = urlsplit(secret_url)
+        if parsed.scheme != "https":
+            WCVA_LOGGER.warning(
+                "Insecure dataset URL (non-HTTPS)",
+                extra={"resolved_url": mask_runtime_value(secret_url)},
+            )
+        return source
 
     attempted.append(_candidate_description("default_path", str(DEFAULT_DATASET_PATH)))
     if DEFAULT_DATASET_PATH.exists():
@@ -329,7 +374,7 @@ def resolve_la_context_source() -> RuntimeDataSource:
     env_url = os.environ.get("WCVA_LA_CONTEXT_URL", "").strip()
     if env_url:
         attempted.append(_candidate_description("env:WCVA_LA_CONTEXT_URL", env_url))
-        return RuntimeDataSource(
+        source = RuntimeDataSource(
             label="Local-authority context",
             value=env_url,
             source_type="env_url",
@@ -337,6 +382,13 @@ def resolve_la_context_source() -> RuntimeDataSource:
             is_url=True,
             attempted=tuple(attempted),
         )
+        parsed = urlsplit(env_url)
+        if parsed.scheme != "https":
+            WCVA_LOGGER.warning(
+                "Insecure LA context URL (non-HTTPS)",
+                extra={"resolved_url": mask_runtime_value(env_url)},
+            )
+        return source
 
     secret_url, secret_url_source = _get_secret_value_with_source("la_context_url")
     if secret_url:
@@ -345,7 +397,7 @@ def resolve_la_context_source() -> RuntimeDataSource:
                 secret_url_source or "secret:la_context_url", secret_url
             )
         )
-        return RuntimeDataSource(
+        source = RuntimeDataSource(
             label="Local-authority context",
             value=secret_url,
             source_type="secret_url",
@@ -353,6 +405,13 @@ def resolve_la_context_source() -> RuntimeDataSource:
             is_url=True,
             attempted=tuple(attempted),
         )
+        parsed = urlsplit(secret_url)
+        if parsed.scheme != "https":
+            WCVA_LOGGER.warning(
+                "Insecure LA context URL (non-HTTPS)",
+                extra={"resolved_url": mask_runtime_value(secret_url)},
+            )
+        return source
 
     attempted.append(
         _candidate_description("default_path", str(DEFAULT_LA_CONTEXT_PATH))
@@ -395,6 +454,8 @@ def get_la_context_url() -> str | None:
 # K-anonymity threshold (matches Baromedr dashboard suppression rule)
 # ---------------------------------------------------------------------------
 K_ANON_THRESHOLD = 5
+
+MAX_ROWS_STREAMLIT_UI = 200
 
 
 @dataclass()

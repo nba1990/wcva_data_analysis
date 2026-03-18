@@ -195,6 +195,25 @@ Streamlit’s own settings (e.g. `STREAMLIT_SERVER_*`) are set in the Dockerfile
 - If the dataset is sensitive, prefer **read-only volume mounts** or a secret-backed private URL and avoid baking it into the image.
 - Use a reverse proxy for TLS and, if needed, authentication; the Streamlit app itself does not implement auth.
 
+### Secrets and runtime configuration: quick do/don't checklist
+
+Use this checklist when configuring a new deployment or reviewing an existing one:
+
+- **Do**: keep private survey datasets **out of Git history and Docker images**.
+  - Mount them at runtime via read-only volumes (e.g. `/app/runtime-data`) or use a private, access-controlled URL.
+  - Use `WCVA_DATASET_PATH` / `WCVA_DATASET_URL` (or matching Streamlit secrets) to point at the runtime dataset.
+- **Do**: store credentials and private URLs in **environment variables or a secrets manager**.
+  - For Streamlit Cloud, use the built-in Secrets Manager (`[wcva_data]` block).
+  - For Docker/Compose/Kubernetes, inject secrets via environment variables or mounted secret files that are **not** committed.
+- **Do**: assume logs and diagnostics might be shared when debugging.
+  - Dataset paths and URLs shown in Deployment Health are masked; keep that masking in place and avoid adding raw paths/URLs to new log messages.
+- **Do**: regularly review `Deployment Health → Download diagnostics JSON` in non-production environments to confirm masking and configuration behave as expected.
+- **Don't**: commit `.env`, `secrets.toml`, `datasets/WCVA_W2_Anonymised_Dataset.csv`, or any other private runtime files to version control.
+- **Don't**: hard-code private URLs, API keys, or passwords into Python modules, `Dockerfile`, or `docker-compose.yml`.
+- **Don't**: expose non-HTTPS dataset URLs to the public internet unless they are short-lived, presigned, and access-controlled.
+
+For more operator-focused guidance on secrets, demo mode, and private data handling, see `docs/learning/02_private_data_secrets_and_demo_mode.md`.
+
 ---
 
 ## Troubleshooting

@@ -28,7 +28,13 @@ from src.config import (
 )
 from src.eda import volunteer_recruitment_analysis, volunteer_retention_analysis
 from src.narratives import recruitment_vs_retention_phrase
+from src.page_context import PageContext
 from src.wave_context import get_wave_registry, trend_series
+
+
+def render_page(ctx: PageContext) -> None:
+    """Standard section-page entrypoint used by src.app."""
+    render_volunteer_recruitment(ctx.df, ctx.n)
 
 
 def render_volunteer_recruitment(df: pd.DataFrame, n: int) -> None:

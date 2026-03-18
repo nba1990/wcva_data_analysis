@@ -36,12 +36,23 @@ repos:
         types_or: [python, pyi]
       - id: pytest
         name: pytest (non-e2e)
-        entry: pytest tests/ -m "not e2e" -q --tb=line
+        entry: .venv/bin/pytest tests/ -m "not e2e" -q --tb=line
         language: system
         pass_filenames: false
       - id: mypy
         name: mypy (src + tests)
-        entry: mypy src/ tests/
+        entry: .venv/bin/mypy src/ tests/
         language: system
         pass_filenames: false
+      # Optional: enable this hook locally for extra safety.
+      # - id: pyupgrade
+      #   name: pyupgrade (modernise syntax)
+      #   entry: .venv/bin/pyupgrade --py311-plus
+      #   language: system
+      #   types: [python]
+      - id: detect-secrets
+        name: detect-secrets (scan for secrets)
+        entry: .venv/bin/detect-secrets-hook --baseline .secrets.baseline
+        language: system
+        pass_filenames: true
 # Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

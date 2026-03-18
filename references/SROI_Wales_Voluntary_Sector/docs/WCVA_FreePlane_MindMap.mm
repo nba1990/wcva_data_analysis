@@ -725,14 +725,14 @@
 <node TEXT="Voluntary Sector" ID="ID_335012681" CREATED="1772481131616" MODIFIED="1773417587937" TAGS="SROI - Volunteering [UK]&#xa;Economic Value - Voluntary Sector"><richcontent TYPE="NOTE">
 <html>
   <head>
-    
+
   </head>
   <body>
     <p style="margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; text-indent: 0px">
       1. Volunteering in Wales:
     </p>
     <p style="margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; text-indent: 0px">
-      
+
     </p>
     <p style="margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; text-indent: 0px">
       - 938,000 volunteers.
@@ -770,7 +770,7 @@
     </p>
     <p style="margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; text-indent: 0px">
       <br/>
-      
+
     </p>
     <p style="margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; text-indent: 0px">
       - **Wales:** 370,000+ carers | 96% of all care delivered!
@@ -791,7 +791,7 @@
       - The Carers UK/University of Sheffield: Without unpaid carers, the health and social care system would collapse.
     </p>
     <p style="margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; text-indent: 0px">
-      
+
     </p>
     <p style="margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; text-indent: 0px">
       Total UK Voluntary Sector's Income: £69.1bn in 2021-2022 (+9%)
@@ -817,14 +817,14 @@
 <node TEXT="Contributes Towards" ID="ID_1000269777" CREATED="1772481236422" MODIFIED="1773417602624" TAGS="Economic Value - Voluntary Sector"><richcontent TYPE="NOTE">
 <html>
   <head>
-    
+
   </head>
   <body>
     <p>
       NLCF Funds to Wales over 30 years: £1bn+<br/>Projects Funded: 23,000+
     </p>
     <p>
-      
+
     </p>
     <p>
       UK-Wide (2024-2025):
@@ -836,7 +836,7 @@
       82% -&gt; Organisations with income &lt; £1m
     </p>
     <p>
-      
+
     </p>
     <p>
       People &amp; Places Programme: £20m for 2024-2025 financial year
@@ -845,7 +845,7 @@
       Individual Grants: £20k - £500k
     </p>
     <p>
-      
+
     </p>
     <p>
       UK-SPF - Replacing EU Structural Funds (post Brexit): Allocation: £585m to Wales between 2022-2025
@@ -866,7 +866,7 @@
       5. 2023: 85 applications - £3.7m | 37 projects successful
     </p>
     <p>
-      
+
     </p>
     <p>
       WCVA - Intermediate Body for European Social Fund - Active Inclusion Fund (AIF)
@@ -931,7 +931,7 @@
 <richcontent TYPE="NOTE">
 <html>
   <head>
-    
+
   </head>
   <body>
     <p>

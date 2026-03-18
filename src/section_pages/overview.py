@@ -36,7 +36,19 @@ from src.eda import (
     workforce_operations,
 )
 from src.narratives import demand_finance_scissor_phrase
+from src.page_context import PageContext
 from src.wave_context import get_wave_registry
+
+
+def render_page(ctx: PageContext) -> None:
+    """Standard section-page entrypoint used by src.app."""
+    render_overview(
+        ctx.df,
+        suppressed=ctx.ui_config.suppressed,
+        n=ctx.n,
+        palette_mode=ctx.ui_config.palette_mode,
+        prof=ctx.prof,
+    )
 
 
 def render_overview(

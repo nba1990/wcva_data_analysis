@@ -80,12 +80,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install import-linter
 
       - name: Black (format check)
         run: BLACK_NUM_WORKERS=1 black --check src/ tests/
 
       - name: isort (import order check)
         run: isort --check-only src/ tests/
+
+      - name: Import Linter (architecture contracts)
+        run: lint-imports
 
   typecheck:
     runs-on: ubuntu-latest
@@ -126,5 +130,31 @@ jobs:
         run: |
           pip install pip-audit
           pip-audit
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies (app + docs)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r docs/requirements-docs.txt
+
+      - name: Generate diagrams
+        run: |
+          python scripts/generate_diagrams.py
+
+      - name: Build Sphinx HTML docs
+        working-directory: docs
+        run: |
+          make html
 
 # Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

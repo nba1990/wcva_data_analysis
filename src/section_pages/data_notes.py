@@ -12,7 +12,14 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
+from src.config import MAX_ROWS_STREAMLIT_UI
 from src.data_loader import data_quality_profile
+from src.page_context import PageContext
+
+
+def render_page(ctx: PageContext) -> None:
+    """Standard section-page entrypoint used by src.app."""
+    render_data_notes(ctx.df)
 
 
 def render_data_notes(df: pd.DataFrame) -> None:
@@ -38,9 +45,21 @@ def render_data_notes(df: pd.DataFrame) -> None:
     block_df = pd.DataFrame(
         dq["block_completeness"].items(), columns=["Question Block", "Completeness (%)"]
     ).sort_values("Completeness (%)", ascending=False)
-    # st.dataframe(block_df, use_container_width=True, hide_index=True)
-    # use_container_width=True is deprecated and is already removed in Streamlit since 2025-12-31
-    st.dataframe(block_df, width="stretch", hide_index=True)
+
+    max_rows = MAX_ROWS_STREAMLIT_UI
+    display_block_df = block_df.head(max_rows)
+    st.dataframe(display_block_df, width="stretch", hide_index=True)
+    if len(block_df) > max_rows:
+        st.caption(
+            f"Showing first {max_rows} rows. Download the full table as CSV for offline review."
+        )
+    st.download_button(
+        "Download block completeness CSV",
+        data=block_df.to_csv(index=False),
+        file_name="data_notes_block_completeness.csv",
+        mime="text/csv",
+        key="download_block_completeness_csv",
+    )
 
     st.divider()
 

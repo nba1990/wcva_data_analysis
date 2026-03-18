@@ -1,4 +1,4 @@
-# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/ 
+# Copyright (C) 2026 - Bharadwaj Raman - https://github.com/nba1990/
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License v3.
@@ -12,6 +12,7 @@ __pycache__/
 .coverage
 coverage.xml
 .pytest_cache/
+.hypothesis/
 htmlcov/
 *.cover
 .mypy_cache/
@@ -29,7 +30,9 @@ env/
 .idea/
 .vscode/
 .cursor/
+.codex/
 scratch/
+src.svg
 
 output/*.html
 output/*.pdf
@@ -42,4 +45,4 @@ docs/build/
 # OS
 .DS_Store
 Thumbs.db
-# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis 
+# Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis

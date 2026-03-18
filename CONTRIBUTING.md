@@ -54,6 +54,35 @@ Thank you for your interest in contributing. This document explains how to set u
    mypy src/
    ```
 
+4. **Logging and observability**:
+   - Use the shared `WCVA_LOGGER` from `src.config` instead of creating new loggers.
+   - Prefer structured logs with `extra={...}` for key fields (for example: `{"app_mode": "demo", "n_rows": len(df)}`).
+   - Log configuration and data-source decisions at **INFO**; use **WARNING** for insecure or unexpected but recoverable situations; use **ERROR** when a request or page cannot proceed.
+
+5. **Secrets scanning (detect-secrets)**:
+   - This repo is configured to use [`detect-secrets`](https://github.com/Yelp/detect-secrets) via pre-commit.
+   - To (re)generate the baseline after installing `detect-secrets`:
+     ```bash
+     detect-secrets scan > .secrets.baseline
+     ```
+   - The `.pre-commit-config.yaml` hook uses this baseline:
+     ```yaml
+     - id: detect-secrets
+       name: detect-secrets (scan for secrets)
+       entry: .venv/bin/detect-secrets-hook --baseline .secrets.baseline
+       language: system
+       pass_filenames: true
+     ```
+   - After updating the baseline, run:
+     ```bash
+     pre-commit run detect-secrets --all-files
+     ```
+
+   Secrets scanning does not replace good operational hygiene (see
+   `docs/DOCKER_AND_DEPLOYMENT.md` and
+   `docs/learning/02_private_data_secrets_and_demo_mode.md`), but it adds another
+   automated safety net.
+
 ---
 
 ## 3. Branching and pull requests
@@ -123,11 +152,12 @@ When adding new code, extend this standard: add a module docstring if you create
   - `MAJOR` for breaking changes to runtime or deployment expectations.
   - `MINOR` for new dashboard capabilities, documentation, deployment, or testing improvements that remain backwards-compatible.
   - `PATCH` for focused bug fixes or documentation corrections.
+- The canonical release runbook lives in **`docs/source/release_process.md`** (Sphinx: *Release process*). Use that page as the single source of truth.
 - Before a release, update:
-  - `pyproject.toml`
-  - `docs/source/conf.py`
-  - `CHANGELOG.md`
-- Create an annotated git tag using the format `vX.Y.Z`.
+  - `pyproject.toml` (version)
+  - `README.md` (Current release)
+  - `CHANGELOG.md` (Keep a Changelog format)
+- Create an annotated git tag using the format `vX.Y.Z` and publish a matching GitHub Release.
 - Keep `CHANGELOG.md` in Keep a Changelog style with a fresh `Unreleased` section after each release.
 
 If you have questions, open an issue or start a discussion through the repository.

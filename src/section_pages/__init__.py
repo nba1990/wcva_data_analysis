@@ -8,10 +8,14 @@
 """
 Section page modules for the Baromedr Cymru Wave 2 dashboard.
 
-Each module exposes a `render_*` function that takes the filtered DataFrame
-and any required context (e.g. n, suppressed), and writes directly to Streamlit
-(st.title, st.markdown, charts via show_chart, etc.). Page dispatch is in
-src/app.py; navigation IDs in src/navigation.NAV_ITEMS must match.
+Each module exposes a single `render_page(context: PageContext)` entrypoint
+plus one or more internal `render_*` helpers. The shared `PageContext`
+dataclass (defined in ``src.page_context``) carries the filtered DataFrame,
+full dataset, per-session UI config, and any precomputed aggregates.
+
+Page dispatch and construction of `PageContext` live in ``src.app``; navigation
+IDs in ``src.navigation.NAV_ITEMS`` must match the keys used in
+``PAGE_RENDERERS`` in ``src.app``.
 
 Modules: at_a_glance, concerns_and_risks, data_notes, demographics_and_types,
 deployment_health, earned_settlement, executive_summary, overview,

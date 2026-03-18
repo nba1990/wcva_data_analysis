@@ -12,6 +12,7 @@ from pathlib import Path
 import streamlit as st
 
 from src.config import get_app_ui_config
+from src.page_context import PageContext
 from src.sroi_charts.sroi_figures import (
     make_alignment_heatmap_figure,
     make_framework_flow_plotly_figure,
@@ -34,6 +35,13 @@ def _get_mindmap_html() -> str:
         / "references/SROI_Wales_Voluntary_Sector/docs/WCVA_Text_Interactive_MindMap.html"
     )
     return path.read_text(encoding="utf-8")
+
+
+def render_page(
+    ctx: PageContext,
+) -> None:  # noqa: ARG001 - ctx unused (kept for consistency)
+    """Standard section-page entrypoint used by src.app."""
+    render_sroi_references()
 
 
 def render_sroi_references() -> None:

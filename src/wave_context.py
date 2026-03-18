@@ -24,6 +24,7 @@ import pandas as pd
 import streamlit as st
 from pydantic import BaseModel, ConfigDict, Field
 
+from src.config import WCVA_LOGGER
 from src.wave_schema import evaluate_metric, load_wave_schema
 
 
@@ -383,6 +384,9 @@ def build_wave_context_from_df(
     This is intended for Wave 2+ where the source is a row-level dataset
     rather than a hand-crafted Wave 1 payload. It uses simple aggregations
     that align with the existing Wave 1 structure.
+
+    Raises:
+        ValueError: If df has too few rows to build a stable context.
     """
     from src.eda import (
         demand_and_outlook,
@@ -390,6 +394,25 @@ def build_wave_context_from_df(
         volunteer_recruitment_analysis,
         workforce_operations,
     )
+
+    # Guard against completely empty or single-row frames which are
+    # unlikely to yield meaningful percentages, but allow the tiny
+    # integration fixtures used in tests (n>=2).
+    MIN_WAVE_CONTEXT_N = 2
+    if df is None or len(df) < MIN_WAVE_CONTEXT_N:
+        WCVA_LOGGER.warning(
+            "Skipping WaveContext build due to insufficient data",
+            extra={
+                "wave_label": wave_label,
+                "wave_number": wave_number,
+                "n": 0 if df is None else len(df),
+                "min_wave_context_n": MIN_WAVE_CONTEXT_N,
+            },
+        )
+        raise ValueError(
+            "Insufficient data to build WaveContext "
+            f"(n={0 if df is None else len(df)}; minimum {MIN_WAVE_CONTEXT_N})."
+        )
 
     prof = profile_summary(df)
     dem = demand_and_outlook(df)
@@ -683,16 +706,32 @@ def build_wave_registry_from_current_data(df: Optional[pd.DataFrame]) -> WaveReg
         df = load_dataset()
 
     # Wave 2 is currently derived from the full dataset; additional waves
-    # can be appended here as the tracking series grows.
-    wave2_ctx = build_wave_context_from_df(
-        df,
-        wave_label="Wave 2",
-        wave_number=2,
-    )
-    waves: Dict[str, WaveContext] = {
-        "Wave 1": WAVE1_CONTEXT,
-        "Wave 2": wave2_ctx,
-    }
+    # can be appended here as the tracking series grows. When the dataset
+    # is empty or too small, we fall back to a registry containing only
+    # Wave 1 so that trend and comparison helpers remain well-defined.
+    try:
+        wave2_ctx = build_wave_context_from_df(
+            df,
+            wave_label="Wave 2",
+            wave_number=2,
+        )
+        WCVA_LOGGER.info(
+            "Built WaveContext for current data",
+            extra={"wave_label": "Wave 2", "wave_number": 2, "n": len(df)},
+        )
+        waves: Dict[str, WaveContext] = {
+            "Wave 1": WAVE1_CONTEXT,
+            "Wave 2": wave2_ctx,
+        }
+    except ValueError:
+        WCVA_LOGGER.info(
+            "Wave 2 context not built due to insufficient data; using Wave 1 only",
+            extra={"n": 0 if df is None else len(df)},
+        )
+        waves = {
+            "Wave 1": WAVE1_CONTEXT,
+        }
+
     return WaveRegistry(waves=waves)
 
 

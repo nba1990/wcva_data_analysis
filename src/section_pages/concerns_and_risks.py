@@ -13,12 +13,18 @@ import streamlit as st
 from src.charts import horizontal_bar_ranked, kpi_card_html, show_chart, wave_trend_line
 from src.config import WCVA_BRAND, get_app_ui_config
 from src.eda import workforce_operations
+from src.page_context import PageContext
 from src.wave_context import (
     build_trend_long,
     build_trend_pivot,
     get_wave_registry,
     summarise_trend_changes,
 )
+
+
+def render_page(ctx: PageContext) -> None:
+    """Standard section-page entrypoint used by src.app."""
+    render_concerns_and_risks(ctx.df, ctx.n)
 
 
 def render_concerns_and_risks(df: pd.DataFrame, n: int) -> None:

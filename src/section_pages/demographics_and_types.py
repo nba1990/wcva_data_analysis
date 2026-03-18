@@ -25,6 +25,12 @@ from src.config import (
     resolve_grouping,
 )
 from src.eda import volunteer_demographics, volunteering_types
+from src.page_context import PageContext
+
+
+def render_page(ctx: PageContext) -> None:
+    """Standard section-page entrypoint used by src.app."""
+    render_demographics_and_types(ctx.df, ctx.n)
 
 
 def render_demographics_and_types(df: pd.DataFrame, n: int) -> None:

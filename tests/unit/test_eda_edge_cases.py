@@ -105,6 +105,11 @@ def test_cross_segment_analysis_min_n_threshold() -> None:
     assert "Small" in sizes
     assert "Medium" not in sizes
 
+    # Each metric now exposes its own base_n and enough_data flag
+    small = sizes["Small"]
+    assert small["pct_demand_increased_base_n"] == 3
+    assert small["pct_demand_increased_enough_data"] is True
+
 
 def test_finance_recruitment_cross_positive_case() -> None:
     # Construct a small dataset that satisfies n>=10 and at least 3 in each group
@@ -132,7 +137,7 @@ def test_finance_recruitment_cross_positive_case() -> None:
 
 
 def test_finance_recruitment_cross_returns_none_when_insufficient_data() -> None:
-    """When fewer than 3 in either finance group, cross-analysis returns None."""
+    """Return None when either finance group has fewer than 3 rows."""
     df = pd.DataFrame(
         {
             "financial_direction": ["Deteriorated", "Stayed the same"],

@@ -18,7 +18,13 @@ from src.config import (
     resolve_grouping,
 )
 from src.eda import volunteering_types
+from src.page_context import PageContext
 from src.wave_context import get_wave_registry
+
+
+def render_page(ctx: PageContext) -> None:
+    """Standard section-page entrypoint used by src.app."""
+    render_earned_settlement(ctx.df, ctx.n)
 
 
 def render_earned_settlement(df: pd.DataFrame, n: int) -> None:

@@ -24,7 +24,13 @@ from src.config import (
     resolve_grouping,
 )
 from src.eda import volunteer_retention_analysis
+from src.page_context import PageContext
 from src.wave_context import get_wave_registry, trend_series
+
+
+def render_page(ctx: PageContext) -> None:
+    """Standard section-page entrypoint used by src.app."""
+    render_volunteer_retention(ctx.df, ctx.n)
 
 
 def render_volunteer_retention(df: pd.DataFrame, n: int) -> None:

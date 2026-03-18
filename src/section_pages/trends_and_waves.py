@@ -11,14 +11,20 @@ import pandas as pd
 import streamlit as st
 
 from src.charts import show_chart, wave_trend_line
-from src.config import WCVA_BRAND, get_app_ui_config
+from src.config import MAX_ROWS_STREAMLIT_UI, WCVA_BRAND, get_app_ui_config
 from src.eda import volunteer_recruitment_analysis, workforce_operations
+from src.page_context import PageContext
 from src.wave_context import (
     build_trend_long,
     build_trend_pivot,
     get_wave_registry,
     summarise_trend_changes,
 )
+
+
+def render_page(ctx: PageContext) -> None:
+    """Standard section-page entrypoint used by src.app."""
+    render_trends_and_waves(ctx.df)
 
 
 def render_trends_and_waves(df: pd.DataFrame) -> None:
@@ -88,7 +94,13 @@ def render_trends_and_waves(df: pd.DataFrame) -> None:
 
     st.subheader("Headline trend table")
     wide = build_trend_pivot(working_df)
-    st.dataframe(wide, hide_index=True, width="stretch")
+    max_rows = MAX_ROWS_STREAMLIT_UI
+    display_wide = wide.head(max_rows)
+    st.dataframe(display_wide, hide_index=True, width="stretch")
+    if len(wide) > max_rows:
+        st.caption(
+            f"Showing first {max_rows} rows. Download the full table as CSV for offline analysis."
+        )
 
     # Download full long-format trends as CSV for external analysis
     csv = trend_df.to_csv(index=False)
@@ -150,61 +162,68 @@ def render_trends_and_waves(df: pd.DataFrame) -> None:
     st.subheader("Debug: EDA vs WaveContext (Wave 2)")
 
     with st.expander("Show comparison table for key metrics"):
-        rec = volunteer_recruitment_analysis(df)
-        wf = workforce_operations(df)
+        if "Wave 2" not in registry.waves:
+            st.info(
+                "Wave 2 context is not available for the current dataset "
+                "(for example, because there are too few responses). "
+                "Cross-wave debug comparisons are skipped."
+            )
+        else:
+            rec = volunteer_recruitment_analysis(df)
+            wf = workforce_operations(df)
 
-        wave2_ctx = registry.get("Wave 2")
+            wave2_ctx = registry.get("Wave 2")
 
-        debug_rows = [
-            {
-                "metric": "Too few volunteers %",
-                "source": "EDA (pct_too_few)",
-                "value": rec["pct_too_few"],
-            },
-            {
-                "metric": "Too few volunteers %",
-                "source": "WaveContext (workforce.headline.too_few_volunteers_pct)",
-                "value": wave2_ctx.workforce.headline.too_few_volunteers_pct,
-            },
-            {
-                "metric": "Has reserves %",
-                "source": "EDA (reserves_yes_pct)",
-                "value": wf["reserves_yes_pct"],
-            },
-            {
-                "metric": "Has reserves %",
-                "source": "WaveContext (headline_kpis.financial_health.has_financial_reserves_pct)",
-                "value": wave2_ctx.headline_kpis.financial_health.has_financial_reserves_pct,
-            },
-            {
-                "metric": "Using reserves (of those with reserves) %",
-                "source": "EDA (using_reserves_pct)",
-                "value": wf["using_reserves_pct"],
-            },
-            {
-                "metric": "Using reserves (of those with reserves) %",
-                "source": "WaveContext (headline_kpis.financial_health.using_reserves_among_those_with_reserves_pct)",
-                "value": wave2_ctx.headline_kpis.financial_health.using_reserves_among_those_with_reserves_pct,
-            },
-        ]
+            debug_rows = [
+                {
+                    "metric": "Too few volunteers %",
+                    "source": "EDA (pct_too_few)",
+                    "value": rec["pct_too_few"],
+                },
+                {
+                    "metric": "Too few volunteers %",
+                    "source": "WaveContext (workforce.headline.too_few_volunteers_pct)",
+                    "value": wave2_ctx.workforce.headline.too_few_volunteers_pct,
+                },
+                {
+                    "metric": "Has reserves %",
+                    "source": "EDA (reserves_yes_pct)",
+                    "value": wf["reserves_yes_pct"],
+                },
+                {
+                    "metric": "Has reserves %",
+                    "source": "WaveContext (headline_kpis.financial_health.has_financial_reserves_pct)",
+                    "value": wave2_ctx.headline_kpis.financial_health.has_financial_reserves_pct,
+                },
+                {
+                    "metric": "Using reserves (of those with reserves) %",
+                    "source": "EDA (using_reserves_pct)",
+                    "value": wf["using_reserves_pct"],
+                },
+                {
+                    "metric": "Using reserves (of those with reserves) %",
+                    "source": "WaveContext (headline_kpis.financial_health.using_reserves_among_those_with_reserves_pct)",
+                    "value": wave2_ctx.headline_kpis.financial_health.using_reserves_among_those_with_reserves_pct,
+                },
+            ]
 
-        debug_df = pd.DataFrame(debug_rows)
+            debug_df = pd.DataFrame(debug_rows)
 
-        # Add a simple match flag (EDA vs WaveContext) within each metric
-        tolerance = 0.5  # allowed absolute difference for rounding
-        debug_df["match"] = ""
-        for metric_name in debug_df["metric"].unique():
-            subset = debug_df[debug_df["metric"] == metric_name]
-            if len(subset) == 2:
-                v1, v2 = subset["value"].iloc[0], subset["value"].iloc[1]
-                ok = abs(float(v1) - float(v2)) <= tolerance
-                debug_df.loc[subset.index, "match"] = ok
-        st.dataframe(debug_df, hide_index=True, width="stretch")
-        st.caption(
-            "EDA aggregates and WaveContext values should match (aside from integer rounding). "
-            "The 'match' column shows whether values agree within a small tolerance; "
-            "if it is False, it indicates a mapping or transformation issue."
-        )
+            # Add a simple match flag (EDA vs WaveContext) within each metric
+            tolerance = 0.5  # allowed absolute difference for rounding
+            debug_df["match"] = ""
+            for metric_name in debug_df["metric"].unique():
+                subset = debug_df[debug_df["metric"] == metric_name]
+                if len(subset) == 2:
+                    v1, v2 = subset["value"].iloc[0], subset["value"].iloc[1]
+                    ok = abs(float(v1) - float(v2)) <= tolerance
+                    debug_df.loc[subset.index, "match"] = ok
+            st.dataframe(debug_df, hide_index=True, width="stretch")
+            st.caption(
+                "EDA aggregates and WaveContext values should match (aside from integer rounding). "
+                "The 'match' column shows whether values agree within a small tolerance; "
+                "if it is False, it indicates a mapping or transformation issue."
+            )
 
     st.subheader("How This Links to the Executive Summary")
     st.markdown(

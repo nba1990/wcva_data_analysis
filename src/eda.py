@@ -82,6 +82,13 @@ def _value_counts_ordered(series: pd.Series, order: list[str]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _safe_series(df: pd.DataFrame, column: str, dtype: str | None = None) -> pd.Series:
+    """Return df[column] if present, else an empty Series of the requested dtype."""
+    if column in df.columns:
+        return df[column]
+    return pd.Series(dtype=dtype or "object")
+
+
 def _share_true(series: pd.Series) -> float:
     """Return percentage of True values over non-missing base.
 
@@ -541,21 +548,44 @@ def volunteering_types(df: pd.DataFrame) -> dict[str, Any]:
 
 
 def _segment_metrics(subset: pd.DataFrame, n: int) -> dict:
-    """Shared metrics for a subset (n = len(subset))."""
-    volobj = subset["volobjectives"]
+    """Shared metrics for a subset (n = len(subset)) with per-metric bases."""
+    volobj = _safe_series(subset, "volobjectives")
     volobj_base = int(volobj.notna().sum())
-    rec_diff = subset["has_vol_rec_difficulty"]
-    ret_diff = subset["has_vol_ret_difficulty"]
+    rec_diff = _safe_series(subset, "has_vol_rec_difficulty", dtype="bool")
+    ret_diff = _safe_series(subset, "has_vol_ret_difficulty", dtype="bool")
+    demand_dir = _safe_series(subset, "demand_direction")
+    fin_dir = _safe_series(subset, "financial_direction")
+
+    rec_base = int(rec_diff.notna().sum())
+    ret_base = int(ret_diff.notna().sum())
+    demand_base = int(demand_dir.notna().sum())
+    fin_base = int(fin_dir.notna().sum())
+
+    # Cross-segment tables already drop segments with n < 3. For the
+    # per-metric "enough_data" flags we use the same minimum base so
+    # that segments which pass the row-count filter are treated as
+    # having sufficient data by default.
+    SEGMENT_MIN_BASE = 3
+
+    def _enough(base: int) -> bool:
+        return base >= SEGMENT_MIN_BASE
+
     return {
         "n": n,
         # Percentages use non-missing bases per-metric; this keeps segment tables
         # aligned with the main KPIs and avoids denominator confusion.
         "pct_vol_rec_difficulty": _share_true(rec_diff),
+        "pct_vol_rec_difficulty_base_n": rec_base,
+        "pct_vol_rec_difficulty_enough_data": _enough(rec_base),
         "pct_vol_ret_difficulty": _share_true(ret_diff),
-        "pct_demand_increased": _share_true(subset["demand_direction"].eq("Increased")),
-        "pct_finance_deteriorated": _share_true(
-            subset["financial_direction"].eq("Deteriorated")
-        ),
+        "pct_vol_ret_difficulty_base_n": ret_base,
+        "pct_vol_ret_difficulty_enough_data": _enough(ret_base),
+        "pct_demand_increased": _share_true(demand_dir.eq("Increased")),
+        "pct_demand_increased_base_n": demand_base,
+        "pct_demand_increased_enough_data": _enough(demand_base),
+        "pct_finance_deteriorated": _share_true(fin_dir.eq("Deteriorated")),
+        "pct_finance_deteriorated_base_n": fin_base,
+        "pct_finance_deteriorated_enough_data": _enough(fin_base),
         "pct_too_few_vols": (
             round(
                 100
@@ -606,22 +636,30 @@ def finance_recruitment_cross(df: pd.DataFrame) -> dict[str, Any] | None:
     det = df["financial_direction"] == "Deteriorated"
     not_det = ~det & df["financial_direction"].notna()
     rec_hard = df["vol_rec"].isin(["Somewhat difficult", "Extremely difficult"])
-    n_det = det.sum()
-    n_not_det = not_det.sum()
+    n_det = int(det.sum())
+    n_not_det = int(not_det.sum())
     if n_det < 3 or n_not_det < 3:
         return None
     # Among those who answered the recruitment difficulty question
     det_answered = det & df["vol_rec"].notna()
     not_det_answered = not_det & df["vol_rec"].notna()
-    pct_det = round(100 * rec_hard[det_answered].sum() / max(1, det_answered.sum()), 1)
+    base_det = int(det_answered.sum())
+    base_not_det = int(not_det_answered.sum())
+    pct_det = round(
+        100 * rec_hard[det_answered].sum() / max(1, base_det),
+        1,
+    )
     pct_not_det = round(
-        100 * rec_hard[not_det_answered].sum() / max(1, not_det_answered.sum()), 1
+        100 * rec_hard[not_det_answered].sum() / max(1, base_not_det),
+        1,
     )
     return {
         "pct_rec_difficulty_if_finance_deteriorated": pct_det,
         "pct_rec_difficulty_if_finance_not_deteriorated": pct_not_det,
-        "n_finance_deteriorated": int(n_det),
-        "n_finance_not_deteriorated": int(n_not_det),
+        "n_finance_deteriorated": n_det,
+        "n_finance_not_deteriorated": n_not_det,
+        "base_rec_difficulty_if_finance_deteriorated": base_det,
+        "base_rec_difficulty_if_finance_not_deteriorated": base_not_det,
     }
 
 

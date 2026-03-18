@@ -21,6 +21,7 @@ from src.narratives import (
     demand_finance_scissor_phrase,
     recruitment_vs_retention_phrase,
 )
+from src.page_context import PageContext
 from src.wave_context import get_wave_registry
 
 
@@ -45,6 +46,15 @@ def _delta_arrow(old: float, new: float, *, higher_is_good: bool) -> str:
     return (
         f"<span style='color:{colour};font-weight:700'>{symbol}</span> "
         f"({sign}{delta_str} pts)"
+    )
+
+
+def render_page(ctx: PageContext) -> None:
+    """Standard section-page entrypoint used by src.app."""
+    render_at_a_glance(
+        ctx.df,
+        ctx.n,
+        ctx.ui_config.accessible_mode,
     )
 
 

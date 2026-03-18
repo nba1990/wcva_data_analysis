@@ -17,13 +17,13 @@ These items were identified during architecture and testing work; they are **not
 ### 1.1 Technology exploration
 
 - **PyGWalker / YData Profiling**
-  Evaluate for rapid EDA inside the dashboard (e.g. a separate “EDA playground” page for internal use). Would allow interactive exploration of columns and distributions without writing custom Streamlit widgets.
+  Evaluate for rapid EDA inside the dashboard (e.g. a separate “EDA playground” page for internal use). Would allow interactive exploration of columns and distributions without writing custom Streamlit widgets. See also `docs/learning/05_streamlit_and_dashboards.md` for an overview of where these tools fit in the stack.
 
 - **DuckDB**
-  Assess whether DuckDB would simplify heavy analytical queries (e.g. aggregations over large slices, cross-wave joins) currently implemented in Pandas. Could reduce memory use and speed up some filters.
+  Assess whether DuckDB would simplify heavy analytical queries (e.g. aggregations over large slices, cross-wave joins) currently implemented in Pandas. Could reduce memory use and speed up some filters. A natural home is behind helpers in `src/eda.py`, keeping the public API unchanged.
 
 - **PyDeck**
-  Consider a small geospatial view if geographic data (local authorities, regions) becomes central to a story—e.g. overlay Baromedr results on a Wales map.
+  Consider a small geospatial view if geographic data (local authorities, regions) becomes central to a story—e.g. overlay Baromedr results on a Wales map. The representation index work on the Overview page would be a good candidate for this.
 
 ### 1.2 Future dashboards (portfolio-style)
 
