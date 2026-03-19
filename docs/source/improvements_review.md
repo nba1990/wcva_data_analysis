@@ -26,6 +26,49 @@ The biggest opportunities are now mostly “maturity” improvements:
 - **Codify performance/caching boundaries** (what is cached, why, and how filters affect computation).
 - **Turn broad knowledge (capability clusters) into a concise, navigable reference** linked to this repo’s concrete practices.
 
+## Assessment: professionalisation and maturation debt
+
+This section captures the outcome of external and internal reviews focussing on intentional engineering principles with normal maturation debt. It also records a high-signal, low-noise roadmap to fully professionalise the repo.
+
+### Verdict
+
+It is **professionally minded and intentionally engineered**, with explicit architecture (ARCHITECTURE.md, ADRs), substantive CI (tests, lint, types, security, packaging, docs), test stratification (unit, integration, e2e), architectural enforcement (import-linter, nav→dispatch test), and serious attention to privacy (demo mode, k-anonymity, URL redaction). The weak spots below are **conventional single-product / organically-grown debt**.
+
+### Findings from review (March 2026)
+
+**1. Medium — UI/rendering layer enforcement is thinner than the docs suggest**
+
+- Overall coverage is modest (~60%); several high-change presentation modules are barely exercised.
+- Page modules with weak or no direct test coverage include: `src/section_pages/overview.py`, `src/section_pages/at_a_glance.py`, `src/section_pages/trends_and_waves.py`, and `src/generate_presentation.py`.
+- Core analytics (config, data_loader, eda, charts) are better protected; the presentation layer is guarded mainly by e2e smoke tests.
+- The current repo-wide coverage gate is still permissive enough that the suite can pass while important presentation-heavy modules remain lightly tested.
+- **Direction**: Add targeted unit-style tests for data-selection and metric logic used by these pages (even if Streamlit itself is not fully exercised), and/or raise coverage goals for key section pages where safe.
+
+**2. Medium — Large multi-responsibility modules**
+
+- Several important modules have grown into large, multi-responsibility files (organic evolution rather than a fully matured modular design).
+- Affected modules: `src/config.py`, `src/wave_context.py`, `src/eda.py`, `src/generate_presentation.py`.
+- **Direction**: Split by sub-domain over time (e.g. config/runtime vs config/ui; eda/demand vs eda/volunteering; presentation/html vs presentation/pdf) to improve boundaries and cognitive load.
+
+**3. Low — Packaging/import hygiene**
+
+- Both `src/app.py` and `src/generate_presentation.py` modify `sys.path` at import time so the project root is on the path. This is a pragmatic workaround common in repos that started as scripts and were later professionalised.
+- **Direction**: Remove the need for `sys.path` manipulation by relying on an installable package or a consistent entry point (e.g. `python -m ...`) so that CLI, tests, and packaging all use the same import semantics.
+
+**4. Low — Narrow architectural contracts**
+
+- The import-linter config (`.importlinter`) currently enforces only two contracts, both centred on `section_pages`. Useful, but not yet a broad architectural safety net.
+- **Direction**: Broaden contracts (e.g. section_pages must not import low-level infra directly; tests must not depend on section_pages except via a defined surface; encode more of ARCHITECTURE.md layering into import rules).
+
+**5. Additional improvement areas**
+
+- **Page modules as thin presenters**: Move non-trivial data shaping from section pages into `eda.py` or helpers so page modules are thin presenters; add unit-style tests for any logic that remains in page modules.
+- **Typed boundaries**: Introduce small dataclasses or TypedDicts at the boundary between `eda` and `section_pages` so the UI layer has clear contracts instead of generic dicts.
+- **Observability**: Use `WCVA_LOGGER` consistently with structured keys (e.g. dataset_source_type, app_mode, n_rows) around data-source resolution, filter application, and key user actions; centralise “required assets present” checks so they can be asserted in tests as well as on the deployment health page.
+- **UI automation maturity**: The current e2e layer is intentionally light and import-oriented. If the dashboard becomes more user-facing or design-sensitive, add browser-driven UI automation for key flows (navigation, filters, suppression messaging, demo-mode labelling, chart/table toggles, download affordances) rather than relying only on import smoke plus unit/integration coverage.
+
+These items are reflected in the prioritised backlog below where they are not already covered.
+
 ## Audit checklist (capability clusters)
 
 This uses the umbrella capability clusters described in `capability_clusters` (see that page for definitions).
@@ -193,7 +236,34 @@ Priority labels are “P0” (high leverage/low risk), “P1” (medium), “P2�
 
 - **Logging consistency**
   - **Where**: `src/data_loader.py`, `src/wave_context.py`, `src/app.py`, `src/generate_presentation.py`.
-  - **Acceptance**: consistent structured keys; no raw URLs in logs.
+  - **Acceptance**: consistent structured keys; no raw URLs in logs; key user actions are represented explicitly (for example: filter changes, mode switches, and page render failures).
+
+- **UI/rendering layer test depth**
+  - **Where**: add targeted unit-style tests for data-selection and metric logic used by `src/section_pages/overview.py`, `src/section_pages/at_a_glance.py`, `src/section_pages/trends_and_waves.py`, and (where feasible) `src/generate_presentation.py`; avoid relying solely on e2e smoke for presentation logic.
+  - **Why**: these high-change modules are currently barely exercised; tests guard refactors and prevent regressions.
+  - **Acceptance**: meaningful coverage or explicit tests for key page-level metric/build logic; coverage threshold or module-level goals updated so the suite cannot pass indefinitely with thin coverage in presentation-heavy modules.
+
+- **Eliminate sys.path manipulation**
+  - **Where**: `src/app.py` and `src/generate_presentation.py` currently insert the project root into `sys.path` at import time.
+  - **Why**: packaging hygiene; run identically from CLI, tests, and installed package without path hacks.
+  - **Acceptance**: entry points work via `python -m ...` or installed package; no `sys.path` modification in app or presentation code.
+
+- **Broaden import-linter contracts**
+  - **Where**: `.importlinter`; currently only two contracts, both centred on `section_pages`.
+  - **Why**: encode more of ARCHITECTURE.md layering (e.g. section_pages do not import low-level infra directly; tests use a defined surface for section_pages).
+  - **Acceptance**: at least one additional contract that reinforces app → pages → eda/data boundaries; docs updated.
+
+- **Browser-driven UI regression coverage**
+  - **Where**: add a small, stable browser E2E layer alongside the current smoke tests; Playwright is a strong candidate if the team wants full user-journey automation.
+  - **Why**: some risks only appear in the real browser/runtime interaction layer, such as broken sidebar navigation, widgets not retaining state, suppression banners not appearing when filters shrink the sample, demo-mode labelling regressions, broken embedded HTML, layout issues, or download controls disappearing.
+  - **How to keep it proportionate**: start with a tiny happy-path suite rather than a broad brittle UI matrix. Focus on a few canonical journeys and stable assertions, using the bundled sample dataset or explicit demo mode.
+  - **Suggested initial scenarios**:
+    - app boots and shows the expected default page in demo/sample mode
+    - sidebar navigation switches between a few core pages successfully
+    - applying filters can trigger the suppression warning and hide sensitive outputs
+    - deployment health page shows runtime-source state and demo/real labelling
+    - a representative page still renders key charts/tables after filter changes
+  - **Acceptance**: CI runs a small browser-based regression suite reliably; failures correspond to user-visible breakage rather than cosmetic noise.
 
 ### P2 — Longer-term / optional
 
@@ -204,6 +274,26 @@ Priority labels are “P0” (high leverage/low risk), “P1” (medium), “P2�
 - **Multi-wave mapping layer expansion**
   - **Where**: follow ADR-008; expand `config/waves/*.schema.yml` and evaluator vocabulary in `src/wave_schema.py`.
   - **Acceptance**: new waves can be added with minimal code changes and robust comparability checks.
+
+- **Split large multi-responsibility modules**
+  - **Where**: `src/config.py`, `src/wave_context.py`, `src/eda.py`, `src/generate_presentation.py` each carry many distinct responsibilities.
+  - **Why**: improve boundaries and cognitive load; e.g. `config/` (runtime vs UI), `eda/` (demand, volunteering, etc.), `presentation/` (html vs pdf).
+  - **Acceptance**: submodules or packages with clear single-purpose modules; public API preserved or explicitly migrated.
+
+- **Thin presenters and typed boundaries**
+  - **Where**: `src/section_pages/*`; move non-trivial data shaping into `src/eda.py` or helpers; introduce small dataclasses or TypedDicts at the `eda` ↔ `section_pages` boundary.
+  - **Why**: page modules become thin presenters; UI layer has clear contracts instead of generic dicts; easier to test and refactor.
+  - **Acceptance**: section pages call EDA helpers that return typed structures; no ad-hoc dict building in page renderers for complex data.
+
+- **Testing strategy overhaul (if UI complexity grows)**
+  - **Where**: test pyramid across `tests/unit`, `tests/integration`, and browser E2E.
+  - **Why**: if the product becomes more operator-facing or visually richer, the current testing strategy may remain too backend-heavy relative to actual UX risk.
+  - **Direction**:
+    - keep most logic tests at unit/integration level for speed and debuggability
+    - use browser E2E only for a narrow set of critical user journeys
+    - add visual/assertion helpers only for intentionally stable UI elements, not every chart pixel
+    - prefer deterministic demo/sample fixtures and explicit runtime modes for repeatability
+  - **Acceptance**: the repo has a documented test pyramid that explains what belongs in unit, integration, smoke, and browser-E2E layers, with CI scope sized to remain fast and reliable.
 
 ## How to use this backlog
 

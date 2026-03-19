@@ -8,6 +8,8 @@ See the LICENSE file for full licensing terms.
 
 This document captures backlog items, testing strategy notes, and pointers to policy questions and plans so that knowledge from past planning and development remains actionable. **New or returning?** The main **README** has a short "New here? Picking this up again?" orientation and a "Documentation index" table listing all key docs (this file, ARCHITECTURE, CONTRIBUTING, ADRs, Sphinx, etc.).
 
+For a **professionalisation and maturation-debt assessment** (external review findings), capability-cluster audit, and **prioritised P0/P1/P2 improvement backlog**, see **`docs/source/improvements_review.md`** (built into the Sphinx site as *Comprehensive review and improvement backlog*).
+
 ---
 
 ## 1. Backlog (future enhancements)

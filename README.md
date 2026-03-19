@@ -268,7 +268,7 @@ This repository also includes a minimal [Read the Docs](https://readthedocs.org/
 | **Sphinx / Read the Docs** (`docs/source/`, build: `docs/build/html/`) | Getting started, architecture, contributing, operations runbook, privacy/suppression explainer, full API reference. Live site: `https://baromedr.readthedocs.io/en/latest/`. |
 | **docs/source/release_process.md** | Canonical release runbook: verification checklist, tagging, and publishing steps. |
 | **docs/source/capability_clusters.md** | General-purpose capability-cluster map (PaaS/SaaS/product engineering), linked back to this repo’s concrete practices. |
-| **docs/source/improvements_review.md** | Capability-cluster audit + prioritised improvement backlog for this codebase. |
+| **docs/source/improvements_review.md** | Capability-cluster audit, **professionalisation/maturation-debt assessment** (external review findings), and prioritised improvement backlog. |
 | **pytest.ini** | Test discovery, `e2e` marker. |
 | **pyproject.toml** | Ruff, mypy, coverage, and packaging config. |
 
@@ -442,6 +442,7 @@ See `ARCHITECTURE.md` and the ADRs in `docs/adr/` (e.g. ADR-004 for state/cachin
 ## Backlog and learning
 
 - **`docs/LEARNING_AND_BACKLOG.md`** – Backlog items (PyGWalker, DuckDB, PyDeck, future dashboards), testing strategy notes, and safe/unsafe patterns.
+- **`docs/source/improvements_review.md`** (Sphinx) – Capability-cluster audit, **professionalisation and maturation-debt assessment** (findings from codebase reviews), and prioritised P0/P1/P2 improvement backlog.
 - **`docs/learning/`** – Curated guides on repo structure, private data/secrets, demo mode, deployment, testing, releases, and git hygiene using this repo as the example.
 - **`docs/DOCKER_AND_DEPLOYMENT.md`** – Docker build/run, docker-compose, self-hosting, and deployment options.
 - **`ARCHITECTURE.md`** – Sections 9–10: developer tour (how to read tests and docs) and future dashboards/backlog.
