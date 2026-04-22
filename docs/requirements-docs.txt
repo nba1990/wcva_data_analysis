@@ -10,7 +10,7 @@
 # Then: cd docs && make html  (output in docs/build/html/)
 sphinx>=7.0
 sphinx-rtd-theme>=2.0
-PyYAML>=6.0
+PyYAML>=6.0.3
 myst-parser>=3.0
 graphviz>=0.20
 sphinxcontrib-mermaid>=2.0
