@@ -12,7 +12,7 @@ kaleido>=0.2.1
 fpdf2>=2.7
 pydantic>=2.12.5
 pydantic_core>=2.41.5
-PyYAML>=6.0
+PyYAML>=6.0.3
 numpy>=2.4.3
 psutil>=7.2.2
 # Source code available under AGPLv3: https://github.com/nba1990/wcva_data_analysis
